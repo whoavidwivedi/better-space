@@ -307,27 +307,33 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     dataConnsRef.current.set(conn.peer, conn);
 
     conn.on("open", () => {
-      // Send self state upon handshake
-      const me = participantsRef.current.get(peerIdRef.current);
-      if (me) {
-        conn.send({ type: "SYNC_USER", payload: me });
-      }
+      // Send self state AND all known participants upon handshake to establish a full mesh
+      const allUsers = Array.from(participantsRef.current.values());
+      conn.send({ type: "SYNC_ALL_USERS", payload: allUsers });
     });
 
     conn.on("data", (data: any) => {
       if (!data || !data.type) return;
 
       switch (data.type) {
-        case "SYNC_USER": {
-          const user: Participant = data.payload;
+        case "SYNC_ALL_USERS": {
+          const users: Participant[] = data.payload;
+          
           setParticipants((prev) => {
             const next = new Map(prev);
-            next.set(user.peerId, user);
+            users.forEach((u) => next.set(u.peerId, u));
             return next;
           });
-          // Mesh relay: If host, broadcast this new participant to others
-          if (myRoleRef.current === "host") {
-            broadcastData({ type: "SYNC_USER", payload: user });
+
+          // Establish mesh connections: Connect to any new peers we don't have connections to yet
+          const me = participantsRef.current.get(peerIdRef.current);
+          if (me) {
+            users.forEach((u) => {
+              if (u.peerId !== peerIdRef.current && !dataConnsRef.current.has(u.peerId)) {
+                // We use setTimeout to avoid blocking the current execution frame with multiple connects
+                setTimeout(() => connectToPeer(u.peerId, me), Math.random() * 500);
+              }
+            });
           }
           break;
         }
@@ -352,11 +358,6 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
           if (peerIdRef.current === targetId) {
             if (isHandRaised !== undefined) setIsHandRaised(isHandRaised);
             if (isMuted !== undefined) setIsMuted(isMuted);
-          }
-
-          // Relay status update
-          if (myRoleRef.current === "host") {
-            broadcastData(data);
           }
           break;
         }
