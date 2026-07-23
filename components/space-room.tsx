@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Peer, { MediaConnection, DataConnection } from "peerjs";
 import { 
   Mic, MicOff, Hand, Radio, Users, Copy, Check, LogOut, 
-  Volume2, MessageSquare
+  Volume2, MessageSquare, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,51 +59,97 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
   const dataConnsRef = useRef<Map<string, DataConnection>>(new Map());
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
+  // Mutable Refs for stale closures in PeerJS callbacks
+  const participantsRef = useRef(participants);
+  useEffect(() => { participantsRef.current = participants; }, [participants]);
+  
+  const peerIdRef = useRef(peerId);
+  useEffect(() => { peerIdRef.current = peerId; }, [peerId]);
+
+  const myRoleRef = useRef(myRole);
+  useEffect(() => { myRoleRef.current = myRole; }, [myRole]);
+
   const getLocalAudioStream = async () => {
     try {
-      const rawStream = await navigator.mediaDevices.getUserMedia({ 
+      const constraints: MediaStreamConstraints = {
         audio: {
           noiseSuppression: true,
           echoCancellation: true,
           autoGainControl: true,
-        }, 
-        video: false 
-      });
+          channelCount: 1,
+          sampleRate: 48000,
+          // @ts-ignore
+          googNoiseSuppression: true,
+          googHighpassFilter: true,
+          googEchoCancellation: true,
+        },
+        video: false,
+      };
+
+      const rawStream = await navigator.mediaDevices.getUserMedia(constraints);
       rawStreamRef.current = rawStream;
 
-      // Filter background noise / air using Web Audio API
+      // Create an inline AudioWorklet for an Aggressive Noise Gate
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(rawStream);
       
-      // Highpass filter to remove low rumble (wind, breathing rumble)
-      const highpass = audioCtx.createBiquadFilter();
-      highpass.type = "highpass";
-      highpass.frequency.value = 150; // Cut off below 150Hz
+      const workletCode = `
+        class NoiseGate extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this.threshold = 0.025; // Strict threshold to filter air/fans
+            this.gain = 0;
+            this.attack = 0.1; // Fast open
+            this.release = 0.002; // Smooth fade out
+          }
+          process(inputs, outputs) {
+            const input = inputs[0];
+            const output = outputs[0];
+            if (!input || !input.length || !input[0]) return true;
 
-      // Lowpass filter to remove high-frequency air/hiss
-      const lowpass = audioCtx.createBiquadFilter();
-      lowpass.type = "lowpass";
-      lowpass.frequency.value = 5000; // Cut off above 5kHz
+            let sum = 0;
+            for (let i = 0; i < input[0].length; i++) {
+              sum += input[0][i] * input[0][i];
+            }
+            const rms = Math.sqrt(sum / input[0].length);
 
-      // Dynamics compressor to act as a leveler
-      const compressor = audioCtx.createDynamicsCompressor();
-      compressor.threshold.value = -50;
-      compressor.knee.value = 40;
-      compressor.ratio.value = 12;
-      compressor.attack.value = 0;
-      compressor.release.value = 0.25;
+            // Determine if we should open the gate
+            const targetGain = rms > this.threshold ? 1.0 : 0.0;
+            
+            // Smooth the transition to prevent popping/clicking
+            if (targetGain > this.gain) {
+              this.gain += this.attack;
+              if (this.gain > 1) this.gain = 1;
+            } else {
+              this.gain -= this.release;
+              if (this.gain < 0) this.gain = 0;
+            }
 
+            for (let c = 0; c < input.length; c++) {
+              for (let i = 0; i < input[c].length; i++) {
+                output[c][i] = input[c][i] * this.gain;
+              }
+            }
+            return true;
+          }
+        }
+        registerProcessor('noise-gate', NoiseGate);
+      `;
+      
+      const blob = new Blob([workletCode], { type: 'application/javascript' });
+      const workletUrl = URL.createObjectURL(blob);
+      await audioCtx.audioWorklet.addModule(workletUrl);
+
+      const source = audioCtx.createMediaStreamSource(rawStream);
+      const noiseGateNode = new AudioWorkletNode(audioCtx, 'noise-gate');
       const destination = audioCtx.createMediaStreamDestination();
       
-      source.connect(highpass);
-      highpass.connect(lowpass);
-      lowpass.connect(compressor);
-      compressor.connect(destination);
+      source.connect(noiseGateNode);
+      noiseGateNode.connect(destination);
 
       const processedStream = destination.stream;
       localStreamRef.current = processedStream;
 
-      // Disable raw tracks if muted or listener initially to ensure privacy (green dot)
+      // Disable raw tracks if muted or listener initially to ensure privacy
       rawStream.getAudioTracks().forEach((track) => {
         track.enabled = userRole !== "listener" && !isMuted;
       });
@@ -185,6 +231,10 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
       peerInstance.on("error", (err) => {
         console.error("PeerJS Error:", err);
+        if (err.type === "peer-unavailable" && myRole !== "host") {
+          alert("The host has ended this space.");
+          onLeave();
+        }
       });
     };
 
@@ -258,7 +308,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
     conn.on("open", () => {
       // Send self state upon handshake
-      const me = participants.get(peerId);
+      const me = participantsRef.current.get(peerIdRef.current);
       if (me) {
         conn.send({ type: "SYNC_USER", payload: me });
       }
@@ -276,7 +326,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
             return next;
           });
           // Mesh relay: If host, broadcast this new participant to others
-          if (myRole === "host") {
+          if (myRoleRef.current === "host") {
             broadcastData({ type: "SYNC_USER", payload: user });
           }
           break;
@@ -299,13 +349,13 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
           });
 
           // Sync local state if the update was about us (e.g. host rejected our hand raise)
-          if (peerId === targetId) {
+          if (peerIdRef.current === targetId) {
             if (isHandRaised !== undefined) setIsHandRaised(isHandRaised);
             if (isMuted !== undefined) setIsMuted(isMuted);
           }
 
           // Relay status update
-          if (myRole === "host") {
+          if (myRoleRef.current === "host") {
             broadcastData(data);
           }
           break;
@@ -313,7 +363,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
         case "CHANGE_ROLE": {
           const { targetPeerId, newRole } = data.payload;
-          if (peerId === targetPeerId) {
+          if (peerIdRef.current === targetPeerId) {
             setMyRole(newRole);
             if (newRole === "listener") {
               setIsMuted(true);
@@ -622,7 +672,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
                         </AvatarFallback>
                       </Avatar>
                       {listener.isHandRaised && (
-                        <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full animate-bounce shadow-sm">
+                        <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full shadow-sm">
                           <Hand className="h-3 w-3" />
                         </div>
                       )}
@@ -638,17 +688,17 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
                               size="sm"
                               variant="ghost"
                               onClick={() => promoteOrDemote(listener.peerId, "speaker")}
-                              className="text-[10px] text-emerald-500 hover:bg-emerald-500/10 h-6 px-1.5"
+                              className="text-[10px] text-emerald-500 hover:bg-emerald-500/10 h-7 px-2 flex items-center gap-1 bg-emerald-500/5 font-semibold"
                             >
-                              Accept
+                              <Check className="h-3 w-3" /> Accept
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => rejectMicRequest(listener.peerId)}
-                              className="text-[10px] text-destructive hover:bg-destructive/10 h-6 px-1.5"
+                              className="text-[10px] text-destructive hover:bg-destructive/10 h-7 px-2 flex items-center gap-1 bg-destructive/5 font-semibold"
                             >
-                              Reject
+                              <X className="h-3 w-3" /> Reject
                             </Button>
                           </>
                         ) : (
@@ -689,7 +739,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
                   isHandRaised ? "border-primary text-primary" : "text-muted-foreground"
                 }`}
               >
-                <Hand className={`h-5 w-5 ${isHandRaised ? "animate-bounce" : ""}`} />
+                <Hand className={`h-5 w-5`} />
                 {isHandRaised ? "Hand Raised" : "Request to Speak"}
               </Button>
             )}
