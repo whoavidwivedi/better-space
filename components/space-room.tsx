@@ -3,23 +3,41 @@
 import React, { useEffect, useRef, useState } from "react";
 import Peer, { MediaConnection, DataConnection } from "peerjs";
 import { 
-  Mic, MicOff, Hand, Radio, Users, Copy, Check, LogOut, 
-  Volume2, MessageSquare, X
-} from "lucide-react";
+  Mic01Icon as Mic, MicOff01Icon as MicOff, UserGroupIcon as Users, 
+  Copy01Icon as Copy, CheckmarkBadge01Icon as Check, Logout01Icon as LogOut, 
+  Message01Icon as MessageSquare, HeadphonesIcon as Headphones, VolumeOffIcon, KeyboardIcon,
+  ArrowDown01Icon as ChevronDown
+} from "hugeicons-react";
+import { useTheme } from "next-themes";
+import { Message, MessageAvatar, MessageContent, MessageHeader } from "@/components/ui/message";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { AudioVisualizer } from "@/components/audio-visualizer";
+import { EmojiClickData, Theme } from "emoji-picker-react";
+import EmojiPicker from "emoji-picker-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { SmileIcon as Smile, Settings01Icon as SettingsIcon } from "hugeicons-react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
 interface Participant {
   peerId: string;
   name: string;
   role: "host" | "speaker" | "listener";
   isMuted: boolean;
+  isDeafened?: boolean;
   isHandRaised: boolean;
   isSpeaking?: boolean;
+  reaction?: string;
 }
 
 interface ChatMessage {
@@ -38,18 +56,40 @@ interface SpaceRoomProps {
 }
 
 export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: SpaceRoomProps) {
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const [peerId, setPeerId] = useState<string>("");
   const [participants, setParticipants] = useState<Map<string, Participant>>(new Map());
-  const [isMuted, setIsMuted] = useState<boolean>(userRole === "listener");
-  const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [isDeafened, setIsDeafened] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [myRole, setMyRole] = useState<"host" | "speaker" | "listener">(userRole);
+  const [myRole, setMyRole] = useState<"speaker">("speaker");
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState<string>("");
   const [showChat, setShowChat] = useState<boolean>(false);
   const [streams, setStreams] = useState<Map<string, MediaStream>>(new Map());
+  
+  // Audio Settings
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicId, setSelectedMicId] = useState<string>("default");
+
+  // Track showChat for async callbacks
+  const showChatRef = useRef(showChat);
+  useEffect(() => { showChatRef.current = showChat; }, [showChat]);
 
   // References
   const peerRef = useRef<Peer | null>(null);
@@ -58,6 +98,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
   const callsRef = useRef<Map<string, MediaConnection>>(new Map());
   const dataConnsRef = useRef<Map<string, DataConnection>>(new Map());
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const reactionTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Mutable Refs for stale closures in PeerJS callbacks
   const participantsRef = useRef(participants);
@@ -66,10 +107,13 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
   const peerIdRef = useRef(peerId);
   useEffect(() => { peerIdRef.current = peerId; }, [peerId]);
 
+  const isDeafenedRef = useRef(isDeafened);
+  useEffect(() => { isDeafenedRef.current = isDeafened; }, [isDeafened]);
+
   const myRoleRef = useRef(myRole);
   useEffect(() => { myRoleRef.current = myRole; }, [myRole]);
 
-  const getLocalAudioStream = async () => {
+  const getLocalAudioStream = async (deviceId?: string) => {
     try {
       const constraints: MediaStreamConstraints = {
         audio: {
@@ -78,6 +122,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
           autoGainControl: true,
           channelCount: 1,
           sampleRate: 48000,
+          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
           // @ts-ignore
           googNoiseSuppression: true,
           googHighpassFilter: true,
@@ -164,6 +209,73 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     }
   };
 
+  const displayReaction = (targetPeerId: string, emoji: string) => {
+    setParticipants((prev) => {
+      const next = new Map(prev);
+      const p = next.get(targetPeerId);
+      if (p) next.set(targetPeerId, { ...p, reaction: emoji });
+      return next;
+    });
+
+    if (reactionTimeoutsRef.current.has(targetPeerId)) {
+      clearTimeout(reactionTimeoutsRef.current.get(targetPeerId)!);
+    }
+
+    const timeout = setTimeout(() => {
+      setParticipants((prev) => {
+        const next = new Map(prev);
+        const p = next.get(targetPeerId);
+        if (p) next.set(targetPeerId, { ...p, reaction: undefined });
+        return next;
+      });
+      reactionTimeoutsRef.current.delete(targetPeerId);
+    }, 4000);
+
+    reactionTimeoutsRef.current.set(targetPeerId, timeout);
+  };
+
+  const handleSendReaction = (emojiObject: any) => {
+    const emoji = emojiObject.emoji;
+    const payload = { peerId, emoji };
+    broadcastData({ type: "REACTION", payload });
+    displayReaction(peerId, emoji);
+  };
+
+  const handleDeviceChange = async (deviceId: string | null) => {
+    if (!deviceId) return;
+    setSelectedMicId(deviceId);
+    const newStream = await getLocalAudioStream(deviceId);
+    if (!newStream) return;
+
+    // Replace track on all existing connections
+    const newAudioTrack = newStream.getAudioTracks()[0];
+    if (!newAudioTrack) return;
+
+    Array.from(callsRef.current.values()).forEach((call) => {
+      const sender = call.peerConnection.getSenders().find(s => s.track?.kind === "audio");
+      if (sender) {
+        sender.replaceTrack(newAudioTrack);
+      }
+    });
+  };
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics = devices.filter(d => d.kind === "audioinput");
+        setAudioDevices(mics);
+        if (mics.length > 0 && selectedMicId === "default") {
+          const def = mics.find(m => m.deviceId === "default") || mics[0];
+          setSelectedMicId(def.deviceId);
+        }
+      } catch (e) {
+        console.error("Could not fetch audio devices", e);
+      }
+    };
+    fetchDevices();
+  }, [selectedMicId]);
+
   // Broadcast data payload to all connected peers
   const broadcastData = (data: any) => {
     dataConnsRef.current.forEach((conn) => {
@@ -176,25 +288,49 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
   // Initialize PeerJS Connection
   useEffect(() => {
     let peerInstance: Peer;
+    let isMounted = true;
+
+    // Listen for tab duplicate checks
+    const bc = new BroadcastChannel("spacex_room_channel");
+    bc.onmessage = (event) => {
+      if (event.data === "check_active") {
+        bc.postMessage("active");
+      }
+    };
 
     const initPeer = async () => {
-      // Create Peer instance with clean room-scoped or generated ID
-      const generatedId = `${roomId}-${Math.random().toString(36).substr(2, 6)}`;
-      peerInstance = new Peer(myRole === "host" ? roomId : generatedId, {
-        debug: 1,
+      // Try to become the signaling node (roomId) or join dynamically
+      const tryHost = new Promise<Peer>((resolve) => {
+        const testPeer = new Peer(roomId, { debug: 0 });
+        testPeer.on("open", () => resolve(testPeer));
+        testPeer.on("error", (err: any) => {
+          if (err.type === "unavailable-id") {
+            const genId = `${roomId}-${Math.random().toString(36).substr(2, 6)}`;
+            const fallbackPeer = new Peer(genId, { debug: 0 });
+            fallbackPeer.on("open", () => resolve(fallbackPeer));
+          }
+        });
       });
+
+      peerInstance = await tryHost;
+      
+      if (!isMounted) {
+        peerInstance.destroy();
+        return;
+      }
 
       peerRef.current = peerInstance;
 
-      peerInstance.on("open", async (id) => {
+      const handlePeerOpen = async (id: string) => {
         setPeerId(id);
         
         // Add self to participants list
         const me: Participant = {
           peerId: id,
           name: userName,
-          role: myRole,
-          isMuted: myRole === "listener" ? true : isMuted,
+          role: "speaker",
+          isMuted: isMuted,
+          isDeafened: isDeafened,
           isHandRaised: false,
         };
         setParticipants((prev) => new Map(prev).set(id, me));
@@ -202,11 +338,14 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
         // Get audio stream ready
         await getLocalAudioStream();
 
-        // If not host, connect to Host's room peer
-        if (myRole !== "host") {
+        // Connect to the room signaling node if we are not the node
+        if (id !== roomId) {
           connectToPeer(roomId, me);
         }
-      });
+      };
+
+      // Since the 'open' event already fired to resolve tryHost, we call this manually
+      handlePeerOpen(peerInstance.id);
 
       // Handle Incoming Data Connections (State syncing / Chat / Signal)
       peerInstance.on("connection", (dataConn) => {
@@ -229,11 +368,9 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
         callsRef.current.set(call.peer, call);
       });
 
-      peerInstance.on("error", (err) => {
-        console.error("PeerJS Error:", err);
-        if (err.type === "peer-unavailable" && myRole !== "host") {
-          alert("The host has ended this space.");
-          onLeave();
+      peerInstance.on("error", (err: any) => {
+        if (err.type !== "peer-unavailable" && err.type !== "unavailable-id") {
+          console.warn("PeerJS Warning:", err);
         }
       });
     };
@@ -241,6 +378,8 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     initPeer();
 
     return () => {
+      isMounted = false;
+      bc.close();
       // Cleanup connections
       callsRef.current.forEach((call) => call.close());
       dataConnsRef.current.forEach((conn) => conn.close());
@@ -279,6 +418,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     const audio = document.createElement("audio");
     audio.srcObject = stream;
     audio.autoplay = true;
+    audio.muted = isDeafenedRef.current;
     audioElementsRef.current.set(peerId, audio);
     document.body.appendChild(audio);
 
@@ -321,7 +461,12 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
           
           setParticipants((prev) => {
             const next = new Map(prev);
-            users.forEach((u) => next.set(u.peerId, u));
+            users.forEach((u) => {
+              if (!prev.has(u.peerId) && u.peerId !== peerIdRef.current) {
+                toast.success(`${u.name} joined the room`);
+              }
+              next.set(u.peerId, u);
+            });
             return next;
           });
 
@@ -339,7 +484,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
         }
 
         case "UPDATE_STATUS": {
-          const { peerId: targetId, isMuted, isHandRaised, role } = data.payload;
+          const { peerId: targetId, isMuted, isDeafened, isHandRaised, role } = data.payload;
           setParticipants((prev) => {
             const next = new Map(prev);
             const p = next.get(targetId);
@@ -347,6 +492,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
               next.set(targetId, {
                 ...p,
                 ...(isMuted !== undefined && { isMuted }),
+                ...(isDeafened !== undefined && { isDeafened }),
                 ...(isHandRaised !== undefined && { isHandRaised }),
                 ...(role !== undefined && { role }),
               });
@@ -354,35 +500,25 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
             return next;
           });
 
-          // Sync local state if the update was about us (e.g. host rejected our hand raise)
+          // Sync local state if the update was about us
           if (peerIdRef.current === targetId) {
-            if (isHandRaised !== undefined) setIsHandRaised(isHandRaised);
             if (isMuted !== undefined) setIsMuted(isMuted);
+            if (isDeafened !== undefined) setIsDeafened(isDeafened);
           }
           break;
         }
 
-        case "CHANGE_ROLE": {
-          const { targetPeerId, newRole } = data.payload;
-          if (peerIdRef.current === targetPeerId) {
-            setMyRole(newRole);
-            if (newRole === "listener") {
-              setIsMuted(true);
-              if (localStreamRef.current) {
-                localStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = false));
-              }
-            }
-          }
-          break;
-        }
-
-        case "END_SPACE": {
-          onLeave();
+        case "REACTION": {
+          const { peerId: targetId, emoji } = data.payload;
+          displayReaction(targetId, emoji);
           break;
         }
 
         case "CHAT_MSG": {
           setMessages((prev) => [...prev, data.payload]);
+          if (!showChatRef.current && data.payload.senderName !== userName) {
+            toast.message(`Message from ${data.payload.senderName}`, { description: data.payload.text });
+          }
           break;
         }
       }
@@ -392,6 +528,10 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
       dataConnsRef.current.delete(conn.peer);
       setParticipants((prev) => {
         const next = new Map(prev);
+        const leavingUser = next.get(conn.peer);
+        if (leavingUser && leavingUser.peerId !== peerIdRef.current) {
+          toast.info(`${leavingUser.name} left the room`);
+        }
         next.delete(conn.peer);
         return next;
       });
@@ -400,7 +540,6 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
   // Toggle Mute / Unmute
   const toggleMute = () => {
-    if (myRole === "listener") return;
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
 
@@ -425,68 +564,58 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     });
   };
 
-  // Toggle Hand Raise
-  const toggleHandRaise = () => {
-    const nextHand = !isHandRaised;
-    setIsHandRaised(nextHand);
+  // Toggle Deafen
+  const toggleDeafen = () => {
+    const nextDeafened = !isDeafened;
+    setIsDeafened(nextDeafened);
+    
+    // Apply deafen state to all current remote audio elements
+    audioElementsRef.current.forEach((audio) => {
+      audio.muted = nextDeafened;
+    });
 
-    const payload = { peerId, isHandRaised: nextHand };
+    const payload = { peerId, isDeafened: nextDeafened };
     broadcastData({ type: "UPDATE_STATUS", payload });
     setParticipants((prev) => {
       const next = new Map(prev);
       const me = next.get(peerId);
-      if (me) next.set(peerId, { ...me, isHandRaised: nextHand });
+      if (me) next.set(peerId, { ...me, isDeafened: nextDeafened });
       return next;
     });
-  };
-
-  // Host Privilege: Change Participant Role (Speaker/Listener)
-  const promoteOrDemote = (targetPeerId: string, newRole: "speaker" | "listener") => {
-    if (myRole !== "host") return;
     
-    // Broadcast role change command
-    broadcastData({ type: "CHANGE_ROLE", payload: { targetPeerId, newRole } });
-
-    // Update local state
-    setParticipants((prev) => {
-      const next = new Map(prev);
-      const target = next.get(targetPeerId);
-      if (target) {
-        next.set(targetPeerId, {
-          ...target,
-          role: newRole,
-          isHandRaised: false,
-          isMuted: newRole === "listener" ? true : target.isMuted,
-        });
-      }
-      return next;
-    });
-  };
-
-  // Host Privilege: Reject Mic Request
-  const rejectMicRequest = (targetPeerId: string) => {
-    if (myRole !== "host") return;
-    const payload = { peerId: targetPeerId, isHandRaised: false };
-    
-    broadcastData({ type: "UPDATE_STATUS", payload });
-    
-    setParticipants((prev) => {
-      const next = new Map(prev);
-      const target = next.get(targetPeerId);
-      if (target) {
-        next.set(targetPeerId, { ...target, isHandRaised: false });
-      }
-      return next;
-    });
-  };
-
-  // Host Privilege: End Space
-  const handleEndSpace = () => {
-    if (myRole === "host") {
-      broadcastData({ type: "END_SPACE", payload: null });
+    // Auto-mute if deafening
+    if (nextDeafened && !isMuted) {
+      toggleMute();
     }
-    onLeave();
   };
+
+  // Hotkey for Mute/Unmute (Cmd/Ctrl + D) and Deafen (Cmd/Ctrl + E)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+      
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        toggleDeafen();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        toggleMute();
+      } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        toggleTheme();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMuted, isDeafened, peerId, theme]);
+
+  // Remove unused host privilege methods
 
   // Send Chat Message
   const sendChatMessage = (e: React.FormEvent) => {
@@ -507,91 +636,116 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
   // Copy Room Link to Clipboard
   const copyInviteLink = () => {
-    const url = `${window.location.origin}?room=${roomId}`;
+    if (copied) return;
+    const url = `${window.location.origin}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
+    toast.success("Link copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Group participants by role
+  // Group participants (everyone is a speaker)
   const allList = Array.from(participants.values());
-  const hostsAndSpeakers = allList.filter((p) => p.role === "host" || p.role === "speaker");
-  const listeners = allList.filter((p) => p.role === "listener");
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans relative">
       {/* Top Bar Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-bold text-lg leading-tight">{roomName}</h1>
-              <Badge variant="outline" className="text-xs px-2 py-0.5 text-primary border-primary/50">
-                ● LIVE
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground font-mono">Room ID: {roomId}</p>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-lg tracking-tight">Space</span>
+            <Badge variant="destructive" className="text-[10px] px-2 py-0 h-5 border-0 font-bold tracking-wider rounded-sm shadow-none">
+              LIVE
+            </Badge>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="hidden md:block">
+            <HoverCard>
+              <HoverCardTrigger render={
+              <div className="relative border bg-background hover:bg-muted rounded-md h-8 w-8 flex items-center justify-center cursor-help transition-colors text-muted-foreground">
+                <KeyboardIcon className="h-4 w-4" />
+              </div>
+            } />
+            <HoverCardContent className="w-64 p-4 shadow-2xl rounded-xl z-[100]" sideOffset={10} align="end">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <KeyboardIcon className="h-4 w-4" /> Keyboard Shortcuts
+                </h4>
+                <div className="flex flex-col gap-3 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Toggle Mute</span>
+                    <KbdGroup><Kbd>⌘</Kbd><Kbd>D</Kbd></KbdGroup>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Toggle Deafen</span>
+                    <KbdGroup><Kbd>⌘</Kbd><Kbd>E</Kbd></KbdGroup>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Toggle Dark Mode</span>
+                    <KbdGroup><Kbd>D</Kbd></KbdGroup>
+                  </div>
+                </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
             onClick={copyInviteLink}
-            className="gap-2"
+            disabled={copied}
+            className="w-[140px] active:scale-[0.97] transition-all duration-150 ease-out"
           >
             {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             {copied ? "Copied Link!" : "Invite Friends"}
           </Button>
 
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowChat(!showChat)}
-            className={`relative border ${showChat ? "bg-primary/20 text-primary border-primary/30" : "text-muted-foreground"}`}
-          >
-            <MessageSquare className="h-5 w-5" />
-            {messages.length > 0 && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary" />
-            )}
-          </Button>
-
-          <Button
             variant="destructive"
             size="sm"
-            onClick={myRole === "host" ? handleEndSpace : onLeave}
-            className="gap-1.5"
+            onClick={onLeave}
+            className="gap-1.5 active:scale-[0.97] transition-all duration-150 ease-out"
           >
             <LogOut className="h-4 w-4" />
-            {myRole === "host" ? "End Space" : "Leave"}
+            Leave
           </Button>
         </div>
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Main Stage Grid */}
-        <main className="flex-1 p-6 md:p-10 overflow-y-auto max-w-5xl mx-auto w-full flex flex-col justify-between gap-8">
+        <main className="flex-1 p-4 md:p-10 pb-32 overflow-y-auto max-w-5xl mx-auto w-full flex flex-col gap-8">
           
           {/* Speakers & Hosts Section */}
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
-                <Volume2 className="h-4 w-4 text-primary" />
-                Speakers ({hostsAndSpeakers.length})
+                <Users className="h-4 w-4 text-primary" />
+                Participants ({allList.length})
               </h2>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {hostsAndSpeakers.map((speaker) => (
+              {allList.map((speaker, index) => (
                 <Card
                   key={speaker.peerId}
-                  className="bg-card text-card-foreground p-5 flex flex-col items-center justify-center relative group transition-all shadow-sm"
+                  className="bg-card text-card-foreground p-5 flex flex-col items-center justify-center relative group shadow-sm animate-in fade-in zoom-in-95 duration-300 ease-out"
+                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
                 >
+                  {/* Reaction */}
+                  {speaker.reaction && (
+                    <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border shadow-sm rounded-full h-9 w-9 flex items-center justify-center text-xl z-10 animate-in fade-in zoom-in-95 duration-200 ease-out">
+                      <span className="leading-none select-none">{speaker.reaction}</span>
+                    </div>
+                  )}
+
                   {/* Avatar */}
                   <div className="relative mb-3">
-                    <Avatar className={`h-20 w-20 border-2 ${speaker.role === "host" ? "border-primary" : "border-border"}`}>
+                    <Avatar className={`h-20 w-20 border-2 border-primary`}>
                       <AvatarFallback className="bg-muted text-foreground font-bold text-xl">
                         {speaker.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
@@ -603,17 +757,21 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
                     >
                       {speaker.isMuted ? <MicOff className="h-3.5 w-3.5 opacity-50" /> : <Mic className="h-3.5 w-3.5 text-primary" />}
                     </div>
+
+                    {/* Deafen indicator status */}
+                    {speaker.isDeafened && (
+                      <div
+                        className={`absolute bottom-0 left-0 p-1.5 rounded-full border bg-background text-foreground shadow-sm`}
+                      >
+                        <VolumeOffIcon className="h-3.5 w-3.5 text-destructive" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Name, Role & Waveform */}
                   <div className="text-center w-full truncate flex flex-col items-center">
                     <p className="font-semibold truncate text-sm">{speaker.name}</p>
                     <div className="flex items-center justify-center gap-1.5 mt-1">
-                      {speaker.role === "host" && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          Host
-                        </Badge>
-                      )}
                       {speaker.peerId === peerId && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           You
@@ -629,162 +787,142 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
                       <AudioVisualizer stream={speaker.peerId === peerId ? localStreamRef.current : streams.get(speaker.peerId) || null} />
                     )}
                   </div>
-
-                  {/* Host Action Options */}
-                  {myRole === "host" && speaker.peerId !== peerId && (
-                    <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => promoteOrDemote(speaker.peerId, "listener")}
-                        className="text-xs text-destructive hover:bg-destructive/10 h-7 px-2"
-                      >
-                        Move to Listener
-                      </Button>
-                    </div>
-                  )}
                 </Card>
               ))}
             </div>
           </section>
-
-          {/* Listeners Section */}
-          <section className="space-y-4">
-            <h2 className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Listeners ({listeners.length})
-            </h2>
-
-            {listeners.length === 0 ? (
-              <div className="text-center py-8 border border-dashed rounded-xl bg-muted/50 text-muted-foreground text-sm">
-                No listeners in the room yet. Share the room link to invite friends!
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                {listeners.map((listener) => (
-                  <Card
-                    key={listener.peerId}
-                    className="bg-card text-card-foreground p-3 flex flex-col items-center justify-center relative group transition-all shadow-sm"
-                  >
-                    <div className="relative mb-2">
-                      <Avatar className="h-12 w-12 border">
-                        <AvatarFallback className="bg-muted text-foreground font-medium text-sm">
-                          {listener.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {listener.isHandRaised && (
-                        <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full shadow-sm">
-                          <Hand className="h-3 w-3" />
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground font-medium truncate w-full text-center">{listener.name}</p>
-
-                    {/* Host action to promote */}
-                    {myRole === "host" && (
-                      <div className="flex gap-1 mt-2">
-                        {listener.isHandRaised ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => promoteOrDemote(listener.peerId, "speaker")}
-                              className="text-[10px] text-emerald-500 hover:bg-emerald-500/10 h-7 px-2 flex items-center gap-1 bg-emerald-500/5 font-semibold"
-                            >
-                              <Check className="h-3 w-3" /> Accept
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => rejectMicRequest(listener.peerId)}
-                              className="text-[10px] text-destructive hover:bg-destructive/10 h-7 px-2 flex items-center gap-1 bg-destructive/5 font-semibold"
-                            >
-                              <X className="h-3 w-3" /> Reject
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => promoteOrDemote(listener.peerId, "speaker")}
-                            className="text-[10px] text-primary hover:bg-primary/10 h-6 px-1.5"
-                          >
-                            Make Speaker
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Dock Controls Footer */}
-          <div className="sticky bottom-6 mt-auto self-center bg-background/90 border p-3 rounded-full shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-3 max-w-md w-full justify-center z-10">
-            {/* Mute Button (Only for speakers/host) */}
-            {myRole !== "listener" ? (
-              <Button
-                onClick={toggleMute}
-                variant={isMuted ? "destructive" : "default"}
-                className="rounded-full h-12 px-6 font-medium gap-2 transition-all"
-              >
-                {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                {isMuted ? "Unmute" : "Mute"}
-              </Button>
-            ) : (
-              <Button
-                onClick={toggleHandRaise}
-                variant="outline"
-                className={`rounded-full h-12 px-6 gap-2 transition-all ${
-                  isHandRaised ? "border-primary text-primary" : "text-muted-foreground"
-                }`}
-              >
-                <Hand className={`h-5 w-5`} />
-                {isHandRaised ? "Hand Raised" : "Request to Speak"}
-              </Button>
-            )}
-          </div>
         </main>
 
-        {/* Sidebar Chat */}
-        {showChat && (
-          <aside className="w-80 border-l bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex flex-col h-[calc(100vh-73px)] sticky top-[73px]">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" /> Space Chat
-              </h3>
-            </div>
+        {/* Floating Dock Controls Footer */}
+        <motion.div 
+          initial={{ x: "-50%" }}
+          animate={{ x: "-50%" }}
+          transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+          className="fixed bottom-4 md:bottom-8 left-1/2 bg-background/90 border p-2 md:p-3 rounded-full shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-2 md:gap-3 z-40"
+        >
+            {/* Chat Toggle Drawer */}
+            <Drawer open={showChat} onOpenChange={setShowChat} showSwipeHandle={true}>
+              <DrawerTrigger render={
+                <Button
+                  variant="outline"
+                  className={`relative rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-150 ease-out ${showChat ? "bg-primary/20 text-primary border-primary/30" : "text-muted-foreground"}`}
+                >
+                  <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
+                  {messages.length > 0 && !showChat && (
+                    <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-primary" />
+                  )}
+                </Button>
+              } />
+              <DrawerContent className="h-[80vh] flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <DrawerHeader className="border-b shrink-0 py-4 flex flex-row items-center justify-between">
+                  <DrawerTitle className="text-sm font-semibold flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-primary" /> Space Chat
+                  </DrawerTitle>
+                  <Button variant="ghost" size="icon" onClick={() => setShowChat(false)} className="rounded-full text-muted-foreground hover:text-foreground">
+                    <ChevronDown className="h-6 w-6" />
+                  </Button>
+                </DrawerHeader>
 
-            <div className="flex-1 p-4 space-y-3 overflow-y-auto text-sm">
-              {messages.length === 0 ? (
-                <p className="text-center text-xs text-muted-foreground py-10">No messages yet. Say hi!</p>
-              ) : (
-                messages.map((msg) => (
-                  <div key={msg.id} className="bg-muted rounded-lg p-2.5 border">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span className="font-semibold text-foreground">{msg.senderName}</span>
-                      <span>{msg.timestamp}</span>
-                    </div>
-                    <p className="text-foreground break-words">{msg.text}</p>
+                <div className="flex-1 p-4 space-y-3 overflow-y-auto text-sm min-h-0 mx-auto w-full max-w-3xl">
+                  {messages.length === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-10">No messages yet. Say hi!</p>
+                  ) : (
+                    messages.map((msg) => (
+                      <Message key={msg.id} align={msg.senderName === userName ? "end" : "start"} className="mb-4 w-full">
+                        <MessageAvatar>
+                          <Avatar className="h-8 w-8 border">
+                            <AvatarFallback className="text-xs">{msg.senderName.substring(0,2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                        </MessageAvatar>
+                        <MessageContent className="min-w-0">
+                          <MessageHeader className="text-xs">{msg.senderName} <span className="text-[10px] text-muted-foreground ml-1 font-mono">{msg.timestamp}</span></MessageHeader>
+                          <Bubble>
+                            <BubbleContent className="text-sm break-words whitespace-pre-wrap">{msg.text}</BubbleContent>
+                          </Bubble>
+                        </MessageContent>
+                      </Message>
+                    ))
+                  )}
+                </div>
+
+                <div className="p-3 border-t shrink-0 w-full">
+                  <form onSubmit={sendChatMessage} className="flex gap-2 mx-auto w-full max-w-3xl">
+                    <Input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Type a message..."
+                      className="text-sm h-12 rounded-xl"
+                    />
+                    <Button type="submit" size="sm" disabled={!chatInput.trim()} className="active:scale-[0.97] transition-all duration-150 ease-out h-12 rounded-xl px-6">
+                      Send
+                    </Button>
+                  </form>
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            {/* Settings Modal */}
+            <Dialog>
+              <DialogTrigger render={
+                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-150 ease-out">
+                  <SettingsIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                </Button>
+              } />
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Audio Settings</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Microphone</label>
+                    <Select value={selectedMicId} onValueChange={handleDeviceChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a microphone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {audioDevices.map((device) => (
+                          <SelectItem key={device.deviceId} value={device.deviceId}>
+                            {device.label || `Microphone ${device.deviceId.substring(0, 5)}...`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
-            <form onSubmit={sendChatMessage} className="p-3 border-t flex gap-2">
-              <Input
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type a message..."
-                className="text-sm"
-              />
-              <Button type="submit" size="sm">
-                Send
-              </Button>
-            </form>
-          </aside>
-        )}
+            <Popover>
+              <PopoverTrigger render={
+                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-150 ease-out">
+                  <Smile className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                </Button>
+              } />
+              <PopoverContent className="w-auto p-0 mb-4 border-none shadow-2xl rounded-xl overflow-hidden origin-bottom animate-in fade-in zoom-in-95 duration-200 ease-out" sideOffset={10}>
+                <EmojiPicker onEmojiClick={handleSendReaction} theme={Theme.AUTO} lazyLoadEmojis={true} />
+              </PopoverContent>
+            </Popover>
+
+            {/* Deafen Button */}
+            <Button
+              onClick={toggleDeafen}
+              variant={isDeafened ? "destructive" : "secondary"}
+              className="rounded-full h-10 w-[100px] md:h-12 md:w-[120px] p-0 overflow-hidden active:scale-[0.97] transition-colors duration-150 ease-out flex items-center justify-center font-medium gap-1 md:gap-1.5 text-xs md:text-sm"
+            >
+              {isDeafened ? <VolumeOffIcon className="h-4 w-4 md:h-5 md:w-5" /> : <Headphones className="h-4 w-4 md:h-5 md:w-5" />}
+              {isDeafened ? "Undeafen" : "Deafen"}
+            </Button>
+            
+            {/* Mute Button */}
+            <Button
+              onClick={toggleMute}
+              variant={isMuted ? "destructive" : "secondary"}
+              className="rounded-full h-10 w-[100px] md:h-12 md:w-[120px] p-0 overflow-hidden active:scale-[0.97] transition-colors duration-150 ease-out flex items-center justify-center font-medium gap-1 md:gap-1.5 text-xs md:text-sm"
+            >
+              {isMuted ? <MicOff className="h-4 w-4 md:h-5 md:w-5" /> : <Mic className="h-4 w-4 md:h-5 md:w-5" />}
+              {isMuted ? "Unmute" : "Mute"}
+            </Button>
+        </motion.div>
       </div>
     </div>
   );

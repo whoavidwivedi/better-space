@@ -8,7 +8,7 @@ export function AudioVisualizer({ stream }: { stream: MediaStream | null }) {
 
   useEffect(() => {
     if (!stream || stream.getAudioTracks().length === 0) {
-      setVolumes([15, 15, 15, 15, 15]);
+      setTimeout(() => setVolumes([15, 15, 15, 15, 15]), 0);
       return;
     }
 
