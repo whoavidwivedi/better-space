@@ -51,37 +51,6 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const playTone = (type: "join" | "leave") => {
-  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-  if (!AudioContext) return;
-  const ctx = new AudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  
-  if (type === "join") {
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.2);
-  } else {
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.2);
-  }
-};
-
 interface SpaceRoomProps {
   roomName: string;
   userName: string;
@@ -239,19 +208,67 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
       const processedStream = destination.stream;
       localStreamRef.current = processedStream;
-      setLocalStreamState(processedStream);
+      rawStream.getAudioTracks().forEach(t => t.enabled = false);
 
-      // Disable raw tracks if muted or listener initially to ensure privacy
-      rawStream.getAudioTracks().forEach((track) => {
-        track.enabled = !isMuted;
-      });
-      processedStream.getAudioTracks().forEach((track) => {
-        track.enabled = !isMuted;
-      });
-      
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: "Space Room",
+          artist: "Ongoing Call",
+          album: "Live Audio",
+          artwork: [ { src: "/icon.svg", sizes: "512x512", type: "image/svg+xml" } ]
+        });
+        navigator.mediaSession.playbackState = "paused";
+        
+        try {
+          if ('setMicrophoneActive' in navigator.mediaSession) {
+            (navigator.mediaSession as any).setMicrophoneActive(false);
+          }
+        } catch (e) {}
+
+        const handleMuteToggle = () => {
+          setIsMuted(currentMuted => {
+            const next = !currentMuted;
+            if (rawStreamRef.current) rawStreamRef.current.getAudioTracks().forEach(t => t.enabled = !next);
+            if (localStreamRef.current) localStreamRef.current.getAudioTracks().forEach(t => t.enabled = !next);
+            if ('mediaSession' in navigator) {
+              try {
+                if ('setMicrophoneActive' in navigator.mediaSession) (navigator.mediaSession as any).setMicrophoneActive(!next);
+                navigator.mediaSession.playbackState = next ? "paused" : "playing";
+              } catch (e) {}
+            }
+            if (channelRef.current) {
+              channelRef.current.send({
+                type: "broadcast",
+                event: "room:update",
+                payload: { type: "UPDATE_STATUS", payload: { peerId: peerRef.current?.id, isMuted: next } }
+              });
+            }
+            setParticipants(prev => {
+              const map = new Map(prev);
+              const me = map.get(memberIdRef.current);
+              if (me) map.set(memberIdRef.current, { ...me, isMuted: next });
+              return map;
+            });
+            return next;
+          });
+        };
+
+        try {
+          navigator.mediaSession.setActionHandler('play', handleMuteToggle);
+          navigator.mediaSession.setActionHandler('pause', handleMuteToggle);
+          navigator.mediaSession.setActionHandler('stop', onLeave);
+          if ('togglemicrophone' in navigator.mediaSession) (navigator.mediaSession as any).setActionHandler('togglemicrophone', handleMuteToggle);
+        } catch (e) {
+          console.warn("MediaSession action handlers not supported", e);
+        }
+      }
+
+      setLocalStreamState(processedStream);
+      rawStream.getAudioTracks().forEach((track) => { track.enabled = !isMuted; });
+      processedStream.getAudioTracks().forEach((track) => { track.enabled = !isMuted; });
       return processedStream;
     } catch (err) {
-      console.warn("Microphone access denied or not available:", err);
+      console.warn("Microphone access denied:", err);
       return null;
     }
   };
@@ -302,15 +319,12 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const newStream = await getLocalAudioStream(deviceId);
     if (!newStream) return;
 
-    // Replace track on all existing connections
     const newAudioTrack = newStream.getAudioTracks()[0];
     if (!newAudioTrack) return;
 
     Array.from(callsRef.current.values()).forEach((call) => {
       const sender = call.peerConnection.getSenders().find(s => s.track?.kind === "audio");
-      if (sender) {
-        sender.replaceTrack(newAudioTrack);
-      }
+      if (sender) sender.replaceTrack(newAudioTrack);
     });
   };
 
@@ -318,20 +332,16 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     if (!deviceId) return;
     setSelectedSpeakerId(deviceId);
     audioElementsRef.current.forEach((audio) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof (audio as any).setSinkId === "function") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (audio as any).setSinkId(deviceId).catch(console.error);
       }
     });
   };
 
-  // Connect to a remote peer
   function connectToPeer(target: Participant, myParticipantInfo: Participant) {
     const targetPeerId = target.peerId;
     if (!peerRef.current || targetPeerId === peerRef.current.id || callsRef.current.has(targetPeerId)) return;
 
-    // We don't connect backwards if the target joined before us (already handled symmetrically)
     const call = peerRef.current.call(targetPeerId, localStreamRef.current as MediaStream, {
       metadata: { participant: myParticipantInfo }
     });
@@ -346,7 +356,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     }
   }
 
-  // Attach audio element for remote stream
   function attachRemoteStream(peerId: string, stream: MediaStream) {
     if (audioElementsRef.current.has(peerId)) return;
     const audio = document.createElement("audio");
@@ -354,9 +363,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     audio.autoplay = true;
     audio.muted = isDeafenedRef.current;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof (audio as any).setSinkId === "function" && selectedSpeakerIdRef.current !== "default") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (audio as any).setSinkId(selectedSpeakerIdRef.current).catch(console.error);
     }
 
@@ -364,7 +371,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     audioElementsRef.current.set(peerId, audio);
     document.body.appendChild(audio);
     
-    // Add stream to streams state for visualizer
     setStreams(prev => {
       const next = new Map(prev);
       next.set(peerId, stream);
@@ -386,14 +392,10 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
   }
 
-  // ============================
-  // PEER CONNECTION & SOCKET SETUP
-  // ============================
   useEffect(() => {
     const fetchDevices = async () => {
       if (!navigator.mediaDevices) {
-        console.warn("Media devices API not available (requires HTTPS or localhost).");
-        toast.error("Microphone access requires HTTPS.");
+        console.warn("Media devices API not available.");
         return;
       }
       try {
@@ -417,17 +419,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     fetchDevices();
   }, [selectedMicId, selectedSpeakerId]);
 
-  // Broadcast data payload to all connected peers
   const broadcastData = (data: { type: string; payload?: unknown }) => {
     channelRef.current?.send({ type: "broadcast", event: "room:update", payload: data });
   };
 
-  // Initialize PeerJS & Supabase Connection
   useEffect(() => {
     const generateId = () => {
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return crypto.randomUUID();
-      }
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
       return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
     };
     
@@ -455,7 +453,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       roster.filter((person) => person.memberId !== memberIdRef.current).forEach((person) => connectToPeer(person, me));
     };
 
-    // Setup Supabase Channel
     const channel = supabase.channel("global-main-room", {
       config: { presence: { key: storedMemberId } }
     });
@@ -492,28 +489,14 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
 
     channel
-      .on("presence", { event: "join" }, ({ newPresences }) => {
-        newPresences.forEach(p => {
-          if (p.id !== storedMemberId) playTone("join");
-        });
-      })
-      .on("presence", { event: "leave" }, ({ leftPresences }) => {
-        leftPresences.forEach(p => {
-          if (p.id !== storedMemberId) playTone("leave");
-        });
-      })
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         const roster = [];
-        
         for (const presenceIds in state) {
           const presences = state[presenceIds];
-          for (const p of presences) {
-            roster.push(memberFor(p as unknown as { id: string; peerId: string; name: string }, true));
-          }
+          for (const p of presences) roster.push(memberFor(p as unknown as { id: string; peerId: string; name: string }, true));
         }
 
-        // Find who left
         const currentMembers = new Set(roster.map(p => p.memberId));
         participantsRef.current.forEach((p, memberId) => {
           if (!currentMembers.has(memberId) && memberId !== storedMemberId) {
@@ -522,18 +505,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           }
         });
 
-        // Update map
         const next = new Map();
         roster.forEach(p => {
           const existing = participantsRef.current.get(p.memberId);
-          if (existing) {
-            next.set(p.memberId, { ...existing, ...p });
-          } else {
-            next.set(p.memberId, { ...p, isInitial: false });
-          }
+          if (existing) next.set(p.memberId, { ...existing, ...p });
+          else next.set(p.memberId, { ...p, isInitial: false });
         });
         
-        // Make sure we exist
         const me = next.get(storedMemberId);
         if (me) next.set(storedMemberId, { ...me, isMuted: isMutedRef.current, isDeafened: isDeafenedRef.current });
         
@@ -557,9 +535,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         }
       })
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          announce();
-        }
+        if (status === "SUBSCRIBED") announce();
       });
 
     return () => {
@@ -575,7 +551,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     };
   }, []);
 
-  // Toggle Mute / Unmute
   const toggleMute = () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
@@ -589,6 +564,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       localStreamRef.current.getAudioTracks().forEach((track) => {
         track.enabled = !nextMuted;
       });
+    }
+
+    if ('mediaSession' in navigator) {
+      try {
+        if ('setMicrophoneActive' in navigator.mediaSession) {
+          (navigator.mediaSession as any).setMicrophoneActive(!nextMuted);
+        }
+        navigator.mediaSession.playbackState = nextMuted ? "paused" : "playing";
+      } catch (e) {}
     }
 
     const payload = { peerId, isMuted: nextMuted };
