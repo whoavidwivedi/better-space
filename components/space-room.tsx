@@ -42,6 +42,7 @@ interface Participant {
   isDeafened?: boolean;
   isHandRaised: boolean;
   isSpeaking?: boolean;
+  reaction?: string;
   isInitial?: boolean;
 }
 
@@ -732,10 +733,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-lg tracking-tight">Space</span>
-            <Badge variant="destructive" className="flex items-center justify-center text-[10px] px-2 h-5 border-0 font-bold tracking-wider rounded-sm shadow-none leading-none">
-              LIVE
-            </Badge>
+            <span className="font-bold text-lg tracking-tight">Better Space</span>
             <Badge variant="outline" className="hidden sm:flex items-center justify-center text-[10px] px-2 h-5 font-mono text-muted-foreground ml-2 rounded-sm leading-none">
               {roomId}
             </Badge>
@@ -816,13 +814,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                   className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out"
                   style={{ animationDelay: speaker.isInitial ? `${index * 50}ms` : "0ms", animationFillMode: "both" }}
                 >
-                  {/* Reaction */}
-                  {speaker.reaction && (
-                    <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border shadow-sm rounded-full h-9 w-9 flex items-center justify-center text-xl z-10 animate-in fade-in zoom-in-95 duration-200 ease-out">
-                      <span className="leading-none select-none">{speaker.reaction}</span>
-                    </div>
-                  )}
-
                   {/* Avatar */}
                   <div className="relative mb-3">
                     <Avatar className={`h-20 w-20 border-2 border-primary bg-white`}>
@@ -831,6 +822,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                         {speaker.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+
+                    {/* Reaction */}
+                    {speaker.reaction && (
+                      <div className="absolute -top-3 -right-3 bg-background/95 backdrop-blur border shadow-sm rounded-full h-10 w-10 flex items-center justify-center text-2xl z-10">
+                        <span className="leading-none select-none">{speaker.reaction}</span>
+                      </div>
+                    )}
 
                     {/* Mute indicator status */}
                     <div

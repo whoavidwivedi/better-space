@@ -15,7 +15,7 @@ function SpaceHomeContent() {
   const [error, setError] = useState<string>("");
 
   const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
-  const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
+  const [currentSeedIndex, setCurrentSeedIndex] = useState(Math.floor(Math.random() * avatarSeeds.length));
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -54,7 +54,7 @@ function SpaceHomeContent() {
       <header className="px-8 py-6 flex items-center justify-between border-b">
         <div className="flex items-center gap-2.5">
           <div className="relative h-8 w-8 rounded-full overflow-hidden border-2 border-primary bg-white shadow-sm flex items-center justify-center">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="popLayout" initial={false}>
               <motion.img
                 key={seed}
                 src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`}
@@ -96,12 +96,7 @@ function SpaceHomeContent() {
       </header>
 
       <main className="flex-1 flex items-center justify-center p-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="w-full max-w-sm"
-        >
+        <div className="w-full max-w-sm">
           <Card className="w-full">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
               <h2 className="text-2xl font-semibold leading-none tracking-tight">Join Better Space</h2>
@@ -146,7 +141,7 @@ function SpaceHomeContent() {
               </form>
             </div>
           </Card>
-        </motion.div>
+        </div>
       </main>
     </div>
   );
