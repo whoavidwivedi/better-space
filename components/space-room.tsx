@@ -40,6 +40,7 @@ interface Participant {
   isHandRaised: boolean;
   isSpeaking?: boolean;
   reaction?: string;
+  isInitial?: boolean;
 }
 
 interface ChatMessage {
@@ -86,6 +87,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   // Audio Settings
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedMicId, setSelectedMicId] = useState<string>("default");
+  const [localStreamState, setLocalStreamState] = useState<MediaStream | null>(null);
 
   // Track showChat for async callbacks
   const showChatRef = useRef(showChat);
@@ -126,7 +128,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           channelCount: 1,
           sampleRate: 48000,
           ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
-          // @ts-ignore
+          // @ts-expect-error chrome specific constraints
           googNoiseSuppression: true,
           googHighpassFilter: true,
           googEchoCancellation: true,
@@ -138,6 +140,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       rawStreamRef.current = rawStream;
 
       // Create an inline AudioWorklet for an Aggressive Noise Gate
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       const workletCode = `
@@ -196,6 +199,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
       const processedStream = destination.stream;
       localStreamRef.current = processedStream;
+      setLocalStreamState(processedStream);
 
       // Disable raw tracks if muted or listener initially to ensure privacy
       rawStream.getAudioTracks().forEach((track) => {
@@ -237,7 +241,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     reactionTimeoutsRef.current.set(targetPeerId, timeout);
   };
 
-  const handleSendReaction = (emojiObject: any) => {
+  const handleSendReaction = (emojiObject: EmojiClickData) => {
     const emoji = emojiObject.emoji;
     const payload = { peerId, emoji };
     broadcastData({ type: "REACTION", payload });
@@ -262,6 +266,60 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
   };
 
+  // Connect to a remote peer
+  function connectToPeer(target: Participant, myParticipantInfo: Participant) {
+    const targetPeerId = target.peerId;
+    if (!peerRef.current || targetPeerId === peerRef.current.id || callsRef.current.has(targetPeerId)) return;
+
+    // We don't connect backwards if the target joined before us (already handled symmetrically)
+    const call = peerRef.current.call(targetPeerId, localStreamRef.current as MediaStream, {
+      metadata: { participant: myParticipantInfo }
+    });
+
+    if (call) {
+      call.on("stream", (remoteStream) => attachRemoteStream(targetPeerId, remoteStream));
+      call.on("close", () => {
+        if (callsRef.current.get(targetPeerId) === call) callsRef.current.delete(targetPeerId);
+        removeRemoteStream(targetPeerId);
+      });
+      callsRef.current.set(targetPeerId, call);
+    }
+  }
+
+  // Attach audio element for remote stream
+  function attachRemoteStream(peerId: string, stream: MediaStream) {
+    if (audioElementsRef.current.has(peerId)) return;
+    const audio = document.createElement("audio");
+    audio.srcObject = stream;
+    audio.autoplay = true;
+    audio.play().catch(e => console.error("Error playing remote audio", e));
+    audioElementsRef.current.set(peerId, audio);
+    
+    // Add stream to streams state for visualizer
+    setStreams(prev => {
+      const next = new Map(prev);
+      next.set(peerId, stream);
+      return next;
+    });
+  }
+
+  function removeRemoteStream(peerId: string) {
+    const audio = audioElementsRef.current.get(peerId);
+    if (audio) {
+      audio.remove();
+      audioElementsRef.current.delete(peerId);
+    }
+    
+    setStreams(prev => {
+      const next = new Map(prev);
+      next.delete(peerId);
+      return next;
+    });
+  }
+
+  // ============================
+  // PEER CONNECTION & SOCKET SETUP
+  // ============================
   useEffect(() => {
     const fetchDevices = async () => {
       try {
@@ -280,7 +338,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   }, [selectedMicId]);
 
   // Broadcast data payload to all connected peers
-  const broadcastData = (data: any) => {
+  const broadcastData = (data: { type: string; payload?: unknown }) => {
     socketRef.current?.emit("room:update", data);
   };
 
@@ -295,7 +353,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const peerInstance = new Peer({ debug: 0 });
     peerRef.current = peerInstance;
 
-    const memberFor = (member: { id: string; peerId: string; name: string }): Participant => ({
+    const memberFor = (member: { id: string; peerId: string; name: string }, isInitial = false): Participant => ({
       memberId: member.id,
       peerId: member.peerId,
       name: member.name,
@@ -303,6 +361,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       isMuted: true,
       isDeafened: false,
       isHandRaised: false,
+      isInitial,
     });
 
     const announce = () => {
@@ -318,7 +377,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
     peerInstance.on("open", (id) => {
       setPeerId(id);
-      const me = memberFor({ id: storedMemberId, peerId: id, name: userName });
+      const me = memberFor({ id: storedMemberId, peerId: id, name: userName }, true);
       setParticipants((prev) => new Map(prev).set(storedMemberId, me));
       void getLocalAudioStream().then(() => connectRoster(Array.from(participantsRef.current.values())));
       announce();
@@ -343,19 +402,19 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     socket.on("connect", announce);
     socket.on("room:state", ({ members: roster }: { members: Array<{ id: string; peerId: string; name: string }> }) => {
       const next = new Map<string, Participant>();
-      roster.forEach((member) => next.set(member.id, memberFor(member)));
+      roster.forEach((member) => next.set(member.id, memberFor(member, true)));
       const me = next.get(storedMemberId);
       if (me) next.set(storedMemberId, { ...me, isMuted, isDeafened });
       setParticipants(next);
       connectRoster(Array.from(next.values()));
     });
     socket.on("room:member-joined", ({ member }: { member: { id: string; peerId: string; name: string } }) => {
-      setParticipants((prev) => new Map(prev).set(member.id, memberFor(member)));
+      setParticipants((prev) => new Map(prev).set(member.id, memberFor(member, false)));
     });
     socket.on("room:member-reconnected", ({ previousPeerId, member }: { previousPeerId: string; member: { id: string; peerId: string; name: string } }) => {
       callsRef.current.get(previousPeerId)?.close();
       removeRemoteStream(previousPeerId);
-      const nextMember = memberFor(member);
+      const nextMember = memberFor(member, false);
       setParticipants((prev) => new Map(prev).set(member.id, nextMember));
     });
     socket.on("room:member-left", ({ memberId, peerId: leavingPeerId }: { memberId: string; peerId: string }) => {
@@ -367,7 +426,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         return next;
       });
     });
-    socket.on("room:update", (message: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    socket.on("room:update", (message: { type: string; payload?: any }) => {
       if (!message?.type) return;
       if (message.type === "UPDATE_STATUS") {
         const { peerId: targetId, isMuted: muted, isDeafened: deafened, isHandRaised } = message.payload;
@@ -379,7 +439,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       } else if (message.type === "REACTION") {
         displayReaction(message.payload.peerId, message.payload.emoji);
       } else if (message.type === "CHAT_MSG") {
-        setMessages((prev) => [...prev, message.payload]);
+        setMessages((prev) => [...prev, message.payload as ChatMessage]);
         if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
       }
     });
@@ -396,62 +456,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       socketRef.current = null;
     };
   }, []);
-
-  // Connect to a remote peer
-  const connectToPeer = (target: Participant, myParticipantInfo: Participant) => {
-    const targetPeerId = target.peerId;
-    if (!peerRef.current || targetPeerId === peerRef.current.id || callsRef.current.has(targetPeerId)) return;
-
-    if (peerRef.current.disconnected) {
-      peerRef.current.reconnect();
-      return;
-    }
-
-    // Call connection if we have audio stream capability
-    if (localStreamRef.current) {
-      const call = peerRef.current.call(targetPeerId, localStreamRef.current);
-      if (call) {
-        call.on("stream", (remoteStream) => {
-          attachRemoteStream(targetPeerId, remoteStream);
-        });
-        call.on("close", () => {
-          removeRemoteStream(targetPeerId);
-        });
-        callsRef.current.set(targetPeerId, call);
-      }
-    }
-  };
-
-  // Attach audio element for remote stream
-  const attachRemoteStream = (peerId: string, stream: MediaStream) => {
-    if (audioElementsRef.current.has(peerId)) return;
-    const audio = document.createElement("audio");
-    audio.srcObject = stream;
-    audio.autoplay = true;
-    audio.muted = isDeafenedRef.current;
-    audioElementsRef.current.set(peerId, audio);
-    document.body.appendChild(audio);
-
-    setStreams((prev) => {
-      const next = new Map(prev);
-      next.set(peerId, stream);
-      return next;
-    });
-  };
-
-  const removeRemoteStream = (peerId: string) => {
-    const audio = audioElementsRef.current.get(peerId);
-    if (audio) {
-      audio.remove();
-      audioElementsRef.current.delete(peerId);
-    }
-    setStreams((prev) => {
-      const next = new Map(prev);
-      next.delete(peerId);
-      return next;
-    });
-  };
-
 
   // Toggle Mute / Unmute
   const toggleMute = () => {
@@ -540,26 +544,26 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       const handlePlay = () => { if (isMuted) toggleMuteRef.current(); };
       const handlePause = () => { if (!isMuted) toggleMuteRef.current(); };
 
-      try { navigator.mediaSession.setActionHandler('togglemicrophone' as any, handleToggle); } catch (e) {}
-      try { navigator.mediaSession.setActionHandler('play', handlePlay); } catch (e) {}
-      try { navigator.mediaSession.setActionHandler('pause', handlePause); } catch (e) {}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      try { navigator.mediaSession.setActionHandler('togglemicrophone' as any, handleToggle); } catch {}
+      try { navigator.mediaSession.setActionHandler('play', handlePlay); } catch {}
+      try { navigator.mediaSession.setActionHandler('pause', handlePause); } catch {}
       
       try {
-        // @ts-ignore
         if (navigator.mediaSession.setMicrophoneActive) {
-          // @ts-ignore
           navigator.mediaSession.setMicrophoneActive(!isMuted);
         }
-      } catch (e) {}
+      } catch {}
     }
     
     return () => {
       if ('mediaSession' in navigator) {
         try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           navigator.mediaSession.setActionHandler('togglemicrophone' as any, null);
           navigator.mediaSession.setActionHandler('play', null);
           navigator.mediaSession.setActionHandler('pause', null);
-        } catch (e) {}
+        } catch {}
       }
     };
   }, [isMuted]);
@@ -686,7 +690,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                 <Card
                   key={speaker.peerId}
                   className="bg-card text-card-foreground p-5 flex flex-col items-center justify-center relative group shadow-sm animate-in fade-in zoom-in-95 duration-300 ease-out"
-                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
+                  style={{ animationDelay: speaker.isInitial ? `${index * 50}ms` : "0ms", animationFillMode: "both" }}
                 >
                   {/* Reaction */}
                   {speaker.reaction && (
@@ -736,7 +740,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Muted</span>
                       </div>
                     ) : (
-                      <AudioVisualizer stream={speaker.peerId === peerId ? localStreamRef.current : streams.get(speaker.peerId) || null} />
+                      <AudioVisualizer stream={speaker.peerId === peerId ? localStreamState : streams.get(speaker.peerId) || null} />
                     )}
                   </div>
                 </Card>

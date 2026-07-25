@@ -22,7 +22,7 @@ const io = new SocketIOServer(httpServer, {
 // stable namespace even when its member set is empty.
 const members = new Map();
 
-const roomMembers = () => [...members.values()].map(({ socket, ...member }) => member);
+const roomMembers = () => [...members.values()].map(({ socket: _socket, ...member }) => member);
 
 io.on("connection", (socket) => {
   let memberId;
