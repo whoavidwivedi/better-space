@@ -305,19 +305,23 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     const initPeer = async () => {
       const maxSlots = 20; // Support up to 20 users without needing a "host"
 
-      // Find an available slot in the room
+      // Find an available slot starting from a random index to avoid sequential delays
+      const startIndex = Math.floor(Math.random() * maxSlots);
+      let attempts = 0;
+      
       const trySlot = (index: number): Promise<Peer> => {
         return new Promise((resolve, reject) => {
-          if (index >= maxSlots) {
+          if (attempts >= maxSlots) {
             reject(new Error("Room is full"));
             return;
           }
+          attempts++;
           const id = `${roomId}-slot-${index}`;
           const p = new Peer(id, { debug: 0 });
           p.on("open", () => resolve(p));
           p.on("error", (err: any) => {
             if (err.type === "unavailable-id") {
-              resolve(trySlot(index + 1));
+              resolve(trySlot((index + 1) % maxSlots));
             } else if (err.type !== "peer-unavailable") {
               console.warn("PeerJS Warning during init:", err);
             }
@@ -326,7 +330,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
       };
 
       try {
-        peerInstance = await trySlot(0);
+        peerInstance = await trySlot(startIndex);
       } catch (err) {
         toast.error("Room is full or unavailable.");
         return;
@@ -357,10 +361,13 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
         await getLocalAudioStream();
 
         // Connect to ALL OTHER SLOTS in the room to form the mesh
+        // Stagger connections slightly to prevent overwhelming the signaling server
+        let staggerMs = 0;
         for (let i = 0; i < maxSlots; i++) {
           const targetId = `${roomId}-slot-${i}`;
           if (targetId !== id) {
-            connectToPeer(targetId, me);
+            setTimeout(() => connectToPeer(targetId, me), staggerMs);
+            staggerMs += 50;
           }
         }
       };
@@ -438,20 +445,28 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     if (!peerRef.current || targetPeerId === peerRef.current.id) return;
     if (dataConnsRef.current.has(targetPeerId)) return;
 
+    if (peerRef.current.disconnected) {
+      peerRef.current.reconnect();
+      return;
+    }
+
     // Data connection
     const dataConn = peerRef.current.connect(targetPeerId);
+    if (!dataConn) return;
     handleDataConnection(dataConn);
 
     // Call connection if we have audio stream capability
     if (localStreamRef.current) {
       const call = peerRef.current.call(targetPeerId, localStreamRef.current);
-      call.on("stream", (remoteStream) => {
-        attachRemoteStream(targetPeerId, remoteStream);
-      });
-      call.on("close", () => {
-        removeRemoteStream(targetPeerId);
-      });
-      callsRef.current.set(targetPeerId, call);
+      if (call) {
+        call.on("stream", (remoteStream) => {
+          attachRemoteStream(targetPeerId, remoteStream);
+        });
+        call.on("close", () => {
+          removeRemoteStream(targetPeerId);
+        });
+        callsRef.current.set(targetPeerId, call);
+      }
     }
   };
 
@@ -668,7 +683,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
       const handlePlay = () => { if (isMuted) toggleMuteRef.current(); };
       const handlePause = () => { if (!isMuted) toggleMuteRef.current(); };
 
-      try { navigator.mediaSession.setActionHandler('togglemicrophone', handleToggle); } catch (e) {}
+      try { navigator.mediaSession.setActionHandler('togglemicrophone' as any, handleToggle); } catch (e) {}
       try { navigator.mediaSession.setActionHandler('play', handlePlay); } catch (e) {}
       try { navigator.mediaSession.setActionHandler('pause', handlePause); } catch (e) {}
       
@@ -684,7 +699,7 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     return () => {
       if ('mediaSession' in navigator) {
         try {
-          navigator.mediaSession.setActionHandler('togglemicrophone', null);
+          navigator.mediaSession.setActionHandler('togglemicrophone' as any, null);
           navigator.mediaSession.setActionHandler('play', null);
           navigator.mediaSession.setActionHandler('pause', null);
         } catch (e) {}
