@@ -102,10 +102,14 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
   // Mutable Refs for stale closures in PeerJS callbacks
   const participantsRef = useRef(participants);
-  useEffect(() => { participantsRef.current = participants; }, [participants]);
+  useEffect(() => { 
+    participantsRef.current = participants; 
+  }, [participants]);
   
   const peerIdRef = useRef(peerId);
   useEffect(() => { peerIdRef.current = peerId; }, [peerId]);
+
+
 
   const isDeafenedRef = useRef(isDeafened);
   useEffect(() => { isDeafenedRef.current = isDeafened; }, [isDeafened]);
@@ -299,20 +303,34 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     };
 
     const initPeer = async () => {
-      // Try to become the signaling node (roomId) or join dynamically
-      const tryHost = new Promise<Peer>((resolve) => {
-        const testPeer = new Peer(roomId, { debug: 0 });
-        testPeer.on("open", () => resolve(testPeer));
-        testPeer.on("error", (err: any) => {
-          if (err.type === "unavailable-id") {
-            const genId = `${roomId}-${Math.random().toString(36).substr(2, 6)}`;
-            const fallbackPeer = new Peer(genId, { debug: 0 });
-            fallbackPeer.on("open", () => resolve(fallbackPeer));
-          }
-        });
-      });
+      const maxSlots = 20; // Support up to 20 users without needing a "host"
 
-      peerInstance = await tryHost;
+      // Find an available slot in the room
+      const trySlot = (index: number): Promise<Peer> => {
+        return new Promise((resolve, reject) => {
+          if (index >= maxSlots) {
+            reject(new Error("Room is full"));
+            return;
+          }
+          const id = `${roomId}-slot-${index}`;
+          const p = new Peer(id, { debug: 0 });
+          p.on("open", () => resolve(p));
+          p.on("error", (err: any) => {
+            if (err.type === "unavailable-id") {
+              resolve(trySlot(index + 1));
+            } else if (err.type !== "peer-unavailable") {
+              console.warn("PeerJS Warning during init:", err);
+            }
+          });
+        });
+      };
+
+      try {
+        peerInstance = await trySlot(0);
+      } catch (err) {
+        toast.error("Room is full or unavailable.");
+        return;
+      }
       
       if (!isMounted) {
         peerInstance.destroy();
@@ -338,13 +356,16 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
         // Get audio stream ready
         await getLocalAudioStream();
 
-        // Connect to the room signaling node if we are not the node
-        if (id !== roomId) {
-          connectToPeer(roomId, me);
+        // Connect to ALL OTHER SLOTS in the room to form the mesh
+        for (let i = 0; i < maxSlots; i++) {
+          const targetId = `${roomId}-slot-${i}`;
+          if (targetId !== id) {
+            connectToPeer(targetId, me);
+          }
         }
       };
 
-      // Since the 'open' event already fired to resolve tryHost, we call this manually
+      // Since the 'open' event already fired, we call this manually
       handlePeerOpen(peerInstance.id);
 
       // Handle Incoming Data Connections (State syncing / Chat / Signal)
@@ -377,7 +398,29 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
     initPeer();
 
+    // Periodically attempt to connect to any missing slots
+    // This allows discovery of new users in a completely hostless environment
+    const meshCheckInterval = setInterval(() => {
+      const me = participantsRef.current.get(peerIdRef.current);
+      if (me && peerRef.current) {
+        for (let i = 0; i < 20; i++) {
+          const targetId = `${roomId}-slot-${i}`;
+          if (targetId !== peerIdRef.current) {
+            const conn = dataConnsRef.current.get(targetId);
+            if (!conn || !conn.open) {
+              if (conn) {
+                conn.close();
+                dataConnsRef.current.delete(targetId);
+              }
+              connectToPeer(targetId, me);
+            }
+          }
+        }
+      }
+    }, 8000);
+
     return () => {
+      clearInterval(meshCheckInterval);
       isMounted = false;
       bc.close();
       // Cleanup connections
@@ -615,6 +658,40 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMuted, isDeafened, peerId, theme]);
 
+  // Media Session API for background mobile mute/unmute
+  const toggleMuteRef = useRef(toggleMute);
+  useEffect(() => { toggleMuteRef.current = toggleMute; }, [toggleMute]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      const handleToggle = () => toggleMuteRef.current();
+      const handlePlay = () => { if (isMuted) toggleMuteRef.current(); };
+      const handlePause = () => { if (!isMuted) toggleMuteRef.current(); };
+
+      try { navigator.mediaSession.setActionHandler('togglemicrophone', handleToggle); } catch (e) {}
+      try { navigator.mediaSession.setActionHandler('play', handlePlay); } catch (e) {}
+      try { navigator.mediaSession.setActionHandler('pause', handlePause); } catch (e) {}
+      
+      try {
+        // @ts-ignore
+        if (navigator.mediaSession.setMicrophoneActive) {
+          // @ts-ignore
+          navigator.mediaSession.setMicrophoneActive(!isMuted);
+        }
+      } catch (e) {}
+    }
+    
+    return () => {
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.setActionHandler('togglemicrophone', null);
+          navigator.mediaSession.setActionHandler('play', null);
+          navigator.mediaSession.setActionHandler('pause', null);
+        } catch (e) {}
+      }
+    };
+  }, [isMuted]);
+
   // Remove unused host privilege methods
 
   // Send Chat Message
@@ -656,6 +733,9 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
             <span className="font-bold text-lg tracking-tight">Space</span>
             <Badge variant="destructive" className="text-[10px] px-2 py-0 h-5 border-0 font-bold tracking-wider rounded-sm shadow-none">
               LIVE
+            </Badge>
+            <Badge variant="outline" className="hidden sm:inline-flex text-[10px] px-2 py-0 h-5 font-mono text-muted-foreground ml-2 rounded-sm">
+              {roomId}
             </Badge>
           </div>
         </div>

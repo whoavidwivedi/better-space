@@ -81,6 +81,11 @@ function SpaceHomeContent() {
               <p className="text-sm text-muted-foreground">
                 Enter your name to join the general voice channel.
               </p>
+              <div className="pt-2">
+                <Badge variant="secondary" className="font-mono text-xs text-muted-foreground">
+                  Room: global-main-room
+                </Badge>
+              </div>
             </div>
 
             <div className="p-6 pt-0">
