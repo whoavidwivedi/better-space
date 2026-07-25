@@ -174,10 +174,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
               } catch (e) {}
             }
             if (channelRef.current) {
-              channelRef.current.send({
-                type: "broadcast",
-                event: "room:update",
-                payload: { type: "UPDATE_STATUS", payload: { peerId: peerRef.current?.id, isMuted: next } }
+              channelRef.current.track({
+                id: memberIdRef.current,
+                peerId: peerRef.current?.id,
+                name: userName,
+                isMuted: next,
+                isDeafened: isDeafenedRef.current,
+                isHandRaised: false
               });
             }
             setParticipants(prev => {
@@ -379,14 +382,14 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const peerInstance = new Peer({ debug: 0 });
     peerRef.current = peerInstance;
 
-    const memberFor = (member: { id: string; peerId: string; name: string }, isInitial = false): Participant => ({
+    const memberFor = (member: { id: string; peerId: string; name: string; isMuted?: boolean; isDeafened?: boolean; isHandRaised?: boolean }, isInitial = false): Participant => ({
       memberId: member.id,
       peerId: member.peerId,
       name: member.name,
       role: "member",
-      isMuted: true,
-      isDeafened: false,
-      isHandRaised: false,
+      isMuted: member.isMuted ?? true,
+      isDeafened: member.isDeafened ?? false,
+      isHandRaised: member.isHandRaised ?? false,
       isInitial,
     });
 
@@ -403,7 +406,14 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
     const announce = () => {
       if (channel.state === "joined" && peerInstance.open) {
-        channel.track({ id: storedMemberId, peerId: peerInstance.id, name: userName });
+        channel.track({ 
+          id: storedMemberId, 
+          peerId: peerInstance.id, 
+          name: userName,
+          isMuted: isMutedRef.current,
+          isDeafened: isDeafenedRef.current,
+          isHandRaised: false
+        });
       }
     };
 
@@ -437,7 +447,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         const roster = [];
         for (const presenceIds in state) {
           const presences = state[presenceIds];
-          for (const p of presences) roster.push(memberFor(p as unknown as { id: string; peerId: string; name: string }, true));
+          for (const p of presences) roster.push(memberFor(p as unknown as { id: string; peerId: string; name: string; isMuted?: boolean; isDeafened?: boolean; isHandRaised?: boolean }, true));
         }
 
         const currentMembers = new Set(roster.map(p => p.memberId));
@@ -495,6 +505,10 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   }, []);
 
   const toggleMute = () => {
+    if (isDeafened) {
+      toast.error("You cannot unmute while deafened");
+      return;
+    }
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
 
@@ -517,8 +531,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       } catch (e) {}
     }
 
-    const payload = { peerId, isMuted: nextMuted };
-    broadcastData({ type: "UPDATE_STATUS", payload });
+    broadcastData({ type: "UPDATE_STATUS", payload: { peerId, isMuted: nextMuted } });
+    channelRef.current?.track({
+      id: memberIdRef.current,
+      peerId,
+      name: userName,
+      isMuted: nextMuted,
+      isDeafened: isDeafenedRef.current,
+      isHandRaised: false
+    });
     setParticipants((prev) => {
       const next = new Map(prev);
       const me = next.get(memberIdRef.current);
@@ -527,7 +548,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
   };
 
-  // Toggle Deafen
   const toggleDeafen = () => {
     const nextDeafened = !isDeafened;
     setIsDeafened(nextDeafened);
@@ -537,19 +557,42 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       audio.muted = nextDeafened;
     });
 
-    const payload = { peerId, isDeafened: nextDeafened };
-    broadcastData({ type: "UPDATE_STATUS", payload });
+    let nextMuted = isMuted;
+    // Auto-mute if deafening
+    if (nextDeafened && !isMuted) {
+      nextMuted = true;
+      setIsMuted(true);
+      if (rawStreamRef.current) {
+        rawStreamRef.current.getAudioTracks().forEach((track) => track.enabled = false);
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach((track) => track.enabled = false);
+      }
+      if ('mediaSession' in navigator) {
+        try {
+          if ('setMicrophoneActive' in navigator.mediaSession) {
+            (navigator.mediaSession as any).setMicrophoneActive(false);
+          }
+        } catch (e) {}
+      }
+    }
+
+    broadcastData({ type: "UPDATE_STATUS", payload: { peerId, isMuted: nextMuted, isDeafened: nextDeafened } });
+    channelRef.current?.track({
+      id: memberIdRef.current,
+      peerId,
+      name: userName,
+      isMuted: nextMuted,
+      isDeafened: nextDeafened,
+      isHandRaised: false
+    });
+
     setParticipants((prev) => {
       const next = new Map(prev);
       const me = next.get(memberIdRef.current);
-      if (me) next.set(memberIdRef.current, { ...me, isDeafened: nextDeafened });
+      if (me) next.set(memberIdRef.current, { ...me, isDeafened: nextDeafened, isMuted: nextMuted });
       return next;
     });
-    
-    // Auto-mute if deafening
-    if (nextDeafened && !isMuted) {
-      toggleMute();
-    }
   };
 
   // Hotkey for Mute/Unmute (Cmd/Ctrl + D) and Deafen (Cmd/Ctrl + E)
@@ -931,8 +974,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
             {/* Mute Button */}
             <Button
               onClick={toggleMute}
+              disabled={isDeafened}
               variant={isMuted ? "destructive" : "secondary"}
-              className="rounded-full h-10 w-[100px] md:h-12 md:w-[120px] p-0 overflow-hidden active:scale-[0.97] transition-colors duration-150 ease-out flex items-center justify-center font-medium gap-1 md:gap-1.5 text-xs md:text-sm"
+              className={`rounded-full h-10 w-[100px] md:h-12 md:w-[120px] p-0 overflow-hidden active:scale-[0.97] transition-colors duration-150 ease-out flex items-center justify-center font-medium gap-1 md:gap-1.5 text-xs md:text-sm ${isDeafened ? "opacity-50" : ""}`}
             >
               {isMuted ? <MicOff className="h-4 w-4 md:h-5 md:w-5" /> : <Mic className="h-4 w-4 md:h-5 md:w-5" />}
               {isMuted ? "Unmute" : "Mute"}

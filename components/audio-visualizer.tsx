@@ -70,7 +70,7 @@ export function AudioVisualizer({ stream }: { stream: MediaStream | null }) {
       {volumes.map((vol, i) => (
         <div 
           key={i} 
-          className="w-1 bg-primary rounded-full transition-all duration-75"
+          className="w-1 bg-primary rounded-full"
           style={{ height: `${vol}%` }}
         />
       ))}
