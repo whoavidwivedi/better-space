@@ -464,13 +464,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
+    if (rawStreamRef.current) {
+      rawStreamRef.current.getAudioTracks().forEach((track) => {
         track.enabled = !nextMuted;
       });
     }
-    if (rawStreamRef.current) {
-      rawStreamRef.current.getAudioTracks().forEach((track) => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach((track) => {
         track.enabled = !nextMuted;
       });
     }
