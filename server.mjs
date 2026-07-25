@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import os from "node:os";
 import next from "next";
 import { Server as SocketIOServer } from "socket.io";
 
@@ -74,5 +75,23 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(port, hostname, () => {
-  console.log(`> Space is ready on http://${hostname}:${port}`);
+  const interfaces = os.networkInterfaces();
+  let networkAddress = null;
+
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        networkAddress = iface.address;
+        break;
+      }
+    }
+    if (networkAddress) break;
+  }
+
+  console.log(`\n  ▲ Next.js / Space Room Server`);
+  console.log(`  ➜  Local:   http://localhost:${port}`);
+  if (networkAddress) {
+    console.log(`  ➜  Network: http://${networkAddress}:${port}`);
+  }
+  console.log("");
 });
