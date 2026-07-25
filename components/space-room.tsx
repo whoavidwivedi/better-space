@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { supabase } from "../lib/supabase";
+import { RealtimeChannel } from "@supabase/supabase-js";
 import Peer, { MediaConnection, DataConnection } from "peerjs";
-import { io, Socket } from "socket.io-client";
 import { 
   Mic01Icon as Mic, MicOff01Icon as MicOff, UserGroupIcon as Users, 
   Copy01Icon as Copy, CheckmarkBadge01Icon as Check, Logout01Icon as LogOut, 
@@ -100,7 +101,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
   // References
   const peerRef = useRef<Peer | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const memberIdRef = useRef<string>("");
   const localStreamRef = useRef<MediaStream | null>(null);
   const rawStreamRef = useRef<MediaStream | null>(null);
@@ -119,6 +120,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   useEffect(() => { peerIdRef.current = peerId; }, [peerId]);
 
 
+
+  const isMutedRef = useRef(isMuted);
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
   const isDeafenedRef = useRef(isDeafened);
   useEffect(() => { isDeafenedRef.current = isDeafened; }, [isDeafened]);
@@ -384,14 +388,11 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
   // Broadcast data payload to all connected peers
   const broadcastData = (data: { type: string; payload?: unknown }) => {
-    socketRef.current?.emit("room:update", data);
+    channelRef.current?.send({ type: "broadcast", event: "room:update", payload: data });
   };
 
-  // Initialize PeerJS Connection
+  // Initialize PeerJS & Supabase Connection
   useEffect(() => {
-    const socket = io({ autoConnect: true });
-    socketRef.current = socket;
-    
     const generateId = () => {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
@@ -417,15 +418,22 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       isInitial,
     });
 
-    const announce = () => {
-      if (!socket.connected || !peerInstance.open) return;
-      socket.emit("room:join", { id: storedMemberId, peerId: peerInstance.id, name: userName });
-    };
-
     const connectRoster = (roster: Participant[]) => {
       const me = participantsRef.current.get(memberIdRef.current) || roster.find((person) => person.memberId === memberIdRef.current);
       if (!me) return;
       roster.filter((person) => person.memberId !== memberIdRef.current).forEach((person) => connectToPeer(person, me));
+    };
+
+    // Setup Supabase Channel
+    const channel = supabase.channel("global-main-room", {
+      config: { presence: { key: storedMemberId } }
+    });
+    channelRef.current = channel;
+
+    const announce = () => {
+      if (channel.state === "joined" && peerInstance.open) {
+        channel.track({ id: storedMemberId, peerId: peerInstance.id, name: userName });
+      }
     };
 
     peerInstance.on("open", (id) => {
@@ -452,61 +460,77 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       if (error.type !== "peer-unavailable") console.warn("PeerJS Warning:", error);
     });
 
-    socket.on("connect", announce);
-    socket.on("room:state", ({ members: roster }: { members: Array<{ id: string; peerId: string; name: string }> }) => {
-      const next = new Map<string, Participant>();
-      roster.forEach((member) => next.set(member.id, memberFor(member, true)));
-      const me = next.get(storedMemberId);
-      if (me) next.set(storedMemberId, { ...me, isMuted, isDeafened });
-      setParticipants(next);
-      connectRoster(Array.from(next.values()));
-    });
-    socket.on("room:member-joined", ({ member }: { member: { id: string; peerId: string; name: string } }) => {
-      setParticipants((prev) => new Map(prev).set(member.id, memberFor(member, false)));
-    });
-    socket.on("room:member-reconnected", ({ previousPeerId, member }: { previousPeerId: string; member: { id: string; peerId: string; name: string } }) => {
-      callsRef.current.get(previousPeerId)?.close();
-      removeRemoteStream(previousPeerId);
-      const nextMember = memberFor(member, false);
-      setParticipants((prev) => new Map(prev).set(member.id, nextMember));
-    });
-    socket.on("room:member-left", ({ memberId, peerId: leavingPeerId }: { memberId: string; peerId: string }) => {
-      callsRef.current.get(leavingPeerId)?.close();
-      removeRemoteStream(leavingPeerId);
-      setParticipants((prev) => {
-        const next = new Map(prev);
-        next.delete(memberId);
-        return next;
-      });
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    socket.on("room:update", (message: { type: string; payload?: any }) => {
-      if (!message?.type) return;
-      if (message.type === "UPDATE_STATUS") {
-        const { peerId: targetId, isMuted: muted, isDeafened: deafened, isHandRaised } = message.payload;
-        setParticipants((prev) => {
-          const next = new Map(prev);
-          for (const [id, person] of next) if (person.peerId === targetId) next.set(id, { ...person, isMuted: muted ?? person.isMuted, isDeafened: deafened ?? person.isDeafened, isHandRaised: isHandRaised ?? person.isHandRaised });
-          return next;
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const roster = [];
+        
+        for (const presenceIds in state) {
+          const presences = state[presenceIds];
+          for (const p of presences) {
+            roster.push(memberFor(p as unknown as { id: string; peerId: string; name: string }, true));
+          }
+        }
+
+        // Find who left
+        const currentMembers = new Set(roster.map(p => p.memberId));
+        participantsRef.current.forEach((p, memberId) => {
+          if (!currentMembers.has(memberId) && memberId !== storedMemberId) {
+            callsRef.current.get(p.peerId)?.close();
+            removeRemoteStream(p.peerId);
+          }
         });
-      } else if (message.type === "REACTION") {
-        displayReaction(message.payload.peerId, message.payload.emoji);
-      } else if (message.type === "CHAT_MSG") {
-        setMessages((prev) => [...prev, message.payload as ChatMessage]);
-        if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
-      }
-    });
+
+        // Update map
+        const next = new Map();
+        roster.forEach(p => {
+          const existing = participantsRef.current.get(p.memberId);
+          if (existing) {
+            next.set(p.memberId, { ...existing, ...p });
+          } else {
+            next.set(p.memberId, { ...p, isInitial: false });
+          }
+        });
+        
+        // Make sure we exist
+        const me = next.get(storedMemberId);
+        if (me) next.set(storedMemberId, { ...me, isMuted: isMutedRef.current, isDeafened: isDeafenedRef.current });
+        
+        setParticipants(next);
+        connectRoster(Array.from(next.values()));
+      })
+      .on("broadcast", { event: "room:update" }, ({ payload: message }) => {
+        if (!message?.type) return;
+        if (message.type === "UPDATE_STATUS") {
+          const { peerId: targetId, isMuted: muted, isDeafened: deafened, isHandRaised } = message.payload;
+          setParticipants((prev) => {
+            const next = new Map(prev);
+            for (const [id, person] of next) if (person.peerId === targetId) next.set(id, { ...person, isMuted: muted ?? person.isMuted, isDeafened: deafened ?? person.isDeafened, isHandRaised: isHandRaised ?? person.isHandRaised });
+            return next;
+          });
+        } else if (message.type === "REACTION") {
+          displayReaction(message.payload.peerId, message.payload.emoji);
+        } else if (message.type === "CHAT_MSG") {
+          setMessages((prev) => [...prev, message.payload]);
+          if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          announce();
+        }
+      });
 
     return () => {
-      socket.emit("room:leave");
-      socket.disconnect();
+      channel.untrack();
+      supabase.removeChannel(channel);
       callsRef.current.forEach((call) => call.close());
       dataConnsRef.current.forEach((conn) => conn.close());
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       rawStreamRef.current?.getTracks().forEach((track) => track.stop());
       audioElementsRef.current.forEach((audio) => audio.remove());
       peerInstance.destroy();
-      socketRef.current = null;
+      channelRef.current = null;
     };
   }, []);
 
