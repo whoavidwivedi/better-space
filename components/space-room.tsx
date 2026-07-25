@@ -219,8 +219,12 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   const displayReaction = (targetPeerId: string, emoji: string) => {
     setParticipants((prev) => {
       const next = new Map(prev);
-      const p = next.get(targetPeerId);
-      if (p) next.set(targetPeerId, { ...p, reaction: emoji });
+      for (const [id, p] of next) {
+        if (p.peerId === targetPeerId) {
+          next.set(id, { ...p, reaction: emoji });
+          break;
+        }
+      }
       return next;
     });
 
@@ -231,8 +235,12 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const timeout = setTimeout(() => {
       setParticipants((prev) => {
         const next = new Map(prev);
-        const p = next.get(targetPeerId);
-        if (p) next.set(targetPeerId, { ...p, reaction: undefined });
+        for (const [id, p] of next) {
+          if (p.peerId === targetPeerId) {
+            next.set(id, { ...p, reaction: undefined });
+            break;
+          }
+        }
         return next;
       });
       reactionTimeoutsRef.current.delete(targetPeerId);
@@ -479,8 +487,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     broadcastData({ type: "UPDATE_STATUS", payload });
     setParticipants((prev) => {
       const next = new Map(prev);
-      const me = next.get(peerId);
-      if (me) next.set(peerId, { ...me, isMuted: nextMuted });
+      const me = next.get(memberIdRef.current);
+      if (me) next.set(memberIdRef.current, { ...me, isMuted: nextMuted });
       return next;
     });
   };
@@ -499,8 +507,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     broadcastData({ type: "UPDATE_STATUS", payload });
     setParticipants((prev) => {
       const next = new Map(prev);
-      const me = next.get(peerId);
-      if (me) next.set(peerId, { ...me, isDeafened: nextDeafened });
+      const me = next.get(memberIdRef.current);
+      if (me) next.set(memberIdRef.current, { ...me, isDeafened: nextDeafened });
       return next;
     });
     
