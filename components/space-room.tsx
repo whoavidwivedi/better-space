@@ -7,9 +7,10 @@ import Peer, { MediaConnection, DataConnection } from "peerjs";
 import { 
   Mic01Icon as Mic, MicOff01Icon as MicOff, UserGroupIcon as Users, 
   Copy01Icon as Copy, CheckmarkBadge01Icon as Check, Logout01Icon as LogOut, 
-  Message01Icon as MessageSquare, HeadphonesIcon as Headphones, VolumeOffIcon, KeyboardIcon,
+  Message01Icon as MessageSquare, KeyboardIcon,
   ArrowDown01Icon as ChevronDown
 } from "hugeicons-react";
+import { Headphones, HeadphoneOff } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Message, MessageAvatar, MessageContent, MessageHeader } from "@/components/ui/message";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
@@ -18,14 +19,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { AudioVisualizer } from "@/components/audio-visualizer";
 import { EmojiClickData, Theme } from "emoji-picker-react";
 import EmojiPicker from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { SmileIcon as Smile, Settings01Icon as SettingsIcon } from "hugeicons-react";
+import { SparklesIcon as Smile, Settings01Icon as SettingsIcon } from "hugeicons-react";
+import { SmilePlus } from "lucide-react";
+
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,18 +38,17 @@ interface Participant {
   memberId: string;
   peerId: string;
   name: string;
-  role: "member";
   isMuted: boolean;
   isDeafened?: boolean;
   isHandRaised: boolean;
   isSpeaking?: boolean;
-  reaction?: string;
   isInitial?: boolean;
 }
 
 interface ChatMessage {
   id: string;
   senderName: string;
+  senderId?: string;
   text: string;
   timestamp: string;
 }
@@ -57,6 +59,8 @@ interface SpaceRoomProps {
   roomId: string;
   onLeave: () => void;
 }
+
+
 
 export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProps) {
   const { theme, setTheme } = useTheme();
@@ -118,9 +122,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   
   const peerIdRef = useRef(peerId);
   useEffect(() => { peerIdRef.current = peerId; }, [peerId]);
-
-
-
   const isMutedRef = useRef(isMuted);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
@@ -133,21 +134,37 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         audio: {
           noiseSuppression: true,
           echoCancellation: true,
-          autoGainControl: true,
+          autoGainControl: false,
           channelCount: 1,
           sampleRate: 48000,
-          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
-          // @ts-expect-error chrome specific constraints
-          googNoiseSuppression: true,
-          googHighpassFilter: true,
-          googEchoCancellation: true,
+          ...(deviceId && deviceId !== "default" ? { deviceId: { exact: deviceId } } : {})
         },
         video: false,
       };
       if (!navigator.mediaDevices) return null;
-      const rawStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      let rawStream;
+      try {
+        rawStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err: any) {
+        if (err.name === 'NotFoundError' || err.message?.includes('device not found')) {
+          console.warn("Requested microphone not found, falling back to system default.");
+          const fallbackConstraints = { ...constraints, audio: { ...(constraints.audio as MediaTrackConstraints), deviceId: undefined } };
+          rawStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        } else {
+          throw err;
+        }
+      }
+      
       rawStreamRef.current = rawStream;
       localStreamRef.current = rawStream;
+
+      // Re-fetch devices now that we have permissions
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        setAudioDevices(devices.filter(d => d.kind === "audioinput"));
+        setSpeakerDevices(devices.filter(d => d.kind === "audiooutput"));
+      } catch (e) {}
 
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -255,7 +272,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   const handleDeviceChange = async (deviceId: string | null) => {
     if (!deviceId) return;
     setSelectedMicId(deviceId);
-    const newStream = await getLocalAudioStream(deviceId);
+    const actualDeviceId = deviceId.startsWith("mic-") ? undefined : deviceId;
+    const newStream = await getLocalAudioStream(actualDeviceId);
     if (!newStream) return;
 
     const newAudioTrack = newStream.getAudioTracks()[0];
@@ -270,9 +288,10 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   const handleSpeakerChange = async (deviceId: string | null) => {
     if (!deviceId) return;
     setSelectedSpeakerId(deviceId);
+    const actualDeviceId = deviceId.startsWith("speaker-") ? "" : deviceId;
     audioElementsRef.current.forEach((audio) => {
       if (typeof (audio as any).setSinkId === "function") {
-        (audio as any).setSinkId(deviceId).catch(console.error);
+        (audio as any).setSinkId(actualDeviceId).catch(console.error);
       }
     });
   };
@@ -352,11 +371,11 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         setSpeakerDevices(speakers);
         if (mics.length > 0 && selectedMicId === "default") {
           const def = mics.find(m => m.deviceId === "default") || mics[0];
-          setSelectedMicId(def.deviceId);
+          setSelectedMicId(def.deviceId || "mic-0");
         }
         if (speakers.length > 0 && selectedSpeakerId === "default") {
           const def = speakers.find(m => m.deviceId === "default") || speakers[0];
-          setSelectedSpeakerId(def.deviceId);
+          setSelectedSpeakerId(def.deviceId || "speaker-0");
         }
       } catch (e) {
         console.error("Could not fetch audio devices", e);
@@ -375,8 +394,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
     };
     
-    const storedMemberId = window.sessionStorage.getItem("spacex-member-id") || generateId();
-    window.sessionStorage.setItem("spacex-member-id", storedMemberId);
+    // Generate a uniquely fresh member ID for every single tab session.
+    // This perfectly fixes the localhost duplicate tab bug.
+    const storedMemberId = generateId();
     memberIdRef.current = storedMemberId;
 
     const peerInstance = new Peer({ debug: 0 });
@@ -386,7 +406,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       memberId: member.id,
       peerId: member.peerId,
       name: member.name,
-      role: "member",
       isMuted: member.isMuted ?? true,
       isDeafened: member.isDeafened ?? false,
       isHandRaised: member.isHandRaised ?? false,
@@ -442,12 +461,22 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
 
     channel
+      .on("presence", { event: "join" }, ({ key, newPresences }) => {
+        if (key === storedMemberId) return; // ignore own join
+        const person = newPresences[0] as unknown as { name: string };
+        if (person?.name) toast.success(`${person.name} joined the room`);
+      })
+      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+        if (key === storedMemberId) return; // ignore own leave
+        const person = leftPresences[0] as unknown as { name: string };
+        if (person?.name) toast(`${person.name} left the room`);
+      })
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
-        const roster = [];
+        const roster: Participant[] = [];
         for (const presenceIds in state) {
           const presences = state[presenceIds];
-          for (const p of presences) roster.push(memberFor(p as unknown as { id: string; peerId: string; name: string; isMuted?: boolean; isDeafened?: boolean; isHandRaised?: boolean }, true));
+          for (const p of presences) roster.push(memberFor(p as any, true));
         }
 
         const currentMembers = new Set(roster.map(p => p.memberId));
@@ -491,7 +520,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         if (status === "SUBSCRIBED") announce();
       });
 
+    // Ensures instant departure when tab is forcefully closed or refreshed
+    const handleBeforeUnload = () => {
+      channel.untrack();
+      peerInstance.destroy();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       channel.untrack();
       supabase.removeChannel(channel);
       callsRef.current.forEach((call) => call.close());
@@ -665,6 +702,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const msg: ChatMessage = {
       id: Math.random().toString(36).substr(2, 9),
       senderName: userName,
+      senderId: peerId,
       text: chatInput.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
@@ -684,6 +722,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     setTimeout(() => setCopied(false), 2000);
   };
 
+
   // Group participants (everyone is a speaker)
   const allList = Array.from(participants.values());
 
@@ -694,10 +733,10 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-lg tracking-tight">Space</span>
-            <Badge variant="destructive" className="text-[10px] px-2 py-0 h-5 border-0 font-bold tracking-wider rounded-sm shadow-none">
+            <Badge variant="destructive" className="flex items-center justify-center text-[10px] px-2 h-5 border-0 font-bold tracking-wider rounded-sm shadow-none leading-none">
               LIVE
             </Badge>
-            <Badge variant="outline" className="hidden sm:inline-flex text-[10px] px-2 py-0 h-5 font-mono text-muted-foreground ml-2 rounded-sm">
+            <Badge variant="outline" className="hidden sm:flex items-center justify-center text-[10px] px-2 h-5 font-mono text-muted-foreground ml-2 rounded-sm leading-none">
               {roomId}
             </Badge>
           </div>
@@ -736,25 +775,23 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           </div>
 
           <Button
-            variant="outline"
             size="sm"
             onClick={copyInviteLink}
             disabled={copied}
-            className="w-[140px] active:scale-[0.97] transition-all duration-150 ease-out"
+            className={`w-[140px] gap-1.5 rounded-full font-semibold shadow-sm active:scale-[0.97] transition-all duration-200 ease-out border-2 bg-primary text-primary-foreground hover:bg-primary/90 border-primary ${
+              copied ? "disabled:opacity-100" : ""
+            }`}
           >
-            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? "Copied Link!" : "Invite Friends"}
           </Button>
 
-          <Button
-            variant="destructive"
-            size="sm"
+          <button
             onClick={onLeave}
-            className="gap-1.5 active:scale-[0.97] transition-all duration-150 ease-out"
+            className="text-red-500 hover:text-red-600 font-medium text-sm transition-colors duration-200 active:scale-[0.97] px-2"
           >
-            <LogOut className="h-4 w-4" />
             Leave
-          </Button>
+          </button>
         </div>
       </header>
 
@@ -774,9 +811,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
               {allList.map((speaker, index) => (
-                <Card
+                <div
                   key={speaker.peerId}
-                  className="bg-card text-card-foreground p-5 flex flex-col items-center justify-center relative group shadow-sm animate-in fade-in zoom-in-95 duration-300 ease-out"
+                  className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out"
                   style={{ animationDelay: speaker.isInitial ? `${index * 50}ms` : "0ms", animationFillMode: "both" }}
                 >
                   {/* Reaction */}
@@ -788,7 +825,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
                   {/* Avatar */}
                   <div className="relative mb-3">
-                    <Avatar className={`h-20 w-20 border-2 border-primary`}>
+                    <Avatar className={`h-20 w-20 border-2 border-primary bg-white`}>
+                      <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(speaker.peerId)}`} alt={speaker.name} />
                       <AvatarFallback className="bg-muted text-foreground font-bold text-xl">
                         {speaker.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
@@ -804,9 +842,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                     {/* Deafen indicator status */}
                     {speaker.isDeafened && (
                       <div
-                        className={`absolute bottom-0 left-0 p-1.5 rounded-full border bg-background text-foreground shadow-sm`}
+                        className={`absolute bottom-0 left-0 p-1.5 rounded-full border bg-background text-foreground shadow-sm animate-in fade-in zoom-in-95 duration-200`}
                       >
-                        <VolumeOffIcon className="h-3.5 w-3.5 text-destructive" />
+                        <HeadphoneOff className="h-3.5 w-3.5 text-red-500" />
                       </div>
                     )}
                   </div>
@@ -814,23 +852,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                   {/* Name, Role & Waveform */}
                   <div className="text-center w-full truncate flex flex-col items-center">
                     <p className="font-semibold truncate text-sm">{speaker.name}</p>
-                    <div className="flex items-center justify-center gap-1.5 mt-1">
-                      {speaker.peerId === peerId && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          You
-                        </Badge>
-                      )}
-                    </div>
+
                     
                     {speaker.isMuted ? (
-                      <div className="h-6 w-full mt-2 flex items-center justify-center">
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Muted</span>
-                      </div>
+                      <div className="h-6 w-full mt-2" />
                     ) : (
                       <AudioVisualizer stream={speaker.peerId === peerId ? localStreamState : streams.get(speaker.peerId) || null} />
                     )}
                   </div>
-                </Card>
+                </div>
               ))}
             </div>
           </section>
@@ -841,14 +871,14 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           initial={{ x: "-50%" }}
           animate={{ x: "-50%" }}
           transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-          className="fixed bottom-4 md:bottom-8 left-1/2 bg-background/90 border p-2 md:p-3 rounded-full shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-2 md:gap-3 z-40"
+          className="fixed bottom-4 md:bottom-8 mb-[env(safe-area-inset-bottom)] left-1/2 bg-background/90 border-2 border-border p-2 md:p-3 rounded-full shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-2 md:gap-3 z-40"
         >
             {/* Chat Toggle Drawer */}
             <Drawer open={showChat} onOpenChange={setShowChat} showSwipeHandle={true}>
               <DrawerTrigger render={
                 <Button
                   variant="outline"
-                  className={`relative rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-150 ease-out ${showChat ? "bg-primary/20 text-primary border-primary/30" : "text-muted-foreground"}`}
+                  className={`relative rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 ${showChat ? "bg-primary/20 text-primary border-primary" : "text-muted-foreground border-border"}`}
                 >
                   <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
                   {messages.length > 0 && !showChat && (
@@ -861,7 +891,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                   <DrawerTitle className="text-sm font-semibold flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-primary" /> Space Chat
                   </DrawerTitle>
-                  <Button variant="ghost" size="icon" onClick={() => setShowChat(false)} className="rounded-full text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="icon" onClick={() => setShowChat(false)} className="rounded-full text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 ease-out">
                     <ChevronDown className="h-6 w-6" />
                   </Button>
                 </DrawerHeader>
@@ -873,7 +903,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                     messages.map((msg) => (
                       <Message key={msg.id} align={msg.senderName === userName ? "end" : "start"} className="mb-4 w-full">
                         <MessageAvatar>
-                          <Avatar className="h-8 w-8 border">
+                          <Avatar className="h-8 w-8 border bg-white">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(msg.senderId || msg.senderName)}`} alt={msg.senderName} />
                             <AvatarFallback className="text-xs">{msg.senderName.substring(0,2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                         </MessageAvatar>
@@ -896,7 +927,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                       placeholder="Type a message..."
                       className="text-sm h-12 rounded-xl"
                     />
-                    <Button type="submit" size="sm" disabled={!chatInput.trim()} className="active:scale-[0.97] transition-all duration-150 ease-out h-12 rounded-xl px-6">
+                    <Button type="submit" size="sm" disabled={!chatInput.trim()} className="active:scale-[0.97] transition-all duration-200 ease-out h-12 rounded-xl px-6">
                       Send
                     </Button>
                   </form>
@@ -907,7 +938,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
             {/* Settings Modal */}
             <Dialog>
               <DialogTrigger render={
-                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-150 ease-out">
+                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border">
                   <SettingsIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 </Button>
               } />
@@ -923,41 +954,30 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                         <SelectValue placeholder="Select a microphone" />
                       </SelectTrigger>
                       <SelectContent>
-                        {audioDevices.map((device) => (
-                          <SelectItem key={device.deviceId} value={device.deviceId}>
-                            {device.label || `Microphone ${device.deviceId.substring(0, 5)}...`}
-                          </SelectItem>
-                        ))}
+                        {audioDevices.map((device, i) => {
+                          const id = device.deviceId || `mic-${i}`;
+                          return (
+                            <SelectItem key={id} value={id}>
+                              {device.label || `Microphone ${i + 1}`}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Speaker</label>
-                    <Select value={selectedSpeakerId} onValueChange={handleSpeakerChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a speaker" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {speakerDevices.map((device) => (
-                          <SelectItem key={device.deviceId} value={device.deviceId}>
-                            {device.label || `Speaker ${device.deviceId.substring(0, 5)}...`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
                 </div>
               </DialogContent>
             </Dialog>
 
             <Popover>
               <PopoverTrigger render={
-                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-150 ease-out">
-                  <Smile className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border">
+                  <SmilePlus className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 </Button>
               } />
               <PopoverContent className="w-auto p-0 mb-4 border-none shadow-2xl rounded-xl overflow-hidden origin-bottom animate-in fade-in zoom-in-95 duration-200 ease-out" sideOffset={10}>
-                <EmojiPicker onEmojiClick={handleSendReaction} theme={Theme.AUTO} lazyLoadEmojis={true} />
+                <EmojiPicker onEmojiClick={handleSendReaction} theme={Theme.AUTO} lazyLoadEmojis={true} autoFocusSearch={false} />
               </PopoverContent>
             </Popover>
 
@@ -965,10 +985,12 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
             <Button
               onClick={toggleDeafen}
               variant={isDeafened ? "destructive" : "secondary"}
-              className="rounded-full h-10 w-[100px] md:h-12 md:w-[120px] p-0 overflow-hidden active:scale-[0.97] transition-colors duration-150 ease-out flex items-center justify-center font-medium gap-1 md:gap-1.5 text-xs md:text-sm"
+              className={`rounded-full w-28 md:w-32 h-10 md:h-12 p-0 overflow-hidden active:scale-[0.97] transition-all duration-200 ease-out flex items-center justify-center font-medium gap-1.5 text-xs md:text-sm border-2 ${isDeafened ? "border-red-500" : "border-border"}`}
             >
-              {isDeafened ? <VolumeOffIcon className="h-4 w-4 md:h-5 md:w-5" /> : <Headphones className="h-4 w-4 md:h-5 md:w-5" />}
-              {isDeafened ? "Undeafen" : "Deafen"}
+              <div className="flex items-center gap-1.5">
+                {isDeafened ? <HeadphoneOff className="h-4 w-4 md:h-5 md:w-5" /> : <Headphones className="h-4 w-4 md:h-5 md:w-5" />}
+                <span>Deafen</span>
+              </div>
             </Button>
             
             {/* Mute Button */}
@@ -976,10 +998,12 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
               onClick={toggleMute}
               disabled={isDeafened}
               variant={isMuted ? "destructive" : "secondary"}
-              className={`rounded-full h-10 w-[100px] md:h-12 md:w-[120px] p-0 overflow-hidden active:scale-[0.97] transition-colors duration-150 ease-out flex items-center justify-center font-medium gap-1 md:gap-1.5 text-xs md:text-sm ${isDeafened ? "opacity-50" : ""}`}
+              className={`rounded-full w-28 md:w-32 h-10 md:h-12 p-0 overflow-hidden active:scale-[0.97] transition-all duration-200 ease-out flex items-center justify-center font-medium gap-1.5 text-xs md:text-sm border-2 ${isMuted ? "border-red-500" : "border-border"} ${isDeafened ? "opacity-50" : ""}`}
             >
-              {isMuted ? <MicOff className="h-4 w-4 md:h-5 md:w-5" /> : <Mic className="h-4 w-4 md:h-5 md:w-5" />}
-              {isMuted ? "Unmute" : "Mute"}
+              <div className="flex items-center gap-1.5">
+                {isMuted ? <MicOff className="h-4 w-4 md:h-5 md:w-5" /> : <Mic className="h-4 w-4 md:h-5 md:w-5" />}
+                <span>Mute</span>
+              </div>
             </Button>
         </motion.div>
       </div>

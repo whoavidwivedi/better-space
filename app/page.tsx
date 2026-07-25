@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { ArrowRight01Icon as ArrowRight } from "hugeicons-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,18 @@ function SpaceHomeContent() {
   const [inSpace, setInSpace] = useState<boolean>(false);
   const [userName, setUserName] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
+  const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSeedIndex((prev) => (prev + 1) % avatarSeeds.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  const seed = avatarSeeds[currentSeedIndex];
 
   const handleJoinSpace = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +52,49 @@ function SpaceHomeContent() {
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* Header */}
       <header className="px-8 py-6 flex items-center justify-between border-b">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-lg tracking-tight">Space</span>
+        <div className="flex items-center gap-2.5">
+          <div className="relative h-8 w-8 rounded-full overflow-hidden border-2 border-primary bg-white shadow-sm flex items-center justify-center">
+            <AnimatePresence mode="popLayout">
+              <motion.img
+                key={seed}
+                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`}
+                alt="Avatar logo"
+                initial={{ opacity: 0, y: 25, scale: 0.6, rotate: -30 }}
+                animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, y: -25, scale: 0.6, rotate: 30 }}
+                transition={{ type: "spring", stiffness: 350, damping: 22, mass: 1 }}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </AnimatePresence>
+          </div>
+          <div className="flex items-center gap-2 text-primary">
+            <span className="font-bold text-xl tracking-tight text-foreground">Better Space</span>
+            <div className="flex items-center gap-[2px] h-4 ml-0.5">
+              <motion.div
+                className="w-[3px] bg-primary rounded-full"
+                animate={{ height: ["30%", "60%", "30%", "100%", "40%", "80%", "20%", "50%", "30%", "70%", "30%"] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="w-[3px] bg-primary rounded-full"
+                animate={{ height: ["40%", "100%", "50%", "80%", "30%", "90%", "40%", "100%", "60%", "40%", "40%"] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="w-[3px] bg-primary rounded-full"
+                animate={{ height: ["20%", "50%", "20%", "70%", "100%", "40%", "80%", "30%", "60%", "30%", "20%"] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="w-[3px] bg-primary rounded-full"
+                animate={{ height: ["30%", "80%", "40%", "100%", "30%", "70%", "20%", "60%", "80%", "40%", "30%"] }}
+                transition={{ duration: 1.7, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Hero Body */}
       <main className="flex-1 flex items-center justify-center p-6">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -55,7 +104,7 @@ function SpaceHomeContent() {
         >
           <Card className="w-full">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
-              <h2 className="text-2xl font-semibold leading-none tracking-tight">Join Space</h2>
+              <h2 className="text-2xl font-semibold leading-none tracking-tight">Join Better Space</h2>
               <p className="text-sm text-muted-foreground">
                 Enter your name to join the general voice channel.
               </p>
@@ -74,7 +123,7 @@ function SpaceHomeContent() {
                   </label>
                   <Input
                     required
-                    placeholder="e.g. Alex"
+                    placeholder="e.g. Avi"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     className="h-9"
