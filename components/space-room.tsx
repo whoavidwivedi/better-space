@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Peer, { MediaConnection, DataConnection } from "peerjs";
+import { io, Socket } from "socket.io-client";
 import { 
   Mic01Icon as Mic, MicOff01Icon as MicOff, UserGroupIcon as Users, 
   Copy01Icon as Copy, CheckmarkBadge01Icon as Check, Logout01Icon as LogOut, 
@@ -30,9 +31,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
 interface Participant {
+  memberId: string;
   peerId: string;
   name: string;
-  role: "host" | "speaker" | "listener";
+  role: "member";
   isMuted: boolean;
   isDeafened?: boolean;
   isHandRaised: boolean;
@@ -50,12 +52,11 @@ interface ChatMessage {
 interface SpaceRoomProps {
   roomName: string;
   userName: string;
-  userRole: "host" | "speaker" | "listener";
   roomId: string;
   onLeave: () => void;
 }
 
-export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: SpaceRoomProps) {
+export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProps) {
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
@@ -75,7 +76,6 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isDeafened, setIsDeafened] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [myRole, setMyRole] = useState<"speaker">("speaker");
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -93,6 +93,8 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
   // References
   const peerRef = useRef<Peer | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const memberIdRef = useRef<string>("");
   const localStreamRef = useRef<MediaStream | null>(null);
   const rawStreamRef = useRef<MediaStream | null>(null);
   const callsRef = useRef<Map<string, MediaConnection>>(new Map());
@@ -113,9 +115,6 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
   const isDeafenedRef = useRef(isDeafened);
   useEffect(() => { isDeafenedRef.current = isDeafened; }, [isDeafened]);
-
-  const myRoleRef = useRef(myRole);
-  useEffect(() => { myRoleRef.current = myRole; }, [myRole]);
 
   const getLocalAudioStream = async (deviceId?: string) => {
     try {
@@ -200,10 +199,10 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
       // Disable raw tracks if muted or listener initially to ensure privacy
       rawStream.getAudioTracks().forEach((track) => {
-        track.enabled = userRole !== "listener" && !isMuted;
+        track.enabled = !isMuted;
       });
       processedStream.getAudioTracks().forEach((track) => {
-        track.enabled = userRole !== "listener" && !isMuted;
+        track.enabled = !isMuted;
       });
       
       return processedStream;
@@ -282,178 +281,131 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
 
   // Broadcast data payload to all connected peers
   const broadcastData = (data: any) => {
-    dataConnsRef.current.forEach((conn) => {
-      if (conn.open) {
-        conn.send(data);
-      }
-    });
+    socketRef.current?.emit("room:update", data);
   };
 
   // Initialize PeerJS Connection
   useEffect(() => {
-    let peerInstance: Peer;
-    let isMounted = true;
+    const socket = io({ autoConnect: true });
+    socketRef.current = socket;
+    const storedMemberId = window.sessionStorage.getItem("spacex-member-id") || crypto.randomUUID();
+    window.sessionStorage.setItem("spacex-member-id", storedMemberId);
+    memberIdRef.current = storedMemberId;
 
-    // Listen for tab duplicate checks
-    const bc = new BroadcastChannel("spacex_room_channel");
-    bc.onmessage = (event) => {
-      if (event.data === "check_active") {
-        bc.postMessage("active");
-      }
+    const peerInstance = new Peer({ debug: 0 });
+    peerRef.current = peerInstance;
+
+    const memberFor = (member: { id: string; peerId: string; name: string }): Participant => ({
+      memberId: member.id,
+      peerId: member.peerId,
+      name: member.name,
+      role: "member",
+      isMuted: true,
+      isDeafened: false,
+      isHandRaised: false,
+    });
+
+    const announce = () => {
+      if (!socket.connected || !peerInstance.open) return;
+      socket.emit("room:join", { id: storedMemberId, peerId: peerInstance.id, name: userName });
     };
 
-    const initPeer = async () => {
-      const maxSlots = 20; // Support up to 20 users without needing a "host"
-
-      // Find an available slot starting from a random index to avoid sequential delays
-      const startIndex = Math.floor(Math.random() * maxSlots);
-      let attempts = 0;
-      
-      const trySlot = (index: number): Promise<Peer> => {
-        return new Promise((resolve, reject) => {
-          if (attempts >= maxSlots) {
-            reject(new Error("Room is full"));
-            return;
-          }
-          attempts++;
-          const id = `${roomId}-slot-${index}`;
-          const p = new Peer(id, { debug: 0 });
-          p.on("open", () => resolve(p));
-          p.on("error", (err: any) => {
-            if (err.type === "unavailable-id") {
-              resolve(trySlot((index + 1) % maxSlots));
-            } else if (err.type !== "peer-unavailable") {
-              console.warn("PeerJS Warning during init:", err);
-            }
-          });
-        });
-      };
-
-      try {
-        peerInstance = await trySlot(startIndex);
-      } catch (err) {
-        toast.error("Room is full or unavailable.");
-        return;
-      }
-      
-      if (!isMounted) {
-        peerInstance.destroy();
-        return;
-      }
-
-      peerRef.current = peerInstance;
-
-      const handlePeerOpen = async (id: string) => {
-        setPeerId(id);
-        
-        // Add self to participants list
-        const me: Participant = {
-          peerId: id,
-          name: userName,
-          role: "speaker",
-          isMuted: isMuted,
-          isDeafened: isDeafened,
-          isHandRaised: false,
-        };
-        setParticipants((prev) => new Map(prev).set(id, me));
-
-        // Get audio stream ready
-        await getLocalAudioStream();
-
-        // Connect to ALL OTHER SLOTS in the room to form the mesh
-        // Stagger connections slightly to prevent overwhelming the signaling server
-        let staggerMs = 0;
-        for (let i = 0; i < maxSlots; i++) {
-          const targetId = `${roomId}-slot-${i}`;
-          if (targetId !== id) {
-            setTimeout(() => connectToPeer(targetId, me), staggerMs);
-            staggerMs += 50;
-          }
-        }
-      };
-
-      // Since the 'open' event already fired, we call this manually
-      handlePeerOpen(peerInstance.id);
-
-      // Handle Incoming Data Connections (State syncing / Chat / Signal)
-      peerInstance.on("connection", (dataConn) => {
-        handleDataConnection(dataConn);
-      });
-
-      // Handle Incoming Audio Calls
-      peerInstance.on("call", async (call) => {
-        const stream = localStreamRef.current || (await getLocalAudioStream());
-        call.answer(stream || undefined);
-        
-        call.on("stream", (remoteStream) => {
-          attachRemoteStream(call.peer, remoteStream);
-        });
-
-        call.on("close", () => {
-          removeRemoteStream(call.peer);
-        });
-
-        callsRef.current.set(call.peer, call);
-      });
-
-      peerInstance.on("error", (err: any) => {
-        if (err.type !== "peer-unavailable" && err.type !== "unavailable-id") {
-          console.warn("PeerJS Warning:", err);
-        }
-      });
+    const connectRoster = (roster: Participant[]) => {
+      const me = participantsRef.current.get(memberIdRef.current) || roster.find((person) => person.memberId === memberIdRef.current);
+      if (!me) return;
+      roster.filter((person) => person.memberId !== memberIdRef.current).forEach((person) => connectToPeer(person, me));
     };
 
-    initPeer();
+    peerInstance.on("open", (id) => {
+      setPeerId(id);
+      const me = memberFor({ id: storedMemberId, peerId: id, name: userName });
+      setParticipants((prev) => new Map(prev).set(storedMemberId, me));
+      void getLocalAudioStream().then(() => connectRoster(Array.from(participantsRef.current.values())));
+      announce();
+    });
 
-    // Periodically attempt to connect to any missing slots
-    // This allows discovery of new users in a completely hostless environment
-    const meshCheckInterval = setInterval(() => {
-      const me = participantsRef.current.get(peerIdRef.current);
-      if (me && peerRef.current) {
-        for (let i = 0; i < 20; i++) {
-          const targetId = `${roomId}-slot-${i}`;
-          if (targetId !== peerIdRef.current) {
-            const conn = dataConnsRef.current.get(targetId);
-            if (!conn || !conn.open) {
-              if (conn) {
-                conn.close();
-                dataConnsRef.current.delete(targetId);
-              }
-              connectToPeer(targetId, me);
-            }
-          }
-        }
+    peerInstance.on("call", async (call) => {
+      const stream = localStreamRef.current || (await getLocalAudioStream());
+      call.answer(stream || undefined);
+      call.on("stream", (remoteStream) => attachRemoteStream(call.peer, remoteStream));
+      call.on("close", () => {
+        if (callsRef.current.get(call.peer) === call) callsRef.current.delete(call.peer);
+        removeRemoteStream(call.peer);
+      });
+      callsRef.current.set(call.peer, call);
+    });
+
+    peerInstance.on("disconnected", () => peerInstance.reconnect());
+    peerInstance.on("error", (error) => {
+      if (error.type !== "peer-unavailable") console.warn("PeerJS Warning:", error);
+    });
+
+    socket.on("connect", announce);
+    socket.on("room:state", ({ members: roster }: { members: Array<{ id: string; peerId: string; name: string }> }) => {
+      const next = new Map<string, Participant>();
+      roster.forEach((member) => next.set(member.id, memberFor(member)));
+      const me = next.get(storedMemberId);
+      if (me) next.set(storedMemberId, { ...me, isMuted, isDeafened });
+      setParticipants(next);
+      connectRoster(Array.from(next.values()));
+    });
+    socket.on("room:member-joined", ({ member }: { member: { id: string; peerId: string; name: string } }) => {
+      setParticipants((prev) => new Map(prev).set(member.id, memberFor(member)));
+    });
+    socket.on("room:member-reconnected", ({ previousPeerId, member }: { previousPeerId: string; member: { id: string; peerId: string; name: string } }) => {
+      callsRef.current.get(previousPeerId)?.close();
+      removeRemoteStream(previousPeerId);
+      const nextMember = memberFor(member);
+      setParticipants((prev) => new Map(prev).set(member.id, nextMember));
+    });
+    socket.on("room:member-left", ({ memberId, peerId: leavingPeerId }: { memberId: string; peerId: string }) => {
+      callsRef.current.get(leavingPeerId)?.close();
+      removeRemoteStream(leavingPeerId);
+      setParticipants((prev) => {
+        const next = new Map(prev);
+        next.delete(memberId);
+        return next;
+      });
+    });
+    socket.on("room:update", (message: any) => {
+      if (!message?.type) return;
+      if (message.type === "UPDATE_STATUS") {
+        const { peerId: targetId, isMuted: muted, isDeafened: deafened, isHandRaised } = message.payload;
+        setParticipants((prev) => {
+          const next = new Map(prev);
+          for (const [id, person] of next) if (person.peerId === targetId) next.set(id, { ...person, isMuted: muted ?? person.isMuted, isDeafened: deafened ?? person.isDeafened, isHandRaised: isHandRaised ?? person.isHandRaised });
+          return next;
+        });
+      } else if (message.type === "REACTION") {
+        displayReaction(message.payload.peerId, message.payload.emoji);
+      } else if (message.type === "CHAT_MSG") {
+        setMessages((prev) => [...prev, message.payload]);
+        if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
       }
-    }, 8000);
+    });
 
     return () => {
-      clearInterval(meshCheckInterval);
-      isMounted = false;
-      bc.close();
-      // Cleanup connections
+      socket.emit("room:leave");
+      socket.disconnect();
       callsRef.current.forEach((call) => call.close());
       dataConnsRef.current.forEach((conn) => conn.close());
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       rawStreamRef.current?.getTracks().forEach((track) => track.stop());
       audioElementsRef.current.forEach((audio) => audio.remove());
-      peerInstance?.destroy();
+      peerInstance.destroy();
+      socketRef.current = null;
     };
   }, []);
 
   // Connect to a remote peer
-  const connectToPeer = (targetPeerId: string, myParticipantInfo: Participant) => {
-    if (!peerRef.current || targetPeerId === peerRef.current.id) return;
-    if (dataConnsRef.current.has(targetPeerId)) return;
+  const connectToPeer = (target: Participant, myParticipantInfo: Participant) => {
+    const targetPeerId = target.peerId;
+    if (!peerRef.current || targetPeerId === peerRef.current.id || callsRef.current.has(targetPeerId)) return;
 
     if (peerRef.current.disconnected) {
       peerRef.current.reconnect();
       return;
     }
-
-    // Data connection
-    const dataConn = peerRef.current.connect(targetPeerId);
-    if (!dataConn) return;
-    handleDataConnection(dataConn);
 
     // Call connection if we have audio stream capability
     if (localStreamRef.current) {
@@ -500,101 +452,6 @@ export function SpaceRoom({ roomName, userName, userRole, roomId, onLeave }: Spa
     });
   };
 
-  // Data connection handlers (Sync state across mesh)
-  const handleDataConnection = (conn: DataConnection) => {
-    dataConnsRef.current.set(conn.peer, conn);
-
-    conn.on("open", () => {
-      // Send self state AND all known participants upon handshake to establish a full mesh
-      const allUsers = Array.from(participantsRef.current.values());
-      conn.send({ type: "SYNC_ALL_USERS", payload: allUsers });
-    });
-
-    conn.on("data", (data: any) => {
-      if (!data || !data.type) return;
-
-      switch (data.type) {
-        case "SYNC_ALL_USERS": {
-          const users: Participant[] = data.payload;
-          
-          setParticipants((prev) => {
-            const next = new Map(prev);
-            users.forEach((u) => {
-              if (!prev.has(u.peerId) && u.peerId !== peerIdRef.current) {
-                toast.success(`${u.name} joined the room`);
-              }
-              next.set(u.peerId, u);
-            });
-            return next;
-          });
-
-          // Establish mesh connections: Connect to any new peers we don't have connections to yet
-          const me = participantsRef.current.get(peerIdRef.current);
-          if (me) {
-            users.forEach((u) => {
-              if (u.peerId !== peerIdRef.current && !dataConnsRef.current.has(u.peerId)) {
-                // We use setTimeout to avoid blocking the current execution frame with multiple connects
-                setTimeout(() => connectToPeer(u.peerId, me), Math.random() * 500);
-              }
-            });
-          }
-          break;
-        }
-
-        case "UPDATE_STATUS": {
-          const { peerId: targetId, isMuted, isDeafened, isHandRaised, role } = data.payload;
-          setParticipants((prev) => {
-            const next = new Map(prev);
-            const p = next.get(targetId);
-            if (p) {
-              next.set(targetId, {
-                ...p,
-                ...(isMuted !== undefined && { isMuted }),
-                ...(isDeafened !== undefined && { isDeafened }),
-                ...(isHandRaised !== undefined && { isHandRaised }),
-                ...(role !== undefined && { role }),
-              });
-            }
-            return next;
-          });
-
-          // Sync local state if the update was about us
-          if (peerIdRef.current === targetId) {
-            if (isMuted !== undefined) setIsMuted(isMuted);
-            if (isDeafened !== undefined) setIsDeafened(isDeafened);
-          }
-          break;
-        }
-
-        case "REACTION": {
-          const { peerId: targetId, emoji } = data.payload;
-          displayReaction(targetId, emoji);
-          break;
-        }
-
-        case "CHAT_MSG": {
-          setMessages((prev) => [...prev, data.payload]);
-          if (!showChatRef.current && data.payload.senderName !== userName) {
-            toast.message(`Message from ${data.payload.senderName}`, { description: data.payload.text });
-          }
-          break;
-        }
-      }
-    });
-
-    conn.on("close", () => {
-      dataConnsRef.current.delete(conn.peer);
-      setParticipants((prev) => {
-        const next = new Map(prev);
-        const leavingUser = next.get(conn.peer);
-        if (leavingUser && leavingUser.peerId !== peerIdRef.current) {
-          toast.info(`${leavingUser.name} left the room`);
-        }
-        next.delete(conn.peer);
-        return next;
-      });
-    });
-  };
 
   // Toggle Mute / Unmute
   const toggleMute = () => {

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { ArrowRight01Icon as ArrowRight, SparklesIcon as Sparkles } from "hugeicons-react";
+import React, { useState, Suspense } from "react";
+import { ArrowRight01Icon as ArrowRight } from "hugeicons-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,27 +22,7 @@ function SpaceHomeContent() {
       return;
     }
 
-    // Check if another tab is already in the room
-    const bc = new BroadcastChannel("spacex_room_channel");
-    bc.postMessage("check_active");
-    
-    let isAlreadyActive = false;
-    bc.onmessage = (event) => {
-      if (event.data === "active") {
-        isAlreadyActive = true;
-      }
-    };
-
-    // Wait a brief moment for any active tab to respond
-    setTimeout(() => {
-      if (isAlreadyActive) {
-        setError("You are already in the room in another tab or window.");
-        bc.close();
-      } else {
-        bc.close();
-        setInSpace(true);
-      }
-    }, 100);
+    setInSpace(true);
   };
 
   if (inSpace) {
@@ -51,7 +30,6 @@ function SpaceHomeContent() {
       <SpaceRoom
         roomName="General Voice Channel"
         userName={userName}
-        userRole="speaker"
         roomId="global-main-room"
         onLeave={() => setInSpace(false)}
       />
@@ -132,4 +110,3 @@ export default function Home() {
     </Suspense>
   );
 }
-
