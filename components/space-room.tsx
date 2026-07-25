@@ -462,16 +462,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
 
     channel
-      .on("presence", { event: "join" }, ({ key, newPresences }) => {
-        if (key === storedMemberId) return; // ignore own join
-        const person = newPresences[0] as unknown as { name: string };
-        if (person?.name) toast.success(`${person.name} joined the room`);
-      })
-      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-        if (key === storedMemberId) return; // ignore own leave
-        const person = leftPresences[0] as unknown as { name: string };
-        if (person?.name) toast(`${person.name} left the room`);
-      })
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         const roster: Participant[] = [];
@@ -495,7 +485,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           else next.set(p.memberId, { ...p, isInitial: false });
         });
         
-        const me = next.get(storedMemberId);
+        let me = next.get(storedMemberId);
+        if (!me) me = participantsRef.current.get(storedMemberId);
+        
         if (me) next.set(storedMemberId, { ...me, isMuted: isMutedRef.current, isDeafened: isDeafenedRef.current });
         
         setParticipants(next);

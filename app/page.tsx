@@ -15,7 +15,7 @@ function SpaceHomeContent() {
   const [error, setError] = useState<string>("");
 
   const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
-  const [currentSeedIndex, setCurrentSeedIndex] = useState(Math.floor(Math.random() * avatarSeeds.length));
+  const [currentSeedIndex, setCurrentSeedIndex] = useState(() => Math.floor(Math.random() * avatarSeeds.length));
 
   useEffect(() => {
     const interval = setInterval(() => {
