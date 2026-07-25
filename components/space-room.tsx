@@ -156,7 +156,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           album: "Live Audio",
           artwork: [ { src: "/icon.svg", sizes: "512x512", type: "image/svg+xml" } ]
         });
-        navigator.mediaSession.playbackState = "paused";
         
         try {
           if ('setMicrophoneActive' in navigator.mediaSession) {
@@ -172,7 +171,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
             if ('mediaSession' in navigator) {
               try {
                 if ('setMicrophoneActive' in navigator.mediaSession) (navigator.mediaSession as any).setMicrophoneActive(!next);
-                navigator.mediaSession.playbackState = next ? "paused" : "playing";
               } catch (e) {}
             }
             if (channelRef.current) {
@@ -295,7 +293,14 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   }
 
   function attachRemoteStream(peerId: string, stream: MediaStream) {
-    if (audioElementsRef.current.has(peerId)) return;
+    if (audioElementsRef.current.has(peerId)) {
+      const existing = audioElementsRef.current.get(peerId)!;
+      if (existing.srcObject !== stream) {
+        existing.srcObject = stream;
+        existing.play().catch(e => console.warn("Error playing updated stream", e));
+      }
+      return;
+    }
     const audio = document.createElement("audio");
     audio.srcObject = stream;
     audio.autoplay = true;
@@ -509,7 +514,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         if ('setMicrophoneActive' in navigator.mediaSession) {
           (navigator.mediaSession as any).setMicrophoneActive(!nextMuted);
         }
-        navigator.mediaSession.playbackState = nextMuted ? "paused" : "playing";
       } catch (e) {}
     }
 
