@@ -292,8 +292,10 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const audio = document.createElement("audio");
     audio.srcObject = stream;
     audio.autoplay = true;
+    audio.muted = isDeafenedRef.current;
     audio.play().catch(e => console.error("Error playing remote audio", e));
     audioElementsRef.current.set(peerId, audio);
+    document.body.appendChild(audio);
     
     // Add stream to streams state for visualizer
     setStreams(prev => {
