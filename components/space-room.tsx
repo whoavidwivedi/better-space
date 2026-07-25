@@ -147,68 +147,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       if (!navigator.mediaDevices) return null;
       const rawStream = await navigator.mediaDevices.getUserMedia(constraints);
       rawStreamRef.current = rawStream;
-
-      // Create an inline AudioWorklet for an Aggressive Noise Gate
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      const workletCode = `
-        class NoiseGate extends AudioWorkletProcessor {
-          constructor() {
-            super();
-            this.threshold = 0.025; // Strict threshold to filter air/fans
-            this.gain = 0;
-            this.attack = 0.1; // Fast open
-            this.release = 0.002; // Smooth fade out
-          }
-          process(inputs, outputs) {
-            const input = inputs[0];
-            const output = outputs[0];
-            if (!input || !input.length || !input[0]) return true;
-
-            let sum = 0;
-            for (let i = 0; i < input[0].length; i++) {
-              sum += input[0][i] * input[0][i];
-            }
-            const rms = Math.sqrt(sum / input[0].length);
-
-            // Determine if we should open the gate
-            const targetGain = rms > this.threshold ? 1.0 : 0.0;
-            
-            // Smooth the transition to prevent popping/clicking
-            if (targetGain > this.gain) {
-              this.gain += this.attack;
-              if (this.gain > 1) this.gain = 1;
-            } else {
-              this.gain -= this.release;
-              if (this.gain < 0) this.gain = 0;
-            }
-
-            for (let c = 0; c < input.length; c++) {
-              for (let i = 0; i < input[c].length; i++) {
-                output[c][i] = input[c][i] * this.gain;
-              }
-            }
-            return true;
-          }
-        }
-        registerProcessor('noise-gate', NoiseGate);
-      `;
-      
-      const blob = new Blob([workletCode], { type: 'application/javascript' });
-      const workletUrl = URL.createObjectURL(blob);
-      await audioCtx.audioWorklet.addModule(workletUrl);
-
-      const source = audioCtx.createMediaStreamSource(rawStream);
-      const noiseGateNode = new AudioWorkletNode(audioCtx, 'noise-gate');
-      const destination = audioCtx.createMediaStreamDestination();
-      
-      source.connect(noiseGateNode);
-      noiseGateNode.connect(destination);
-
-      const processedStream = destination.stream;
-      localStreamRef.current = processedStream;
-      rawStream.getAudioTracks().forEach(t => t.enabled = false);
+      localStreamRef.current = rawStream;
 
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -263,10 +202,9 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         }
       }
 
-      setLocalStreamState(processedStream);
+      setLocalStreamState(rawStream);
       rawStream.getAudioTracks().forEach((track) => { track.enabled = !isMuted; });
-      processedStream.getAudioTracks().forEach((track) => { track.enabled = !isMuted; });
-      return processedStream;
+      return rawStream;
     } catch (err) {
       console.warn("Microphone access denied:", err);
       return null;
