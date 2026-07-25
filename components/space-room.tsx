@@ -140,7 +140,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         },
         video: false,
       };
-
+      if (!navigator.mediaDevices) return null;
       const rawStream = await navigator.mediaDevices.getUserMedia(constraints);
       rawStreamRef.current = rawStream;
 
@@ -356,6 +356,11 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   // ============================
   useEffect(() => {
     const fetchDevices = async () => {
+      if (!navigator.mediaDevices) {
+        console.warn("Media devices API not available (requires HTTPS or localhost).");
+        toast.error("Microphone access requires HTTPS.");
+        return;
+      }
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const mics = devices.filter(d => d.kind === "audioinput");
@@ -386,7 +391,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   useEffect(() => {
     const socket = io({ autoConnect: true });
     socketRef.current = socket;
-    const storedMemberId = window.sessionStorage.getItem("spacex-member-id") || crypto.randomUUID();
+    
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
+    };
+    
+    const storedMemberId = window.sessionStorage.getItem("spacex-member-id") || generateId();
     window.sessionStorage.setItem("spacex-member-id", storedMemberId);
     memberIdRef.current = storedMemberId;
 
