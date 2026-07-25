@@ -86,12 +86,17 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   
   // Audio Settings
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [speakerDevices, setSpeakerDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedMicId, setSelectedMicId] = useState<string>("default");
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string>("default");
   const [localStreamState, setLocalStreamState] = useState<MediaStream | null>(null);
 
   // Track showChat for async callbacks
   const showChatRef = useRef(showChat);
   useEffect(() => { showChatRef.current = showChat; }, [showChat]);
+
+  const selectedSpeakerIdRef = useRef(selectedSpeakerId);
+  useEffect(() => { selectedSpeakerIdRef.current = selectedSpeakerId; }, [selectedSpeakerId]);
 
   // References
   const peerRef = useRef<Peer | null>(null);
@@ -274,6 +279,18 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     });
   };
 
+  const handleSpeakerChange = async (deviceId: string | null) => {
+    if (!deviceId) return;
+    setSelectedSpeakerId(deviceId);
+    audioElementsRef.current.forEach((audio) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (typeof (audio as any).setSinkId === "function") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (audio as any).setSinkId(deviceId).catch(console.error);
+      }
+    });
+  };
+
   // Connect to a remote peer
   function connectToPeer(target: Participant, myParticipantInfo: Participant) {
     const targetPeerId = target.peerId;
@@ -301,6 +318,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     audio.srcObject = stream;
     audio.autoplay = true;
     audio.muted = isDeafenedRef.current;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (audio as any).setSinkId === "function" && selectedSpeakerIdRef.current !== "default") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (audio as any).setSinkId(selectedSpeakerIdRef.current).catch(console.error);
+    }
+
     audio.play().catch(e => console.error("Error playing remote audio", e));
     audioElementsRef.current.set(peerId, audio);
     document.body.appendChild(audio);
@@ -335,17 +359,23 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const mics = devices.filter(d => d.kind === "audioinput");
+        const speakers = devices.filter(d => d.kind === "audiooutput");
         setAudioDevices(mics);
+        setSpeakerDevices(speakers);
         if (mics.length > 0 && selectedMicId === "default") {
           const def = mics.find(m => m.deviceId === "default") || mics[0];
           setSelectedMicId(def.deviceId);
+        }
+        if (speakers.length > 0 && selectedSpeakerId === "default") {
+          const def = speakers.find(m => m.deviceId === "default") || speakers[0];
+          setSelectedSpeakerId(def.deviceId);
         }
       } catch (e) {
         console.error("Could not fetch audio devices", e);
       }
     };
     fetchDevices();
-  }, [selectedMicId]);
+  }, [selectedMicId, selectedSpeakerId]);
 
   // Broadcast data payload to all connected peers
   const broadcastData = (data: { type: string; payload?: unknown }) => {
@@ -849,6 +879,21 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                         {audioDevices.map((device) => (
                           <SelectItem key={device.deviceId} value={device.deviceId}>
                             {device.label || `Microphone ${device.deviceId.substring(0, 5)}...`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Speaker</label>
+                    <Select value={selectedSpeakerId} onValueChange={handleSpeakerChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a speaker" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {speakerDevices.map((device) => (
+                          <SelectItem key={device.deviceId} value={device.deviceId}>
+                            {device.label || `Speaker ${device.deviceId.substring(0, 5)}...`}
                           </SelectItem>
                         ))}
                       </SelectContent>
