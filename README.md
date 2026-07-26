@@ -1,34 +1,33 @@
 <div align="center">
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=SpaceX&size=120&backgroundColor=transparent" alt="SpaceX Logo" width="120" height="120" />
+  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=BetterSpace&size=120&backgroundColor=transparent" alt="Better Space Logo" width="120" height="120" />
   
-  # Space Room
+  # Better Space
 
-  **A beautifully designed, real-time spatial audio experience.** <br />
-  Built with Next.js, WebRTC, and Tailwind CSS.
+  A real-time spatial audio room built with Next.js, WebRTC, and Tailwind CSS.
 </div>
 
 <br/>
 
-## ✨ Features
+## Features
 
-- 🎧 **Real-time Voice Chat:** Crystal clear, low-latency WebRTC audio powered by PeerJS.
-- 🎨 **Dynamic Avatars:** Beautiful Notion-style avatars for every participant, uniquely generated via Dicebear.
-- 📊 **Audio Visualization:** Live, pulsating audio wave visualizers that react to users' voices in real-time.
-- 😊 **Live Reactions:** Send emojis that organically float up the screen using Framer Motion.
-- 💬 **Integrated Text Chat:** A seamless slide-out drawer for text messaging alongside the audio experience.
-- 📱 **Mobile Optimized:** A sleek, floating bottom control dock tailored perfectly for iOS and Android web browsers.
-- 🔒 **Secure & Scalable:** Presence and signaling handled instantly via Supabase Realtime.
+- **Real-time Voice Chat:** Low-latency WebRTC audio powered by PeerJS.
+- **Dynamic Avatars:** Procedurally generated participant avatars using Dicebear.
+- **Audio Visualization:** Real-time audio waveform visualizers based on microphone input.
+- **Live Reactions:** Send temporary floating reactions to the room using Framer Motion.
+- **Integrated Text Chat:** Synchronized text messaging alongside the audio stream.
+- **Mobile Support:** Responsive UI with a floating control dock optimized for mobile browsers.
+- **Signaling:** Room state, presence, and connection signaling handled via Supabase Realtime.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Framework:** [Next.js 14](https://nextjs.org/) (App Router, Turbopack)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
 - **Realtime Signaling:** [Supabase](https://supabase.com/)
-- **WebRTC (P2P Audio):** [PeerJS](https://peerjs.com/)
-- **Avatars:** [DiceBear](https://www.dicebear.com/) (Notionists style)
+- **WebRTC:** [PeerJS](https://peerjs.com/)
+- **Avatars:** [DiceBear](https://www.dicebear.com/)
 - **Icons:** Lucide React & Hugeicons
 
-## 🛠️ Getting Started
+## Getting Started
 
 1. **Clone the repository**
    ```bash
@@ -54,11 +53,11 @@
    ```
 
 5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000) to join the room!
+   Navigate to [http://localhost:3000](http://localhost:3000) to join the room.
 
 <br />
 
-## 🖼️ Meet the Avatars
+## Avatar Preview
 
 <div align="center">
   <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Alice" width="80" />
@@ -67,4 +66,3 @@
   <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Dave" width="80" />
   <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Eve" width="80" />
 </div>
-<p align="center"><em>Join the space and claim your unique avatar today!</em></p>
