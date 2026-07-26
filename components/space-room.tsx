@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import Peer, { MediaConnection, DataConnection } from "peerjs";
@@ -12,9 +12,10 @@ import {
 } from "hugeicons-react";
 import { Headphones, HeadphoneOff } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Message, MessageAvatar, MessageContent, MessageHeader } from "@/components/ui/message";
+import { Message, MessageAvatar, MessageContent, MessageHeader, MessageGroup } from "@/components/ui/message";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { SmileIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +94,31 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState<string>("");
   const [showChat, setShowChat] = useState<boolean>(false);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [streams, setStreams] = useState<Map<string, MediaStream>>(new Map());
+
+  const groupedMessages = useMemo(() => {
+    const groups: ChatMessage[][] = [];
+    let currentGroup: ChatMessage[] = [];
+    
+    messages.forEach((msg, idx) => {
+      if (idx === 0) {
+        currentGroup.push(msg);
+      } else {
+        const prevMsg = messages[idx - 1];
+        if (prevMsg.senderName === msg.senderName) {
+          currentGroup.push(msg);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = [msg];
+        }
+      }
+    });
+    if (currentGroup.length > 0) {
+      groups.push(currentGroup);
+    }
+    return groups;
+  }, [messages]);
   
   // Audio Settings
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -120,6 +145,8 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const reactionTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const processedMessagesRef = useRef<Set<string>>(new Set());
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef<boolean>(false);
 
   // Mutable Refs for stale closures in PeerJS callbacks
   const participantsRef = useRef(participants);
@@ -425,7 +452,16 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       displayReaction(message.payload.peerId, message.payload.emoji);
     } else if (message.type === "CHAT_MSG") {
       setMessages((prev) => [...prev, message.payload]);
-      if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
+    } else if (message.type === "CHAT_TYPING") {
+      const { senderName, isTyping } = message.payload;
+      if (senderName !== userName) {
+        setTypingUsers((prev) => {
+          const next = new Set(prev);
+          if (isTyping) next.add(senderName);
+          else next.delete(senderName);
+          return next;
+        });
+      }
     }
   }, [userName]);
 
@@ -774,10 +810,41 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   }, [isMuted]);
 
 
+  const handleChatInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setChatInput(value);
+    
+    if (value.trim().length === 0) {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (isTypingRef.current) {
+        broadcastData({ type: "CHAT_TYPING", payload: { senderName: userName, isTyping: false } });
+        isTypingRef.current = false;
+      }
+      return;
+    }
+
+    if (!isTypingRef.current) {
+      broadcastData({ type: "CHAT_TYPING", payload: { senderName: userName, isTyping: true } });
+      isTypingRef.current = true;
+    }
+    
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      broadcastData({ type: "CHAT_TYPING", payload: { senderName: userName, isTyping: false } });
+      isTypingRef.current = false;
+    }, 2000);
+  };
+
   // Send Chat Message
   const sendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
+    
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    if (isTypingRef.current) {
+      broadcastData({ type: "CHAT_TYPING", payload: { senderName: userName, isTyping: false } });
+      isTypingRef.current = false;
+    }
 
     const msg: ChatMessage = {
       id: Math.random().toString(36).substr(2, 9),
@@ -965,7 +1032,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                   )}
                 </Button>
               } />
-              <DrawerContent className="h-[80vh] flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <DrawerContent className="h-[80vh] flex flex-col bg-background">
                 <DrawerHeader className="border-b shrink-0 py-4 flex flex-row items-center justify-between">
                   <DrawerTitle className="text-sm font-semibold flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-primary" /> Space Chat
@@ -976,37 +1043,62 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                 </DrawerHeader>
 
                 <div className="flex-1 p-4 space-y-3 overflow-y-auto text-sm min-h-0 mx-auto w-full max-w-3xl">
-                  {messages.length === 0 ? (
-                    <p className="text-center text-xs text-muted-foreground py-10">No messages yet. Say hi!</p>
-                  ) : (
-                    messages.map((msg) => (
-                      <Message key={msg.id} align={msg.senderName === userName ? "end" : "start"} className="mb-4 w-full">
-                        <MessageAvatar>
-                          <Avatar className="h-8 w-8 border bg-white">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(msg.senderId || msg.senderName)}`} alt={msg.senderName} />
-                            <AvatarFallback className="text-xs">{msg.senderName.substring(0,2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                        </MessageAvatar>
-                        <MessageContent className="min-w-0">
-                          <MessageHeader className="text-xs">{msg.senderName} <span className="text-[10px] text-muted-foreground ml-1 font-mono">{msg.timestamp}</span></MessageHeader>
-                          <Bubble>
-                            <BubbleContent className="text-sm break-words whitespace-pre-wrap">{msg.text}</BubbleContent>
-                          </Bubble>
-                        </MessageContent>
-                      </Message>
-                    ))
-                  )}
+                    {groupedMessages.length === 0 ? (
+                      <p className="text-center text-xs text-muted-foreground py-10">No messages yet. Say hi!</p>
+                    ) : (
+                      groupedMessages.map((group, groupIdx) => (
+                        <MessageGroup key={groupIdx} className="mb-4 w-full">
+                          {group.map((msg, msgIdx) => {
+                            const isFirst = msgIdx === 0;
+                            const isLast = msgIdx === group.length - 1;
+                            
+                            return (
+                              <Message key={msg.id} align={msg.senderName === userName ? "end" : "start"} className="w-full mb-1 group/message">
+                                <MessageAvatar className={isFirst ? "translate-y-3" : ""}>
+                                  {isLast && (
+                                    <Avatar className="h-8 w-8 border bg-white">
+                                      <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(msg.senderId || msg.senderName)}`} alt={msg.senderName} />
+                                      <AvatarFallback className="text-xs">{msg.senderName.substring(0,2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                  )}
+                                </MessageAvatar>
+                                <MessageContent className="min-w-0">
+                                  {isFirst && <MessageHeader className="text-xs">{msg.senderName}</MessageHeader>}
+                                  <Bubble variant={msg.senderName === userName ? "default" : "muted"}>
+                                    <BubbleContent className="text-sm font-medium flex items-end justify-between gap-3 min-w-16">
+                                      <span>{msg.text}</span>
+                                      <span className="text-[9px] font-mono leading-none mb-0.5 opacity-70 shrink-0">{msg.timestamp}</span>
+                                    </BubbleContent>
+                                  </Bubble>
+                                </MessageContent>
+                              </Message>
+                            );
+                          })}
+                        </MessageGroup>
+                      ))
+                    )}
+                    
+                    {/* Typing Indicator */}
+                    {typingUsers.size > 0 && (
+                      <p className="text-xs text-muted-foreground animate-pulse px-2 mb-2 italic">
+                        {typingUsers.size === 1 ? Array.from(typingUsers)[0] : "Multiple people"} is typing...
+                      </p>
+                    )}
                 </div>
 
-                <div className="p-3 border-t shrink-0 w-full">
-                  <form onSubmit={sendChatMessage} className="flex gap-2 mx-auto w-full max-w-3xl">
+                <div className="p-4 border-t shrink-0 w-full bg-background">
+                  <form onSubmit={sendChatMessage} className="relative flex items-center mx-auto w-full max-w-3xl">
                     <Input
                       value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
+                      onChange={handleChatInput}
                       placeholder="Type a message..."
-                      className="text-sm h-12 rounded-xl"
+                      className="text-sm h-14 pl-5 pr-20 rounded-full bg-muted border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                     />
-                    <Button type="submit" size="sm" disabled={!chatInput.trim()} className="active:scale-[0.97] transition-all duration-200 ease-out h-12 rounded-xl px-6">
+                    <Button 
+                      type="submit" 
+                      disabled={!chatInput.trim()} 
+                      className="absolute right-1.5 h-11 px-5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-200 ease-out active:scale-95 disabled:opacity-50 disabled:bg-muted-foreground"
+                    >
                       Send
                     </Button>
                   </form>

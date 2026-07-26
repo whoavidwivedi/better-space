@@ -5,7 +5,6 @@ import { ArrowRight01Icon as ArrowRight } from "hugeicons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SpaceRoom } from "@/components/space-room";
 
@@ -98,7 +97,6 @@ function SpaceHomeContent() {
 
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <Card className="w-full">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
               <h2 className="text-2xl font-semibold leading-none tracking-tight">Join Better Space</h2>
               <p className="text-sm text-muted-foreground">
@@ -119,7 +117,7 @@ function SpaceHomeContent() {
                   </label>
                   <Input
                     required
-                    placeholder="e.g. Avi"
+                    placeholder="Your display name..."
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     className="h-9"
@@ -136,12 +134,11 @@ function SpaceHomeContent() {
                   type="submit"
                   className="w-full active:scale-[0.98] transition-transform duration-150"
                 >
-                  Join Room
+                  Enter Space
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </form>
             </div>
-          </Card>
         </div>
       </main>
     </div>
