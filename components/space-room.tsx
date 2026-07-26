@@ -113,6 +113,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   const dataConnsRef = useRef<Map<string, DataConnection>>(new Map());
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const reactionTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const processedMessagesRef = useRef<Set<string>>(new Set());
 
   // Mutable Refs for stale closures in PeerJS callbacks
   const participantsRef = useRef(participants);
@@ -312,6 +313,16 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       });
       callsRef.current.set(targetPeerId, call);
     }
+    
+    if (!dataConnsRef.current.has(targetPeerId)) {
+      const dataConn = peerRef.current.connect(targetPeerId, { reliable: true });
+      dataConn.on("open", () => {
+        dataConnsRef.current.set(targetPeerId, dataConn);
+      });
+      dataConn.on("data", (data) => handleRoomEventRef.current(data));
+      dataConn.on("close", () => dataConnsRef.current.delete(targetPeerId));
+      dataConn.on("error", () => dataConnsRef.current.delete(targetPeerId));
+    }
   }
 
   function attachRemoteStream(peerId: string, stream: MediaStream) {
@@ -384,8 +395,48 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     fetchDevices();
   }, [selectedMicId, selectedSpeakerId]);
 
-  const broadcastData = (data: { type: string; payload?: unknown }) => {
-    channelRef.current?.send({ type: "broadcast", event: "room:update", payload: data });
+  const handleRoomEvent = (message: any) => {
+    if (!message?.type) return;
+    
+    const msgId = message.msgId;
+    if (msgId) {
+      if (processedMessagesRef.current.has(msgId)) return;
+      processedMessagesRef.current.add(msgId);
+      if (processedMessagesRef.current.size > 1000) {
+        const iter = processedMessagesRef.current.values();
+        processedMessagesRef.current.delete(iter.next().value!);
+      }
+    }
+
+    if (message.type === "UPDATE_STATUS") {
+      const { peerId: targetId, isMuted: muted, isDeafened: deafened, isHandRaised } = message.payload;
+      setParticipants((prev) => {
+        const next = new Map(prev);
+        for (const [id, person] of next) if (person.peerId === targetId) next.set(id, { ...person, isMuted: muted ?? person.isMuted, isDeafened: deafened ?? person.isDeafened, isHandRaised: isHandRaised ?? person.isHandRaised });
+        return next;
+      });
+    } else if (message.type === "REACTION") {
+      displayReaction(message.payload.peerId, message.payload.emoji);
+    } else if (message.type === "CHAT_MSG") {
+      setMessages((prev) => [...prev, message.payload]);
+      if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
+    }
+  };
+
+  const handleRoomEventRef = useRef(handleRoomEvent);
+  useEffect(() => { handleRoomEventRef.current = handleRoomEvent; }, [handleRoomEvent]);
+
+  const broadcastData = (data: { type: string; payload?: unknown, msgId?: string }) => {
+    const msgId = data.msgId || crypto.randomUUID();
+    const message = { ...data, msgId };
+    
+    channelRef.current?.send({ type: "broadcast", event: "room:update", payload: message });
+    
+    dataConnsRef.current.forEach(conn => {
+      if (conn.open) {
+        conn.send(message);
+      }
+    });
   };
 
   useEffect(() => {
@@ -399,7 +450,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     const storedMemberId = generateId();
     memberIdRef.current = storedMemberId;
 
-    const peerInstance = new Peer({ debug: 0 });
+    const peerInstance = new Peer({ 
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:global.stun.twilio.com:3478" }
+        ]
+      }
+    });
     peerRef.current = peerInstance;
 
     const memberFor = (member: { id: string; peerId: string; name: string; isMuted?: boolean; isDeafened?: boolean; isHandRaised?: boolean }, isInitial = false): Participant => ({
@@ -459,6 +518,15 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     peerInstance.on("error", (error) => {
       if (error.type !== "peer-unavailable") console.warn("PeerJS Warning:", error);
     });
+    
+    peerInstance.on("connection", (dataConn) => {
+      dataConn.on("open", () => {
+        dataConnsRef.current.set(dataConn.peer, dataConn);
+      });
+      dataConn.on("data", (data) => handleRoomEventRef.current(data));
+      dataConn.on("close", () => dataConnsRef.current.delete(dataConn.peer));
+      dataConn.on("error", () => dataConnsRef.current.delete(dataConn.peer));
+    });
 
     channel
       .on("presence", { event: "join" }, ({ key, newPresences }) => {
@@ -499,24 +567,33 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
         connectRoster(Array.from(next.values()));
       })
       .on("broadcast", { event: "room:update" }, ({ payload: message }) => {
-        if (!message?.type) return;
-        if (message.type === "UPDATE_STATUS") {
-          const { peerId: targetId, isMuted: muted, isDeafened: deafened, isHandRaised } = message.payload;
-          setParticipants((prev) => {
-            const next = new Map(prev);
-            for (const [id, person] of next) if (person.peerId === targetId) next.set(id, { ...person, isMuted: muted ?? person.isMuted, isDeafened: deafened ?? person.isDeafened, isHandRaised: isHandRaised ?? person.isHandRaised });
-            return next;
-          });
-        } else if (message.type === "REACTION") {
-          displayReaction(message.payload.peerId, message.payload.emoji);
-        } else if (message.type === "CHAT_MSG") {
-          setMessages((prev) => [...prev, message.payload]);
-          if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
-        }
+        handleRoomEventRef.current(message);
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") announce();
       });
+
+    // Watchdog for ICE connection state
+    const watchdog = setInterval(() => {
+      callsRef.current.forEach((call, peerId) => {
+        const state = call.peerConnection?.iceConnectionState;
+        if (state === "disconnected" || state === "failed" || state === "closed") {
+          console.warn(`Connection to ${peerId} failed (${state}), attempting reconnect...`);
+          call.close();
+          callsRef.current.delete(peerId);
+          removeRemoteStream(peerId);
+          dataConnsRef.current.get(peerId)?.close();
+          dataConnsRef.current.delete(peerId);
+          
+          const roster = Array.from(participantsRef.current.values());
+          const me = participantsRef.current.get(memberIdRef.current) || roster.find((person) => person.memberId === memberIdRef.current);
+          if (me) {
+             const target = roster.find(p => p.peerId === peerId);
+             if (target) connectToPeer(target, me);
+          }
+        }
+      });
+    }, 3000);
 
     // Ensures instant departure when tab is forcefully closed or refreshed
     const handleBeforeUnload = () => {
@@ -526,6 +603,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
+      clearInterval(watchdog);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       channel.untrack();
       supabase.removeChannel(channel);
