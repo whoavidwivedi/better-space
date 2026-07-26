@@ -42,6 +42,7 @@ interface Participant {
   isDeafened?: boolean;
   isHandRaised: boolean;
   isSpeaking?: boolean;
+  reaction?: string;
   isInitial?: boolean;
 }
 
