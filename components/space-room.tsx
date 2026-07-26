@@ -893,13 +893,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                   className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out"
                   style={{ animationDelay: speaker.isInitial ? `${index * 50}ms` : "0ms", animationFillMode: "both" }}
                 >
-                  {/* Reaction */}
-                  {speaker.reaction && (
-                    <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border shadow-sm rounded-full h-9 w-9 flex items-center justify-center text-xl z-10 animate-in fade-in zoom-in-95 duration-200 ease-out">
-                      <span className="leading-none select-none">{speaker.reaction}</span>
-                    </div>
-                  )}
-
                   {/* Avatar */}
                   <div className="relative mb-3">
                     <Avatar className={`h-20 w-20 border-2 border-primary bg-white`}>
@@ -908,6 +901,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
                         {speaker.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+
+                    {/* Reaction */}
+                    {speaker.reaction && (
+                      <div className="absolute -top-3 -right-3 bg-background/95 backdrop-blur border shadow-sm rounded-full h-10 w-10 flex items-center justify-center text-2xl z-10 animate-in fade-in zoom-in-95 duration-200 ease-out">
+                        <span className="leading-none select-none">{speaker.reaction}</span>
+                      </div>
+                    )}
 
                     {/* Mute indicator status */}
                     <div
