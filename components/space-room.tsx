@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import Peer, { MediaConnection, DataConnection } from "peerjs";
@@ -33,6 +33,11 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
+};
 
 interface Participant {
   memberId: string;
@@ -396,7 +401,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     fetchDevices();
   }, [selectedMicId, selectedSpeakerId]);
 
-  const handleRoomEvent = (message: any) => {
+  const handleRoomEvent = useCallback((message: any) => {
     if (!message?.type) return;
     
     const msgId = message.msgId;
@@ -422,13 +427,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       setMessages((prev) => [...prev, message.payload]);
       if (!showChatRef.current && message.payload.senderName !== userName) toast.message(`Message from ${message.payload.senderName}`, { description: message.payload.text });
     }
-  };
+  }, [userName]);
 
   const handleRoomEventRef = useRef(handleRoomEvent);
   useEffect(() => { handleRoomEventRef.current = handleRoomEvent; }, [handleRoomEvent]);
 
   const broadcastData = (data: { type: string; payload?: unknown, msgId?: string }) => {
-    const msgId = data.msgId || crypto.randomUUID();
+    const msgId = data.msgId || generateId();
     const message = { ...data, msgId };
     
     channelRef.current?.send({ type: "broadcast", event: "room:update", payload: message });
@@ -441,11 +446,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
   };
 
   useEffect(() => {
-    const generateId = () => {
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-      return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
-    };
-    
     // Generate a uniquely fresh member ID for every single tab session.
     // This perfectly fixes the localhost duplicate tab bug.
     const storedMemberId = generateId();
@@ -603,22 +603,27 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
+    const currentCalls = callsRef.current;
+    const currentDataConns = dataConnsRef.current;
+    const currentAudioElements = audioElementsRef.current;
+
     return () => {
       clearInterval(watchdog);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       channel.untrack();
       supabase.removeChannel(channel);
-      callsRef.current.forEach((call) => call.close());
-      dataConnsRef.current.forEach((conn) => conn.close());
+      currentCalls.forEach((call) => call.close());
+      currentDataConns.forEach((conn) => conn.close());
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       rawStreamRef.current?.getTracks().forEach((track) => track.stop());
-      audioElementsRef.current.forEach((audio) => audio.remove());
+      currentAudioElements.forEach((audio) => audio.remove());
       peerInstance.destroy();
       channelRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (isDeafened) {
       toast.error("You cannot unmute while deafened");
       return;
@@ -660,7 +665,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       if (me) next.set(memberIdRef.current, { ...me, isMuted: nextMuted });
       return next;
     });
-  };
+  }, [isDeafened, isMuted, peerId, userName]);
 
   const toggleDeafen = () => {
     const nextDeafened = !isDeafened;
@@ -733,6 +738,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMuted, isDeafened, peerId, theme]);
 
   // Media Session API for background mobile mute/unmute
@@ -745,7 +751,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
       const handlePlay = () => { if (isMuted) toggleMuteRef.current(); };
       const handlePause = () => { if (!isMuted) toggleMuteRef.current(); };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       try { navigator.mediaSession.setActionHandler('togglemicrophone' as any, handleToggle); } catch {}
       try { navigator.mediaSession.setActionHandler('play', handlePlay); } catch {}
       try { navigator.mediaSession.setActionHandler('pause', handlePause); } catch {}
@@ -760,7 +765,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     return () => {
       if ('mediaSession' in navigator) {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           navigator.mediaSession.setActionHandler('togglemicrophone' as any, null);
           navigator.mediaSession.setActionHandler('play', null);
           navigator.mediaSession.setActionHandler('pause', null);
@@ -769,7 +773,6 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
     };
   }, [isMuted]);
 
-  // Remove unused host privilege methods
 
   // Send Chat Message
   const sendChatMessage = (e: React.FormEvent) => {
@@ -948,14 +951,13 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
           initial={{ x: "-50%" }}
           animate={{ x: "-50%" }}
           transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-          className="fixed bottom-4 md:bottom-8 mb-[env(safe-area-inset-bottom)] left-1/2 bg-background/90 border-2 border-border p-2 md:p-3 rounded-full shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-2 md:gap-3 z-40"
+          className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] md:bottom-8 left-1/2 bg-background/90 border border-border p-1.5 sm:p-2 md:p-3 rounded-full shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-1.5 sm:gap-2 md:gap-3 z-40 max-w-[95vw] overflow-x-auto no-scrollbar"
         >
-            {/* Chat Toggle Drawer */}
             <Drawer open={showChat} onOpenChange={setShowChat} showSwipeHandle={true}>
               <DrawerTrigger render={
                 <Button
                   variant="outline"
-                  className={`relative rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 ${showChat ? "bg-primary/20 text-primary border-primary" : "text-muted-foreground border-border"}`}
+                  className={`relative shrink-0 rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 ${showChat ? "bg-primary/20 text-primary border-primary" : "text-muted-foreground border-border"}`}
                 >
                   <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
                   {messages.length > 0 && !showChat && (
@@ -1015,7 +1017,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
             {/* Settings Modal */}
             <Dialog>
               <DialogTrigger render={
-                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border">
+                <Button variant="outline" className="shrink-0 rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border">
                   <SettingsIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 </Button>
               } />
@@ -1049,7 +1051,7 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
 
             <Popover>
               <PopoverTrigger render={
-                <Button variant="outline" className="rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border">
+                <Button variant="outline" className="shrink-0 rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border">
                   <SmilePlus className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 </Button>
               } />
@@ -1062,11 +1064,11 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
             <Button
               onClick={toggleDeafen}
               variant={isDeafened ? "destructive" : "secondary"}
-              className={`rounded-full w-28 md:w-32 h-10 md:h-12 p-0 overflow-hidden active:scale-[0.97] transition-all duration-200 ease-out flex items-center justify-center font-medium gap-1.5 text-xs md:text-sm border-2 ${isDeafened ? "border-red-500" : "border-border"}`}
+              className={`shrink-0 rounded-full px-3.5 sm:px-5 md:px-6 h-10 md:h-12 flex items-center justify-center font-medium gap-1.5 text-xs md:text-sm border-2 active:scale-[0.97] transition-all duration-200 ease-out ${isDeafened ? "border-red-500" : "border-border"}`}
             >
               <div className="flex items-center gap-1.5">
                 {isDeafened ? <HeadphoneOff className="h-4 w-4 md:h-5 md:w-5" /> : <Headphones className="h-4 w-4 md:h-5 md:w-5" />}
-                <span>Deafen</span>
+                <span className="hidden sm:inline">Deafen</span>
               </div>
             </Button>
             
@@ -1075,11 +1077,11 @@ export function SpaceRoom({ roomName, userName, roomId, onLeave }: SpaceRoomProp
               onClick={toggleMute}
               disabled={isDeafened}
               variant={isMuted ? "destructive" : "secondary"}
-              className={`rounded-full w-28 md:w-32 h-10 md:h-12 p-0 overflow-hidden active:scale-[0.97] transition-all duration-200 ease-out flex items-center justify-center font-medium gap-1.5 text-xs md:text-sm border-2 ${isMuted ? "border-red-500" : "border-border"} ${isDeafened ? "opacity-50" : ""}`}
+              className={`shrink-0 rounded-full px-4 sm:px-5 md:px-6 h-10 md:h-12 flex items-center justify-center font-medium gap-1.5 text-xs md:text-sm border-2 active:scale-[0.97] transition-all duration-200 ease-out ${isMuted ? "border-red-500" : "border-border"} ${isDeafened ? "opacity-50" : ""}`}
             >
               <div className="flex items-center gap-1.5">
                 {isMuted ? <MicOff className="h-4 w-4 md:h-5 md:w-5" /> : <Mic className="h-4 w-4 md:h-5 md:w-5" />}
-                <span>Mute</span>
+                <span className="hidden sm:inline">Mute</span>
               </div>
             </Button>
         </motion.div>

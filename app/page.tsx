@@ -15,13 +15,14 @@ function SpaceHomeContent() {
   const [error, setError] = useState<string>("");
 
   const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
-  const [currentSeedIndex, setCurrentSeedIndex] = useState(() => Math.floor(Math.random() * avatarSeeds.length));
+  const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSeedIndex((prev) => (prev + 1) % avatarSeeds.length);
     }, 1200);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const seed = avatarSeeds[currentSeedIndex];

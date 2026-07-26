@@ -12,7 +12,6 @@ export function AudioVisualizer({ stream }: { stream: MediaStream | null }) {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     
     // Resume context if suspended (browser autoplay policy)
