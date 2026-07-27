@@ -1,12 +1,17 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+
+const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
 
 function SpaceHomeContent() {
-  const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
   const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
+  const [showPioneers, setShowPioneers] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -90,14 +95,65 @@ function SpaceHomeContent() {
                   We are shifting to an enterprise-grade architecture. Get ready for massive room capacities, crystal clear audio, and ultra-low latency.
                 </p>
               </div>
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Thank you to everyone who made our v1 journey so special. We can't wait to share what's next with you.
-                </p>
-              </div>
+
             </div>
         </div>
       </main>
+
+      <footer className="w-full pb-10 pt-6 px-6 flex flex-col items-center justify-center gap-6">
+        <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg">
+          Thank you to <button 
+            type="button" 
+            onClick={() => setShowPioneers(!showPioneers)}
+            onMouseEnter={() => setShowPioneers(true)}
+            onMouseLeave={() => setShowPioneers(false)}
+            onBlur={() => setShowPioneers(false)}
+            className="relative inline-block group cursor-pointer underline decoration-primary underline-offset-4 transition-all text-foreground font-medium outline-none"
+          >
+            everyone
+            <span className={cn(
+              "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max origin-bottom transition-all pointer-events-none z-50 flex flex-col items-start gap-1.5 font-normal",
+              showPioneers ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            )}>
+              {[
+                { name: "Dhirender Choudhary", seed: "Felix" },
+                { name: "Scalar Skeleton", seed: "Aneka" },
+                { name: "Simran Agarwal", seed: "Zoe" },
+                { name: "Yash Raj", seed: "Leo" }
+              ].map((p) => (
+                <div key={p.name} className="flex items-center gap-2">
+                  <Avatar size="sm" className="bg-transparent shrink-0">
+                    <AvatarImage 
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.seed}&backgroundColor=transparent`} 
+                      alt={p.name}
+                      className="object-contain" 
+                    />
+                    <AvatarFallback className="text-[10px]">{p.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium whitespace-nowrap text-xs">{p.name}</span>
+                </div>
+              ))}
+            </span>
+          </button> who made our v1 journey so special. We can&apos;t wait to share what&apos;s next with you.
+        </p>
+
+        <div className="w-full max-w-2xl overflow-hidden flex py-1 [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
+          <motion.div
+            className="flex gap-4 pr-4 w-max"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ ease: "linear", duration: 30, repeat: Infinity }}
+          >
+            {[...avatarSeeds, ...avatarSeeds, ...avatarSeeds, ...avatarSeeds].map((seed, i) => (
+              <img 
+                key={`${seed}-${i}`}
+                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=transparent`} 
+                alt="Avatar" 
+                className="w-12 h-12 shrink-0 object-contain opacity-70 hover:opacity-100 transition-opacity"
+              />
+            ))}
+          </motion.div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils";
+import { AnimatedFavicon } from "@/components/animated-favicon";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 
@@ -11,6 +12,11 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata = {
+  title: "Better Space",
+  description: "A real-time spatial audio room",
+}
 
 export const viewport = {
   width: "device-width",
@@ -31,6 +37,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AnimatedFavicon />
           {children}
           <Toaster position="bottom-center" visibleToasts={1} duration={3000} />
         </ThemeProvider>
