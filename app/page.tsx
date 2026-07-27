@@ -1,18 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { ArrowRight01Icon as ArrowRight } from "hugeicons-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { SpaceRoom } from "@/components/space-room";
 
 function SpaceHomeContent() {
-  const [inSpace, setInSpace] = useState<boolean>(false);
-  const [userName, setUserName] = useState<string>("");
-  const [error, setError] = useState<string>("");
-
   const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
   const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
 
@@ -21,32 +13,9 @@ function SpaceHomeContent() {
       setCurrentSeedIndex((prev) => (prev + 1) % avatarSeeds.length);
     }, 1200);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const seed = avatarSeeds[currentSeedIndex];
-
-  const handleJoinSpace = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!userName.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
-
-    setInSpace(true);
-  };
-
-  if (inSpace) {
-    return (
-      <SpaceRoom
-        roomName="General Voice Channel"
-        userName={userName}
-        roomId="global-main-room"
-        onLeave={() => setInSpace(false)}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
@@ -98,46 +67,34 @@ function SpaceHomeContent() {
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
-              <h2 className="text-2xl font-semibold leading-none tracking-tight">Join Better Space</h2>
+              <h2 className="text-2xl font-semibold leading-none tracking-tight">Upgrading Space</h2>
               <p className="text-sm text-muted-foreground">
-                Enter your name to join the general voice channel.
+                We are currently rebuilding our spatial audio experience.
               </p>
-              <div className="pt-2">
+              <div className="pt-2 flex items-center gap-2">
                 <Badge variant="secondary" className="font-mono text-xs text-muted-foreground">
-                  Room: global-main-room
+                  Status: Maintenance
                 </Badge>
+                <div className="flex gap-1 items-center">
+                  <motion.div className="w-1 h-1 rounded-full bg-primary/60" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0 }} />
+                  <motion.div className="w-1 h-1 rounded-full bg-primary/60" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.2 }} />
+                  <motion.div className="w-1 h-1 rounded-full bg-primary/60" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.4 }} />
+                </div>
               </div>
             </div>
 
-            <div className="p-6 pt-0">
-              <form onSubmit={handleJoinSpace} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none">
-                    Name
-                  </label>
-                  <Input
-                    required
-                    placeholder="Your display name..."
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-
-                {error && (
-                  <div className="text-sm font-medium text-destructive">
-                    {error}
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full active:scale-[0.98] transition-transform duration-150"
-                >
-                  Enter Space
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </form>
+            <div className="p-6 pt-0 space-y-4">
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm leading-none">Next Generation Infrastructure</h3>
+                <p className="text-sm text-muted-foreground">
+                  We are shifting to an enterprise-grade architecture. Get ready for massive room capacities, crystal clear audio, and ultra-low latency.
+                </p>
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Thank you to everyone who made our v1 journey so special. We can't wait to share what's next with you.
+                </p>
+              </div>
             </div>
         </div>
       </main>
