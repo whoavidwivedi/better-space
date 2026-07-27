@@ -23,7 +23,7 @@ function SpaceHomeContent() {
   const seed = avatarSeeds[currentSeedIndex];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="h-[100dvh] w-full overflow-hidden bg-background text-foreground flex flex-col font-sans">
       {/* Header */}
       <header className="px-8 py-6 flex items-center justify-between border-b">
         <div className="flex items-center gap-2.5">
@@ -69,7 +69,7 @@ function SpaceHomeContent() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-6">
+      <main className="flex-1 flex items-center justify-center p-4 md:p-6 overflow-hidden">
         <div className="w-full max-w-sm">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
               <h2 className="text-2xl font-semibold leading-none tracking-tight">Upgrading Space</h2>
@@ -100,7 +100,7 @@ function SpaceHomeContent() {
         </div>
       </main>
 
-      <footer className="w-full pb-10 pt-6 px-6 flex flex-col items-center justify-center gap-6">
+      <footer className="w-full pb-6 md:pb-10 pt-4 md:pt-6 px-4 md:px-6 flex flex-col items-center justify-center gap-4 md:gap-6 shrink-0">
         <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg">
           Thank you to <button 
             type="button" 
