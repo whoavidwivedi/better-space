@@ -134,7 +134,7 @@ function SpaceHomeContent() {
                 </div>
               ))}
             </span>
-          </button> who made our v1 journey so special. We can&apos;t wait to share what&apos;s next with you.
+          </button>{" "}who made our v1 journey so special. We can&apos;t wait to share what&apos;s next with you.
         </p>
 
         <div className="w-full max-w-2xl overflow-hidden flex py-1 [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
