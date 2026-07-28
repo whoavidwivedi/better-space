@@ -5,13 +5,40 @@ import React, { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { SpaceRoomLiveKit } from "@/components/livekit-room";
 
 const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
 
 function SpaceHomeContent() {
   const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
   const [showPioneers, setShowPioneers] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
+  const [token, setToken] = useState("");
+
+  const handleJoin = async () => {
+    if (!userName.trim()) return;
+    setIsJoining(true);
+    try {
+      const res = await fetch(`/api/livekit?room=better-space&username=${encodeURIComponent(userName)}`);
+      const data = await res.json();
+      if (data.token) {
+        setToken(data.token);
+        setHasJoined(true);
+      } else {
+        toast.error("Failed to connect: " + (data.error || "Unknown error"));
+      }
+    } catch (e) {
+      toast.error("Failed to connect to LiveKit server");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -21,6 +48,10 @@ function SpaceHomeContent() {
   }, []);
 
   const seed = avatarSeeds[currentSeedIndex];
+
+  if (hasJoined && token) {
+    return <SpaceRoomLiveKit roomName="better-space" userName={userName} token={token} onLeave={() => setHasJoined(false)} />;
+  }
 
   return (
     <div className="h-[100dvh] w-full overflow-hidden bg-background text-foreground flex flex-col font-sans">
@@ -72,30 +103,43 @@ function SpaceHomeContent() {
       <main className="flex-1 flex items-center justify-center p-4 md:p-6 overflow-hidden">
         <div className="w-full max-w-sm">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
-              <h2 className="text-2xl font-semibold leading-none tracking-tight">Upgrading Space</h2>
+              <h2 className="text-2xl font-semibold leading-none tracking-tight">Space v2 is Live</h2>
               <p className="text-sm text-muted-foreground">
-                We are currently rebuilding our spatial audio experience.
+                Experience our brand new enterprise-grade audio architecture.
               </p>
               <div className="pt-2 flex items-center gap-2">
-                <Badge variant="secondary" className="font-mono text-xs text-muted-foreground">
-                  Status: Maintenance
+                <Badge variant="secondary" className="font-mono text-xs text-primary border-primary/20 bg-primary/10">
+                  Status: Online
                 </Badge>
-                <div className="flex gap-1 items-center">
-                  <motion.div className="w-1 h-1 rounded-full bg-primary/60" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0 }} />
-                  <motion.div className="w-1 h-1 rounded-full bg-primary/60" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.2 }} />
-                  <motion.div className="w-1 h-1 rounded-full bg-primary/60" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.4 }} />
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 pt-0 space-y-4">
+            <div className="p-6 pt-0 space-y-6">
               <div className="space-y-3">
-                <h3 className="font-medium text-sm leading-none">Next Generation Infrastructure</h3>
+                <h3 className="font-medium text-sm leading-none">Instant Rooms</h3>
                 <p className="text-sm text-muted-foreground">
-                  We are shifting to an enterprise-grade architecture. Get ready for massive room capacities, crystal clear audio, and ultra-low latency.
+                  Jump straight into the conversation. Enjoy ultra-low latency, crystal clear voice channels powered by LiveKit SFU.
                 </p>
               </div>
 
+              <div className="space-y-3">
+                <Input 
+                  placeholder="Enter your name..." 
+                  value={userName} 
+                  onChange={(e) => setUserName(e.target.value)} 
+                  maxLength={15}
+                  onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+                />
+                <Button className="w-full" onClick={handleJoin} disabled={!userName.trim() || isJoining}>
+                  {isJoining ? "Connecting..." : "Join Space"}
+                </Button>
+              </div>
             </div>
         </div>
       </main>
