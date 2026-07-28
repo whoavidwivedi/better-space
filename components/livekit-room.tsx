@@ -326,6 +326,7 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
   const isSpeaking = useIsSpeaking(participant);
   const isAudioMuted = !participant.isMicrophoneEnabled;
   const name = participant.identity || "Unknown";
+  const avatarSeed = useMemo(() => Math.random().toString(36).substring(2, 9), []);
 
   const trackRef = useMemo(() => {
     const pub = participant.getTrackPublication(Track.Source.Microphone);
@@ -343,7 +344,7 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
     <div className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out" style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}>
       <div className="relative mb-3">
         <Avatar className="h-20 w-20 border-2 border-border bg-black transition-all">
-          <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=transparent`} alt={name} className="object-contain opacity-90" />
+          <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${avatarSeed}&backgroundColor=transparent`} alt={name} className="object-contain opacity-90 invert dark:invert-0" />
           <AvatarFallback className="bg-black text-white font-bold text-2xl uppercase">{name.substring(0, 2)}</AvatarFallback>
         </Avatar>
 

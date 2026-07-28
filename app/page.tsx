@@ -70,7 +70,7 @@ function SpaceHomeContent() {
                 animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
                 exit={{ opacity: 0, y: -25, scale: 0.6, rotate: 30 }}
                 transition={{ type: "spring", stiffness: 350, damping: 22, mass: 1 }}
-                className="absolute inset-0 h-full w-full object-cover bg-black opacity-90"
+                className="absolute inset-0 h-full w-full object-cover bg-black opacity-90 invert dark:invert-0"
               />
             </AnimatePresence>
           </div>
@@ -148,39 +148,7 @@ function SpaceHomeContent() {
 
       <footer className="w-full pb-6 md:pb-10 pt-4 md:pt-6 px-4 md:px-6 flex flex-col items-center justify-center gap-4 md:gap-6 shrink-0">
         <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg">
-          Thank you to <button 
-            type="button" 
-            onClick={() => setShowPioneers(!showPioneers)}
-            onMouseEnter={() => setShowPioneers(true)}
-            onMouseLeave={() => setShowPioneers(false)}
-            onBlur={() => setShowPioneers(false)}
-            className="relative inline-block group cursor-pointer underline decoration-primary underline-offset-4 transition-all text-foreground font-medium outline-none"
-          >
-            everyone
-            <span className={cn(
-              "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max origin-bottom transition-all pointer-events-none z-50 flex flex-col items-start gap-1.5 font-normal",
-              showPioneers ? "opacity-100 scale-100" : "opacity-0 scale-95"
-            )}>
-              {[
-                { name: "Dhirender Choudhary", seed: "Felix" },
-                { name: "Scalar Skeleton", seed: "Aneka" },
-                { name: "Simran Agarwal", seed: "Zoe" },
-                { name: "Yash Raj", seed: "Leo" }
-              ].map((p) => (
-                <div key={p.name} className="flex items-center gap-2">
-                  <Avatar size="sm" className="bg-transparent shrink-0">
-                    <AvatarImage 
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.seed}&backgroundColor=transparent`} 
-                      alt={p.name}
-                      className="object-contain" 
-                    />
-                    <AvatarFallback className="text-[10px]">{p.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium whitespace-nowrap text-xs">{p.name}</span>
-                </div>
-              ))}
-            </span>
-          </button>{" "}who made our v1 journey so special. We can&apos;t wait to share what&apos;s next with you.
+          Welcome to Space v2.
         </p>
 
         <div className="w-full max-w-2xl overflow-hidden flex py-1 [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
@@ -194,7 +162,7 @@ function SpaceHomeContent() {
                 key={`${seed}-${i}`}
                 className="w-12 h-12 shrink-0 rounded-full bg-black flex items-center justify-center overflow-hidden opacity-70 hover:opacity-100 transition-opacity"
               >
-                <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=transparent`} alt="Avatar" className="w-full h-full object-cover opacity-90" />
+                <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=transparent`} alt="Avatar" className="w-full h-full object-cover opacity-90 invert dark:invert-0" />
               </div>
             ))}
           </motion.div>
