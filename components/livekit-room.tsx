@@ -326,7 +326,20 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
   const isSpeaking = useIsSpeaking(participant);
   const isAudioMuted = !participant.isMicrophoneEnabled;
   const name = participant.identity || "Unknown";
-  const avatarSeed = useMemo(() => Math.random().toString(36).substring(2, 9), []);
+  
+  const [avatarSeed, setAvatarSeed] = useState(() => Math.random().toString(36).substring(2, 9));
+
+  useEffect(() => {
+    let count = 0;
+    const interval = setInterval(() => {
+      setAvatarSeed(Math.random().toString(36).substring(2, 9));
+      count++;
+      if (count > 8) {
+        clearInterval(interval);
+      }
+    }, 120);
+    return () => clearInterval(interval);
+  }, []);
 
   const trackRef = useMemo(() => {
     const pub = participant.getTrackPublication(Track.Source.Microphone);
@@ -345,7 +358,7 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
       <div className="relative mb-3">
         <Avatar className="h-20 w-20 border-2 border-border bg-black transition-all">
           <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${avatarSeed}&backgroundColor=transparent`} alt={name} className="object-contain opacity-90 invert dark:invert-0" />
-          <AvatarFallback className="bg-black text-white font-bold text-2xl uppercase">{name.substring(0, 2)}</AvatarFallback>
+          <AvatarFallback className="bg-black" />
         </Avatar>
 
         {reaction && (

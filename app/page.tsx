@@ -106,30 +106,9 @@ function SpaceHomeContent() {
         <div className="w-full max-w-sm">
             <div className="p-6 pb-4 space-y-1.5 flex flex-col items-start">
               <h2 className="text-2xl font-semibold leading-none tracking-tight">Space v2 is Live</h2>
-              <p className="text-sm text-muted-foreground">
-                Experience our brand new enterprise-grade audio architecture.
-              </p>
-              <div className="pt-2 flex items-center gap-2">
-                <Badge variant="secondary" className="font-mono text-xs text-primary border-primary/20 bg-primary/10">
-                  Status: Online
-                </Badge>
-                <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                  </span>
-                </div>
-              </div>
             </div>
 
             <div className="p-6 pt-0 space-y-6">
-              <div className="space-y-3">
-                <h3 className="font-medium text-sm leading-none">Instant Rooms</h3>
-                <p className="text-sm text-muted-foreground">
-                  Jump straight into the conversation. Enjoy ultra-low latency, crystal clear voice channels powered by LiveKit SFU.
-                </p>
-              </div>
-
               <div className="space-y-3">
                 <Input 
                   placeholder="Enter your name..." 
