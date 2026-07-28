@@ -326,19 +326,42 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
   const isAudioMuted = !participant.isMicrophoneEnabled;
   const name = participant.identity || "Unknown";
 
-  const mediaStream = useMemo(() => {
-    const pub = participant.getTrackPublication(Track.Source.Microphone);
-    if (pub && pub.track && pub.track.mediaStreamTrack) {
-      return new MediaStream([pub.track.mediaStreamTrack]);
-    }
-    return null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [participant.audioTrackPublications]);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    const updateStream = () => {
+      const pub = participant.getTrackPublication(Track.Source.Microphone);
+      if (pub && pub.track && pub.track.mediaStreamTrack) {
+        setMediaStream(new MediaStream([pub.track.mediaStreamTrack]));
+      } else {
+        setMediaStream(null);
+      }
+    };
+    
+    updateStream();
+    
+    participant.on('trackSubscribed', updateStream);
+    participant.on('trackUnsubscribed', updateStream);
+    participant.on('localTrackPublished', updateStream);
+    participant.on('localTrackUnpublished', updateStream);
+    participant.on('trackMuted', updateStream);
+    participant.on('trackUnmuted', updateStream);
+    
+    return () => {
+      participant.off('trackSubscribed', updateStream);
+      participant.off('trackUnsubscribed', updateStream);
+      participant.off('localTrackPublished', updateStream);
+      participant.off('localTrackUnpublished', updateStream);
+      participant.off('trackMuted', updateStream);
+      participant.off('trackUnmuted', updateStream);
+    };
+  }, [participant]);
 
   return (
     <div className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out" style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}>
       <div className="relative mb-3">
         <Avatar className="h-20 w-20 border-2 border-border bg-black transition-all">
+          <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=transparent`} alt={name} className="object-contain opacity-90" />
           <AvatarFallback className="bg-black text-white font-bold text-2xl uppercase">{name.substring(0, 2)}</AvatarFallback>
         </Avatar>
 
