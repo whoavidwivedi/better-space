@@ -7,7 +7,8 @@ import {
   useParticipants,
   useLocalParticipant,
   useIsSpeaking,
-  useRoomContext
+  useRoomContext,
+  useTrackVolume
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
 import { 
@@ -326,36 +327,17 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
   const isAudioMuted = !participant.isMicrophoneEnabled;
   const name = participant.identity || "Unknown";
 
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-
-  useEffect(() => {
-    const updateStream = () => {
-      const pub = participant.getTrackPublication(Track.Source.Microphone);
-      if (pub && pub.track && pub.track.mediaStreamTrack) {
-        setMediaStream(new MediaStream([pub.track.mediaStreamTrack]));
-      } else {
-        setMediaStream(null);
-      }
+  const trackRef = useMemo(() => {
+    const pub = participant.getTrackPublication(Track.Source.Microphone);
+    if (!pub) return undefined;
+    return {
+      participant,
+      publication: pub,
+      source: Track.Source.Microphone,
     };
-    
-    updateStream();
-    
-    participant.on('trackSubscribed', updateStream);
-    participant.on('trackUnsubscribed', updateStream);
-    participant.on('localTrackPublished', updateStream);
-    participant.on('localTrackUnpublished', updateStream);
-    participant.on('trackMuted', updateStream);
-    participant.on('trackUnmuted', updateStream);
-    
-    return () => {
-      participant.off('trackSubscribed', updateStream);
-      participant.off('trackUnsubscribed', updateStream);
-      participant.off('localTrackPublished', updateStream);
-      participant.off('localTrackUnpublished', updateStream);
-      participant.off('trackMuted', updateStream);
-      participant.off('trackUnmuted', updateStream);
-    };
-  }, [participant]);
+  }, [participant, participant.audioTrackPublications]);
+  
+  const volume = useTrackVolume(trackRef as any);
 
   return (
     <div className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out" style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}>
@@ -382,7 +364,7 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
         {isAudioMuted ? (
           <div className="h-6 w-full mt-2" />
         ) : (
-          <AudioVisualizer stream={mediaStream} />
+          <AudioVisualizer volume={volume} />
         )}
       </div>
     </div>

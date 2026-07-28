@@ -1,75 +1,37 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-export function AudioVisualizer({ stream }: { stream: MediaStream | null }) {
+export function AudioVisualizer({ volume = 0 }: { volume?: number }) {
   const [volumes, setVolumes] = useState<number[]>([15, 15, 15, 15, 15]);
-  const reqRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!stream || stream.getAudioTracks().length === 0) {
-      setTimeout(() => setVolumes([15, 15, 15, 15, 15]), 0);
+    // If volume is extremely low (silence or noise gate), flatten the bars
+    if (volume < 0.01) {
+      setVolumes([15, 15, 15, 15, 15]);
       return;
     }
-
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     
-    // Resume context if suspended (browser autoplay policy)
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.7;
-
-    let source: MediaStreamAudioSourceNode;
-    try {
-      source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-    } catch (e) {
-      console.warn("Could not create media stream source", e);
-      return;
-    }
-
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-    const update = () => {
-      analyser.getByteFrequencyData(dataArray);
-      
-      const getVol = (index: number) => {
-        const val = dataArray[index];
-        // Visual noise gate: flatten if there's very little sound
-        if (val < 15) return 15;
-        // Boost slightly but keep realistic to realtime sound
-        return Math.min(100, (val / 160) * 100);
-      };
-      
-      setVolumes([
-        getVol(1),
-        getVol(2),
-        getVol(3),
-        getVol(4),
-        getVol(5)
-      ]);
-      reqRef.current = requestAnimationFrame(update);
-    };
-
-    update();
-
-    return () => {
-      cancelAnimationFrame(reqRef.current);
-      source.disconnect();
-      audioCtx.close().catch(() => {});
-    };
-  }, [stream]);
+    // Scale LiveKit's 0-1 volume to a base 0-100 percentage.
+    // We boost it slightly so normal speaking looks dynamic.
+    const base = Math.min(100, volume * 300);
+    
+    // Simulate a 5-band equalizer by adding randomized frequency jitter to the overall volume scalar
+    setVolumes([
+      Math.max(15, Math.min(100, base + (Math.random() * 30 - 15))),
+      Math.max(15, Math.min(100, base + (Math.random() * 40 - 20))),
+      Math.max(15, Math.min(100, base + (Math.random() * 50 - 25))),
+      Math.max(15, Math.min(100, base + (Math.random() * 40 - 20))),
+      Math.max(15, Math.min(100, base + (Math.random() * 30 - 15))),
+    ]);
+  }, [volume]);
 
   return (
     <div className="flex items-center justify-center gap-[2px] h-6 w-full mt-2">
       {volumes.map((vol, i) => (
         <div 
           key={i} 
-          className="w-1 bg-primary rounded-full"
+          className="w-1 bg-primary rounded-full transition-all duration-75 ease-out"
           style={{ height: `${vol}%` }}
         />
       ))}
