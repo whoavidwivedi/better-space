@@ -7,7 +7,6 @@ import {
   useParticipants,
   useLocalParticipant,
   useIsSpeaking,
-  useChat,
   useRoomContext
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
@@ -19,8 +18,6 @@ import {
 } from "hugeicons-react";
 import { Headphones, HeadphoneOff } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Message, MessageAvatar, MessageContent, MessageHeader, MessageGroup } from "@/components/ui/message";
-import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -38,7 +35,6 @@ import { SmilePlus } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
 export function SpaceRoomLiveKit({ roomName, userName, token, onLeave }: { roomName: string, userName: string, token: string, onLeave: () => void }) {
   const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
@@ -52,8 +48,15 @@ export function SpaceRoomLiveKit({ roomName, userName, token, onLeave }: { roomN
       serverUrl={wsUrl}
       token={token}
       connect={true}
-      audio={true}
+      audio={false}
       video={false}
+      options={{
+        audioCaptureDefaults: {
+          autoGainControl: true,
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      }}
       onDisconnected={onLeave}
     >
       <RoomAudioRenderer />
@@ -66,13 +69,10 @@ function RoomUI({ roomName, userName, onLeave }: { roomName: string, userName: s
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
-  const { chatMessages, send: sendChat } = useChat();
   const { theme, setTheme } = useTheme();
 
   const [isDeafened, setIsDeafened] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [chatInput, setChatInput] = useState("");
   
   // Audio Devices
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -204,27 +204,6 @@ function RoomUI({ roomName, userName, onLeave }: { roomName: string, userName: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMuted, isDeafened, theme]);
 
-  const sendChatMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    sendChat(chatInput.trim());
-    setChatInput("");
-  };
-
-  const groupedMessages = useMemo(() => {
-    const groups: { sender: string, isSelf: boolean, timestamp: number, messages: string[] }[] = [];
-    chatMessages.forEach((m) => {
-      const isSelf = m.from?.identity === userName;
-      const sender = m.from?.identity || "Unknown";
-      if (groups.length > 0 && groups[groups.length - 1].sender === sender && (m.timestamp - groups[groups.length - 1].timestamp < 60000)) {
-        groups[groups.length - 1].messages.push(m.message);
-      } else {
-        groups.push({ sender, isSelf, timestamp: m.timestamp, messages: [m.message] });
-      }
-    });
-    return groups;
-  }, [chatMessages, userName]);
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans relative">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-20">
@@ -239,11 +218,11 @@ function RoomUI({ roomName, userName, onLeave }: { roomName: string, userName: s
         <div className="flex items-center gap-2 md:gap-3">
           <div className="hidden md:block">
             <HoverCard>
-              <HoverCardTrigger>
+              <HoverCardTrigger render={
                 <div className="relative border bg-background hover:bg-muted rounded-md h-8 w-8 flex items-center justify-center cursor-help transition-colors text-muted-foreground">
                   <KeyboardIcon className="h-4 w-4" />
                 </div>
-              </HoverCardTrigger>
+              } />
               <HoverCardContent className="w-64 p-4 shadow-2xl rounded-xl z-[100]" sideOffset={10} align="end">
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -297,56 +276,11 @@ function RoomUI({ roomName, userName, onLeave }: { roomName: string, userName: s
           transition={{ type: "spring", bounce: 0, duration: 0.4 }}
           className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] md:bottom-8 left-1/2 bg-background/90 border border-border p-1.5 sm:p-2 md:p-3 rounded-full shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center gap-1.5 sm:gap-2 md:gap-3 z-40 max-w-[95vw] overflow-x-auto no-scrollbar"
         >
-          <Drawer open={showChat} onOpenChange={setShowChat} showSwipeHandle={true}>
-            <DrawerTrigger>
-              <Button variant="outline" className={`relative shrink-0 rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 ${showChat ? "bg-primary/20 text-primary border-primary" : "text-muted-foreground border-border"}`}>
-                <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
-                {chatMessages.length > 0 && !showChat && <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-primary" />}
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent className="h-[80vh] flex flex-col bg-background">
-              <DrawerHeader className="border-b shrink-0 py-4 flex flex-row items-center justify-between">
-                <DrawerTitle className="text-sm font-semibold flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Space Chat</DrawerTitle>
-                <Button variant="ghost" size="icon" onClick={() => setShowChat(false)} className="rounded-full text-muted-foreground hover:text-foreground active:scale-[0.97] transition-all duration-200 ease-out"><ChevronDown className="h-6 w-6" /></Button>
-              </DrawerHeader>
-
-              <div className="flex-1 p-4 space-y-3 overflow-y-auto text-sm min-h-0 mx-auto w-full max-w-3xl">
-                {groupedMessages.length === 0 ? (
-                  <p className="text-center text-xs text-muted-foreground py-10">No messages yet. Say hi!</p>
-                ) : (
-                  groupedMessages.map((group, groupIdx) => (
-                    <MessageGroup key={groupIdx} className={`mb-4 w-full ${group.isSelf ? 'items-end' : 'items-start'}`}>
-                      {!group.isSelf && (
-                        <MessageAvatar>
-                          <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(group.sender)}&backgroundColor=transparent`} />
-                        </MessageAvatar>
-                      )}
-                      <MessageContent>
-                        <MessageHeader className={group.isSelf ? "justify-end text-muted-foreground/60" : ""}>{group.isSelf ? "You" : group.sender}</MessageHeader>
-                        <div className={`flex flex-col gap-1.5 ${group.isSelf ? 'items-end' : 'items-start'}`}>
-                          {group.messages.map((text, j) => (
-                            <Bubble key={j} variant={group.isSelf ? "default" : "muted"}><BubbleContent>{text}</BubbleContent></Bubble>
-                          ))}
-                        </div>
-                      </MessageContent>
-                    </MessageGroup>
-                  ))
-                )}
-              </div>
-
-              <div className="p-4 border-t shrink-0 w-full bg-background">
-                <form onSubmit={sendChatMessage} className="relative flex items-center mx-auto w-full max-w-3xl">
-                  <Input value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type a message..." className="text-sm h-14 pl-5 pr-20 rounded-full bg-muted border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 transition-all" />
-                  <Button type="submit" disabled={!chatInput.trim()} className="absolute right-1.5 h-11 px-5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-200 ease-out active:scale-95 disabled:opacity-50 disabled:bg-muted-foreground">Send</Button>
-                </form>
-              </div>
-            </DrawerContent>
-          </Drawer>
 
           <Dialog>
-            <DialogTrigger>
+            <DialogTrigger render={
               <Button variant="outline" className="shrink-0 rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border"><SettingsIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" /></Button>
-            </DialogTrigger>
+            } />
             <DialogContent className="sm:max-w-md">
               <DialogHeader><DialogTitle>Audio Settings</DialogTitle></DialogHeader>
               <div className="space-y-4 py-4">
@@ -366,9 +300,9 @@ function RoomUI({ roomName, userName, onLeave }: { roomName: string, userName: s
           </Dialog>
 
           <Popover>
-            <PopoverTrigger>
+            <PopoverTrigger render={
               <Button variant="outline" className="shrink-0 rounded-full h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all duration-200 ease-out border-2 border-border"><SmilePlus className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" /></Button>
-            </PopoverTrigger>
+            } />
             <PopoverContent className="w-auto p-0 mb-4 border-none shadow-2xl rounded-xl overflow-hidden origin-bottom animate-in fade-in zoom-in-95 duration-200 ease-out" sideOffset={10}>
               <EmojiPicker onEmojiClick={handleSendReaction} theme={Theme.AUTO} lazyLoadEmojis={true} autoFocusSearch={false} />
             </PopoverContent>
@@ -404,9 +338,8 @@ function ParticipantTile({ participant, index, reaction }: { participant: any, i
   return (
     <div className="flex flex-col items-center justify-center relative group animate-in fade-in zoom-in-95 duration-300 ease-out" style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}>
       <div className="relative mb-3">
-        <Avatar className={`h-20 w-20 border-2 ${isSpeaking ? 'border-primary ring-4 ring-primary ring-offset-4 ring-offset-background' : 'border-border'} bg-white transition-all`}>
-          <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=transparent`} alt={name} className="object-contain" />
-          <AvatarFallback className="bg-muted text-foreground font-bold text-xl">{name.substring(0, 2).toUpperCase()}</AvatarFallback>
+        <Avatar className="h-20 w-20 border-2 border-border bg-black transition-all">
+          <AvatarFallback className="bg-black text-white font-bold text-2xl uppercase">{name.substring(0, 2)}</AvatarFallback>
         </Avatar>
 
         {reaction && (

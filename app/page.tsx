@@ -14,6 +14,7 @@ import { SpaceRoomLiveKit } from "@/components/livekit-room";
 const avatarSeeds = ["Felix", "Aneka", "Jude", "Avery", "Zoe", "Leo", "Mia", "Sam"];
 
 function SpaceHomeContent() {
+  const [randomSeeds, setRandomSeeds] = useState<string[]>(avatarSeeds);
   const [currentSeedIndex, setCurrentSeedIndex] = useState(0);
   const [showPioneers, setShowPioneers] = useState(false);
   const [userName, setUserName] = useState("");
@@ -41,13 +42,14 @@ function SpaceHomeContent() {
   };
 
   useEffect(() => {
+    setRandomSeeds(Array.from({ length: 15 }, () => Math.random().toString(36).substring(2, 9)));
     const interval = setInterval(() => {
-      setCurrentSeedIndex((prev) => (prev + 1) % avatarSeeds.length);
+      setCurrentSeedIndex((prev) => (prev + 1) % 15);
     }, 1200);
     return () => clearInterval(interval);
   }, []);
 
-  const seed = avatarSeeds[currentSeedIndex];
+  const seed = randomSeeds[currentSeedIndex];
 
   if (hasJoined && token) {
     return <SpaceRoomLiveKit roomName="better-space" userName={userName} token={token} onLeave={() => setHasJoined(false)} />;
@@ -60,16 +62,16 @@ function SpaceHomeContent() {
         <div className="flex items-center gap-2.5">
           <div className="relative h-8 w-8 rounded-full overflow-hidden border-2 border-primary bg-white shadow-sm flex items-center justify-center">
             <AnimatePresence mode="popLayout" initial={false}>
-              <motion.img
+              <motion.div
                 key={seed}
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`}
-                alt="Avatar logo"
                 initial={{ opacity: 0, y: 25, scale: 0.6, rotate: -30 }}
                 animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
                 exit={{ opacity: 0, y: -25, scale: 0.6, rotate: 30 }}
                 transition={{ type: "spring", stiffness: 350, damping: 22, mass: 1 }}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+                className="absolute inset-0 h-full w-full bg-black text-white flex items-center justify-center font-bold text-xs uppercase"
+              >
+                {seed.substring(0, 2)}
+              </motion.div>
             </AnimatePresence>
           </div>
           <div className="flex items-center gap-2 text-primary">
@@ -187,13 +189,13 @@ function SpaceHomeContent() {
             animate={{ x: ["0%", "-50%"] }}
             transition={{ ease: "linear", duration: 30, repeat: Infinity }}
           >
-            {[...avatarSeeds, ...avatarSeeds, ...avatarSeeds, ...avatarSeeds].map((seed, i) => (
-              <img 
+            {[...randomSeeds, ...randomSeeds, ...randomSeeds, ...randomSeeds].map((seed, i) => (
+              <div 
                 key={`${seed}-${i}`}
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=transparent`} 
-                alt="Avatar" 
-                className="w-12 h-12 shrink-0 object-contain opacity-70 hover:opacity-100 transition-opacity"
-              />
+                className="w-12 h-12 shrink-0 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm uppercase opacity-70 hover:opacity-100 transition-opacity"
+              >
+                {seed.substring(0, 2)}
+              </div>
             ))}
           </motion.div>
         </div>
