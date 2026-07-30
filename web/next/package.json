@@ -79,7 +79,7 @@
     "defaults"
   ],
   "portless": {
-    "name": "zerostarter",
+    "name": "temp",
     "script": "dev:app"
   }
 }
