@@ -34,7 +34,7 @@
     "input-otp": "catalog:",
     "livekit-client": "catalog:",
     "nanoid": "catalog:",
-    "next": "catalog:",
+    "next": "^16.2.11",
     "next-themes": "catalog:",
     "nuqs": "catalog:",
     "posthog-js": "catalog:",

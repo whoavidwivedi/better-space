@@ -18,6 +18,11 @@ The rule has **no opt-out**, so no pin survives an install, whatever reason is r
 
 ## Active overrides
 
+### `next` → pinned outside catalog
+
+- **Why an override:** Vercel's build environment reads `package.json` to detect the framework version, but its internal heuristics do not yet support Bun's `catalog:` specifier, causing the build to fail with `Error: No Next.js version detected`. We must explicitly opt `next` out of the root catalog and pin its version in `web/next/package.json` so Vercel can parse it.
+- **Exit criteria:** remove this exception from `.github/scripts/deps-manager.ts` and return `next` to the catalog once Vercel adds support for detecting framework versions from Bun catalogs.
+
 ### `postcss` → `^8.5.23`
 
 - **Advisory:** [GHSA-6g55-p6wh-862q](https://github.com/advisories/GHSA-6g55-p6wh-862q) and [GHSA-r28c-9q8g-f849](https://github.com/advisories/GHSA-r28c-9q8g-f849) (high): arbitrary `.map` file read and path traversal via an attacker-controlled `sourceMappingURL` in CSS comments. Affects `postcss <=8.5.11`.

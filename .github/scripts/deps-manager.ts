@@ -28,6 +28,8 @@ const isLocalProtocol = (v: string) =>
   v.startsWith("link:") ||
   v.startsWith("portal:")
 
+const SKIP_CATALOG_DEPS = new Set(["next"])
+
 const PLAIN_VERSION = /^\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
 
 // resolved by something other than a plain semver range: workspace:/npm:/git+ssh:, urls, github owner/repo
@@ -147,7 +149,7 @@ const pickSafeMoves = (catalogKeys: Set<string>, usedVersions: Map<string, Set<s
   const unsafeMissing: string[] = []
 
   for (const [name, versionsSet] of usedVersions.entries()) {
-    if (catalogKeys.has(name)) continue
+    if (catalogKeys.has(name) || SKIP_CATALOG_DEPS.has(name)) continue
 
     const versions = [...versionsSet]
     const nonLocal = versions.filter((v) => !isLocalProtocol(v))
@@ -223,6 +225,7 @@ async function main() {
 
       for (const [name, version] of Object.entries(deps)) {
         if (isLocalProtocol(version)) continue
+        if (SKIP_CATALOG_DEPS.has(name)) continue
         if (!catalogKeys.has(name) && !safeToMove.has(name)) continue
         if (version !== "catalog:") {
           deps[name] = "catalog:"
