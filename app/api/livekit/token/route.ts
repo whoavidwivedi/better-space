@@ -76,6 +76,13 @@ export async function GET(req: NextRequest) {
     } catch {}
   }
 
+  if (targetRoom && targetRoom.numParticipants >= 50 && !isHost) {
+    return NextResponse.json(
+      { error: { message: "This space is full (max 50 participants)." } },
+      { status: 403 },
+    );
+  }
+
   const at = new AccessToken(process.env.LIVEKIT_API_KEY!, process.env.LIVEKIT_API_SECRET!, {
     identity: username,
   });

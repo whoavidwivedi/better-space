@@ -76,7 +76,29 @@ export async function POST(req: NextRequest) {
   const hostSecret = crypto.randomUUID();
 
   try {
-    const existingRooms = await roomService.listRooms([cleanRoom]);
+    const allRooms = await roomService.listRooms();
+    if (allRooms.length >= 5) {
+      return NextResponse.json(
+        { error: { message: "Server is at capacity (max 5 active spaces). Please try again later." } },
+        { status: 429 },
+      );
+    }
+
+    for (const r of allRooms) {
+      if (r.metadata) {
+        try {
+          const meta = JSON.parse(r.metadata)
+          if (meta.host === cleanHost) {
+            return NextResponse.json(
+              { error: { message: `You are already hosting the space "${r.name}". You can only host one space at a time.` } },
+              { status: 403 },
+            );
+          }
+        } catch {}
+      }
+    }
+
+    const existingRooms = allRooms.filter((r) => r.name === cleanRoom);
     if (existingRooms.length > 0) {
       return NextResponse.json(
         { error: { message: "Space already exists. Please join it from the lobby instead." } },
@@ -87,8 +109,9 @@ export async function POST(req: NextRequest) {
 
   await roomService.createRoom({
     name: cleanRoom,
-    emptyTimeout: 300,
-    metadata: JSON.stringify({ host: cleanHost, hostSecret, banned: [] }),
+    emptyTimeout: 43200,
+    maxParticipants: 50,
+    metadata: JSON.stringify({ host: cleanHost, hostSecret, banned: [], cohosts: [] }),
   });
 
   const at = new AccessToken(process.env.LIVEKIT_API_KEY!, process.env.LIVEKIT_API_SECRET!, {

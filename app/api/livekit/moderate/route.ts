@@ -1,4 +1,4 @@
-import { RoomServiceClient } from "livekit-server-sdk";
+import { RoomServiceClient, TokenVerifier } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
 
 function getRoomService() {
@@ -14,14 +14,23 @@ function getRoomService() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { roomName, hostName, targetIdentity, action, hostSecret } = body;
+  const { roomName, targetIdentity, action, token } = body;
 
-  if (!roomName || !hostName || !action || !hostSecret) {
+  if (!roomName || !action || !token) {
     return NextResponse.json({ error: { message: "Missing parameters" } }, { status: 400 });
   }
 
   const cleanRoom = roomName.trim().substring(0, 30);
-  const cleanHost = hostName.trim().substring(0, 30);
+  
+  let identity = "";
+  try {
+    const verifier = new TokenVerifier(process.env.LIVEKIT_API_KEY!, process.env.LIVEKIT_API_SECRET!);
+    const claims = await verifier.verify(token);
+    identity = claims.sub || "";
+    if (!identity) throw new Error("Invalid token identity");
+  } catch (e: any) {
+    return NextResponse.json({ error: { message: "Invalid or expired token" } }, { status: 401 });
+  }
 
   let roomService: RoomServiceClient;
   try {
@@ -31,36 +40,87 @@ export async function POST(req: NextRequest) {
   }
 
   let isHost = false;
+  let isCohost = false;
   let targetRoom: any = null;
+  let meta: any = null;
+  
   try {
     const rooms = await roomService.listRooms([cleanRoom]);
     targetRoom = rooms.length > 0 ? rooms[0] : null;
     if (targetRoom && targetRoom.metadata) {
-      const meta = JSON.parse(targetRoom.metadata);
-      if (meta.host === cleanHost && meta.hostSecret && meta.hostSecret === hostSecret) {
+      meta = JSON.parse(targetRoom.metadata);
+      if (meta.host === identity) {
         isHost = true;
+      }
+      if (meta.cohosts && meta.cohosts.includes(identity)) {
+        isCohost = true;
       }
     }
   } catch {}
 
-  if (!isHost) {
+  if (!isHost && !isCohost) {
     return NextResponse.json(
-      { error: { message: "Only the host can perform this action", details: targetRoom?.metadata } },
+      { error: { message: "Only the host or co-host can perform this action" } },
+      { status: 403 },
+    );
+  }
+
+  if ((action === "grant_cohost" || action === "revoke_cohost") && !isHost) {
+    return NextResponse.json(
+      { error: { message: "Only the main host can manage co-hosts" } },
+      { status: 403 },
+    );
+  }
+
+  if (targetIdentity && meta && targetIdentity === meta.host) {
+    return NextResponse.json(
+      { error: { message: "Cannot perform moderation actions on the host" } },
+      { status: 403 },
+    );
+  }
+
+  if (targetIdentity && meta && meta.cohosts?.includes(targetIdentity) && !isHost) {
+    return NextResponse.json(
+      { error: { message: "Co-hosts cannot moderate other co-hosts" } },
       { status: 403 },
     );
   }
 
   switch (action) {
+    case "grant_cohost":
+      if (!targetIdentity) {
+        return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
+      }
+      if (!meta.cohosts) meta.cohosts = [];
+      if (meta.cohosts.length >= 2 && !meta.cohosts.includes(targetIdentity)) {
+        return NextResponse.json({ error: { message: "Maximum 2 co-hosts allowed" } }, { status: 400 });
+      }
+      if (!meta.cohosts.includes(targetIdentity)) {
+        meta.cohosts.push(targetIdentity);
+        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+      }
+      return NextResponse.json({ data: { success: true } });
+      
+    case "revoke_cohost":
+      if (!targetIdentity) {
+        return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
+      }
+      if (meta.cohosts && meta.cohosts.includes(targetIdentity)) {
+        meta.cohosts = meta.cohosts.filter((id: string) => id !== targetIdentity);
+        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+      }
+      return NextResponse.json({ data: { success: true } });
+
     case "end":
       await roomService.deleteRoom(cleanRoom);
       return NextResponse.json({ data: { success: true } });
+      
     case "kick":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
-      if (targetRoom && targetRoom.metadata) {
+      if (meta) {
         try {
-          const meta = JSON.parse(targetRoom.metadata);
           const banned = meta.banned || [];
           if (!banned.includes(targetIdentity)) {
             banned.push(targetIdentity);
@@ -75,6 +135,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
       }
       return NextResponse.json({ data: { success: true } });
+      
     case "grant_mic":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
@@ -96,6 +157,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
       }
       return NextResponse.json({ data: { success: true } });
+      
     case "revoke_mic":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
@@ -117,6 +179,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
       }
       return NextResponse.json({ data: { success: true } });
+      
     case "mute":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
@@ -132,6 +195,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
       }
       return NextResponse.json({ data: { success: true } });
+      
     default:
       return NextResponse.json({ error: { message: "Invalid action" } }, { status: 400 });
   }

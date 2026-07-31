@@ -2,7 +2,7 @@
 
 import { RiArrowLeftLine } from "@remixicon/react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import React, { useEffect, useState } from "react"
 
 import { Navbar } from "@/components/common/navbar"
@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/toast"
 
 export function SpaceJoin() {
   const params = useParams<{ name: string }>()
+  const router = useRouter()
   const room = (params?.name || "").trim()
 
   const [userName, setUserName] = useState("")
@@ -65,13 +66,7 @@ export function SpaceJoin() {
     }
   }
 
-  useEffect(() => {
-    if (!room) return
-    const saved = localStorage.getItem("space_username")
-    if (saved) {
-      handleJoin(saved)
-    }
-  }, [room])
+
 
   if (hasJoined && token) {
     return (
@@ -83,6 +78,7 @@ export function SpaceJoin() {
         onLeave={() => {
           setHasJoined(false)
           setToken("")
+          router.push("/lobby")
         }}
       />
     )
@@ -107,38 +103,29 @@ export function SpaceJoin() {
             Tell us what to call you, then jump into the conversation.
           </p>
 
-          {!userName ? (
-            <form
-              className="mt-6 space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault()
-                handleJoin(userName)
-              }}
-            >
-              <Field>
-                <FieldLabel htmlFor="join-user-name">Your Name</FieldLabel>
-                <Input
-                  id="join-user-name"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="What should we call you?"
-                  maxLength={15}
-                  autoFocus
-                />
-              </Field>
-              <Button type="submit" className="w-full" disabled={!userName.trim() || isJoining}>
-                {isJoining ? <Spinner className="mr-2" /> : null}
-                Join Space
-              </Button>
-            </form>
-          ) : (
-            <div className="mt-6">
-              <Button className="w-full" onClick={() => handleJoin(userName)} disabled={isJoining}>
-                {isJoining ? <Spinner className="mr-2" /> : null}
-                Join as {userName}
-              </Button>
-            </div>
-          )}
+          <form
+            className="mt-6 space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleJoin(userName)
+            }}
+          >
+            <Field>
+              <FieldLabel htmlFor="join-user-name">Your Name</FieldLabel>
+              <Input
+                id="join-user-name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="What should we call you?"
+                maxLength={15}
+                autoFocus
+              />
+            </Field>
+            <Button type="submit" className="w-full" disabled={!userName.trim() || isJoining}>
+              {isJoining ? <Spinner className="mr-2" /> : null}
+              Join Space
+            </Button>
+          </form>
         </div>
       </main>
     </div>

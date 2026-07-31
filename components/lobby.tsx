@@ -33,15 +33,19 @@ export function Lobby() {
   const [rooms, setRooms] = useState<RoomInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [userName, setUserName] = useState("")
+  const [isJoining, setIsJoining] = useState(false)
+  const [, setTick] = useState(0)
 
   useEffect(() => {
     const saved = localStorage.getItem("space_username")
     if (saved) {
       setUserName(saved)
     }
+
+    const interval = setInterval(() => setTick((t) => t + 1), 1000)
+    return () => clearInterval(interval)
   }, [])
 
-  const [isJoining, setIsJoining] = useState(false)
   const [hasJoined, setHasJoined] = useState(false)
   const [token, setToken] = useState("")
   const [activeRoomName, setActiveRoomName] = useState("")
@@ -220,10 +224,20 @@ export function Lobby() {
                   />
                 </Field>
                 <div className="pt-2">
+                  {userName.trim() && rooms.some((r) => r.host === userName.trim()) && (
+                    <div className="text-destructive text-sm font-medium mb-3">
+                      You are already hosting a space.
+                    </div>
+                  )}
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={!newSpaceName.trim() || !userName.trim() || isJoining}
+                    disabled={
+                      !newSpaceName.trim() || 
+                      !userName.trim() || 
+                      isJoining || 
+                      rooms.some((r) => r.host === userName.trim())
+                    }
                   >
                     {isJoining ? <Spinner className="mr-2" /> : null}
                     Start & Join Space
@@ -252,24 +266,40 @@ export function Lobby() {
           </Empty>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {rooms.map((room) => (
-              <button
-                key={room.name}
-                onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                className="bg-card border-border hover:border-border/80 flex flex-col rounded-xl border p-5 text-left shadow-sm transition-colors"
-              >
-                <div className="mb-6 flex w-full items-start justify-between">
-                  <div className="truncate pr-4">
-                    <h3 className="truncate text-lg font-semibold">{room.name}</h3>
-                    <p className="text-muted-foreground mt-1 text-sm">Host: {room.host}</p>
+            {rooms.map((room) => {
+              const disconnectTimeStr = typeof window !== "undefined" ? localStorage.getItem(`space_host_disconnected_${room.name}`) : null;
+              let timeLeft = 0;
+              if (disconnectTimeStr && room.host === userName) {
+                const disconnectTime = parseInt(disconnectTimeStr, 10);
+                const elapsed = Date.now() - disconnectTime;
+                if (elapsed < 60000) {
+                  timeLeft = Math.ceil((60000 - elapsed) / 1000);
+                }
+              }
+
+              return (
+                <button
+                  key={room.name}
+                  onClick={(e) => onRoomClick(room.name, e.currentTarget)}
+                  className="bg-card border-border hover:border-border/80 flex flex-col rounded-xl border p-5 text-left shadow-sm transition-colors relative overflow-hidden"
+                >
+                  {timeLeft > 0 && (
+                    <div className="absolute top-0 left-0 right-0 bg-warning text-warning-foreground text-[10px] font-bold text-center py-0.5 animate-pulse">
+                      Host disconnected. Rejoin within {timeLeft}s!
+                    </div>
+                  )}
+                  <div className={`mb-6 flex w-full items-start justify-between ${timeLeft > 0 ? 'mt-2' : ''}`}>
+                    <div className="truncate pr-4">
+                      <h3 className="truncate text-lg font-semibold">{room.name}</h3>
+                      <p className="text-muted-foreground mt-1 text-sm">Host: {room.host}</p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="bg-success/10 text-success border-success/20 shrink-0"
+                    >
+                      Live
+                    </Badge>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className="bg-success/10 text-success border-success/20 shrink-0"
-                  >
-                    Live
-                  </Badge>
-                </div>
 
                 <div className="mt-auto flex w-full items-center justify-between">
                   <div className="flex -space-x-2">
@@ -296,9 +326,10 @@ export function Lobby() {
                     {room.numParticipants} {room.numParticipants === 1 ? "speaker" : "speakers"}
                     <RiArrowRightSLine size={16} />
                   </div>
-                </div>
-              </button>
-            ))}
+                  </div>
+                </button>
+              )
+            })}
           </div>
         )}
       </main>

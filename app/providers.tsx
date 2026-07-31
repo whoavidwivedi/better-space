@@ -2,7 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 
-import { NotificationCenter } from "@/components/notification-center"
+import { Toaster } from "@/components/ui/toast"
 
 export function OuterProvider({ children }: { children: React.ReactNode }) {
   return children
@@ -17,7 +17,7 @@ export function InnerProvider({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       {children}
-      <NotificationCenter />
+      <Toaster />
     </NextThemesProvider>
   )
 }
