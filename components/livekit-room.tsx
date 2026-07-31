@@ -692,61 +692,59 @@ function ParticipantTile({
     }
   }
 
+  const avatarElement = (
+    <div
+      className={`rounded-full transition-shadow ${canPublish && isSpeaking ? "ring-primary ring-offset-background ring-2 ring-offset-2" : ""}`}
+    >
+      <Avatar className="border-border bg-muted size-16 border-2">
+        <AvatarImage
+          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${avatarSeed}&backgroundColor=ffffff`}
+          alt={name}
+          className="object-contain"
+        />
+        <AvatarFallback />
+      </Avatar>
+    </div>
+  )
+
   return (
     <div className="relative flex w-full flex-col items-center">
       <div className="relative">
-        {isHost && name !== localUserName && (
-          <div className="absolute -top-1 -right-1 z-20">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="outline" size="icon" className="size-8 rounded-full shadow-sm">
-                    <RiMoreFill size={14} />
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="start" side="top">
-                {!canPublish && (
-                  <DropdownMenuItem
-                    onSelect={() => handleModerate("grant_mic")}
-                    className="text-success"
-                  >
-                    Grant Mic
-                  </DropdownMenuItem>
-                )}
-                {canPublish && (
-                  <DropdownMenuItem onSelect={() => handleModerate("revoke_mic")}>
-                    Revoke Mic
-                  </DropdownMenuItem>
-                )}
-                {canPublish && (
-                  <DropdownMenuItem onSelect={() => handleModerate("mute")}>
-                    Mute Participant
-                  </DropdownMenuItem>
-                )}
+        {isHost && name !== localUserName ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none cursor-pointer rounded-full hover:opacity-80 transition-opacity">
+              {avatarElement}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" side="top">
+              {!canPublish && (
                 <DropdownMenuItem
-                  onSelect={() => handleModerate("kick")}
-                  className="text-destructive"
+                  onSelect={() => handleModerate("grant_mic")}
+                  className="text-success focus:bg-success/10 focus:text-success"
                 >
-                  Kick from Space
+                  Grant Mic
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              )}
+              {canPublish && (
+                <DropdownMenuItem onSelect={() => handleModerate("revoke_mic")}>
+                  Revoke Mic
+                </DropdownMenuItem>
+              )}
+              {canPublish && (
+                <DropdownMenuItem onSelect={() => handleModerate("mute")}>
+                  Mute Participant
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onSelect={() => handleModerate("kick")}
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+              >
+                Kick from Space
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          avatarElement
         )}
-
-        <div
-          className={`rounded-full transition-shadow ${canPublish && isSpeaking ? "ring-primary ring-offset-background ring-2 ring-offset-2" : ""}`}
-        >
-          <Avatar className="border-border bg-muted size-16 border-2">
-            <AvatarImage
-              src={`https://api.dicebear.com/7.x/notionists/svg?seed=${avatarSeed}&backgroundColor=ffffff`}
-              alt={name}
-              className="object-contain"
-            />
-            <AvatarFallback />
-          </Avatar>
-        </div>
 
         {reaction && (
           <div className="bg-background border-border absolute -top-2 -right-2 z-10 flex size-8 items-center justify-center rounded-full border text-lg shadow-sm">

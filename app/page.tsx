@@ -130,29 +130,6 @@ const STEPS = [
   },
 ]
 
-const TESTIMONIALS = [
-  {
-    quote:
-      "My design team runs critique every week in Better Space. No invites, no accounts, we just send a link and talk.",
-    name: "Priya Nair",
-    role: "Product designer",
-    seed: "priya",
-  },
-  {
-    quote:
-      "The host controls are what win it. Granting the mic from a tap keeps open stages productive instead of chaotic.",
-    name: "Marcus Turner",
-    role: "Community lead",
-    seed: "marcus",
-  },
-  {
-    quote:
-      "We replaced three different tools when we moved our community calls here. It just works in a browser tab.",
-    name: "Jin Lee",
-    role: "Indie maker",
-    seed: "jin",
-  },
-]
 
 const FAQS = [
   {
@@ -535,46 +512,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section
-          aria-labelledby="testimonials-heading"
-          id="testimonials"
-          className="px-4 py-24 md:px-6"
-        >
-          <div className="mx-auto w-full max-w-4xl">
-            <SectionHeading
-              eyebrow="Testimonials"
-              id="testimonials-heading"
-              title="Loved by teams that skip the signup"
-            />
-
-            <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {TESTIMONIALS.map((testimonial) => (
-                <figure
-                  key={testimonial.name}
-                  className="bg-card border-border rounded-xl border p-5"
-                >
-                  <blockquote className="text-sm leading-relaxed">
-                    &ldquo;{testimonial.quote}&rdquo;
-                  </blockquote>
-                  <figcaption className="mt-4 flex items-center gap-3">
-                    <Avatar className="border-border bg-muted size-9 border">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/7.x/notionists/svg?seed=${testimonial.seed}&backgroundColor=ffffff`}
-                        alt=""
-                        className="object-contain"
-                      />
-                      <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-semibold">{testimonial.name}</p>
-                      <p className="text-muted-foreground text-xs">{testimonial.role}</p>
-                    </div>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <section
           aria-labelledby="faq-heading"

@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   let isHost = false;
   let targetRoom: any = null;
   try {
-    const rooms = await roomService.listRooms();
-    targetRoom = rooms.find((r) => r.name === roomName);
+    const rooms = await roomService.listRooms([roomName]);
+    targetRoom = rooms.length > 0 ? rooms[0] : null;
     if (targetRoom && targetRoom.metadata) {
       const meta = JSON.parse(targetRoom.metadata);
       if (meta.host === hostName && meta.hostSecret && meta.hostSecret === hostSecret) {
@@ -66,33 +66,49 @@ export async function POST(req: NextRequest) {
           }
         } catch {}
       }
-      await roomService.removeParticipant(roomName, targetIdentity);
+      try {
+        await roomService.removeParticipant(roomName, targetIdentity);
+      } catch (e: any) {
+        return NextResponse.json({ error: { message: e.message } }, { status: 500 });
+      }
       return NextResponse.json({ data: { success: true } });
     case "grant_mic":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
-      await roomService.updateParticipant(roomName, targetIdentity, {
-        permission: { canPublish: true, canSubscribe: true, canPublishData: true },
-      });
+      try {
+        await roomService.updateParticipant(roomName, targetIdentity, {
+          permission: { canPublish: true, canSubscribe: true, canPublishData: true },
+        });
+      } catch (e: any) {
+        return NextResponse.json({ error: { message: e.message } }, { status: 500 });
+      }
       return NextResponse.json({ data: { success: true } });
     case "revoke_mic":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
-      await roomService.updateParticipant(roomName, targetIdentity, {
-        permission: { canPublish: false, canSubscribe: true, canPublishData: true },
-      });
+      try {
+        await roomService.updateParticipant(roomName, targetIdentity, {
+          permission: { canPublish: false, canSubscribe: true, canPublishData: true },
+        });
+      } catch (e: any) {
+        return NextResponse.json({ error: { message: e.message } }, { status: 500 });
+      }
       return NextResponse.json({ data: { success: true } });
     case "mute":
       if (!targetIdentity) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
-      const participant = await roomService.getParticipant(roomName, targetIdentity);
-      for (const track of participant.tracks) {
-        if (track.source === 2) {
-          await roomService.mutePublishedTrack(roomName, targetIdentity, track.sid, true);
+      try {
+        const participant = await roomService.getParticipant(roomName, targetIdentity);
+        for (const track of participant.tracks) {
+          if (track.source === 2) {
+            await roomService.mutePublishedTrack(roomName, targetIdentity, track.sid, true);
+          }
         }
+      } catch (e: any) {
+        return NextResponse.json({ error: { message: e.message } }, { status: 500 });
       }
       return NextResponse.json({ data: { success: true } });
     default:

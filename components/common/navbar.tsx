@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ModeToggle } from "@/components/common/mode-toggle"
 import { cn, isActive } from "@/lib/utils"
 
 type NavLink = { href: string; label: string; external?: boolean }
@@ -206,6 +207,12 @@ export function Navbar({ links = DEFAULT_LINKS }: { links?: NavLink[] }) {
                     </Link>
                   ),
                 )}
+              </div>
+              <div className="border-border mt-2 flex items-center justify-between border-t px-3 pb-1 pt-2">
+                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Theme
+                </span>
+                <ModeToggle />
               </div>
             </PopoverContent>
           </Popover>
