@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   if (!isHost) {
     return NextResponse.json(
-      { error: { message: "Only the host can perform this action" } },
+      { error: { message: "Only the host can perform this action", details: targetRoom?.metadata } },
       { status: 403 },
     );
   }

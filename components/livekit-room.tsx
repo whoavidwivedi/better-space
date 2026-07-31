@@ -9,6 +9,7 @@ import {
   useRoomContext,
   useTrackVolume,
   useParticipantPermissions,
+  useRoomInfo,
 } from "@livekit/components-react"
 import {
   RiMicLine,
@@ -26,7 +27,7 @@ import {
 import { EmojiClickData, Theme } from "emoji-picker-react"
 import EmojiPicker from "emoji-picker-react"
 import { RoomEvent, Track } from "livekit-client"
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { ModeToggle } from "@/components/common/mode-toggle"
@@ -37,6 +38,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -119,6 +121,7 @@ function RoomUI({
   const room = useRoomContext()
   const { localParticipant } = useLocalParticipant()
   const participants = useParticipants()
+  const { metadata } = useRoomInfo()
 
   const [isDeafened, setIsDeafened] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -129,29 +132,33 @@ function RoomUI({
 
   const isMuted = !localParticipant.isMicrophoneEnabled
 
-  const [roomHost, setRoomHost] = useState("")
+  const canPublish = localParticipant.permissions?.canPublish
+  const prevCanPublish = useRef(canPublish)
 
   useEffect(() => {
-    const parseHost = (metadata?: string) => {
-      try {
-        if (metadata) {
-          const meta = JSON.parse(metadata)
-          setRoomHost(meta.host || "")
-        }
-      } catch {}
+    if (prevCanPublish.current === undefined) {
+      prevCanPublish.current = canPublish
+      return
     }
 
-    parseHost(room.metadata)
-
-    const handleMetadataChanged = (metadata: string) => {
-      parseHost(metadata)
+    if (canPublish && !prevCanPublish.current) {
+      toast.add({ title: "Host granted you the microphone!", type: "success" })
+      localParticipant.setMicrophoneEnabled(true).catch(() => {
+        toast.add({ title: "Could not automatically enable microphone.", type: "error" })
+      })
+    } else if (!canPublish && prevCanPublish.current) {
+      toast.add({ title: "Host revoked your microphone access.", type: "error" })
     }
+    prevCanPublish.current = canPublish
+  }, [canPublish, localParticipant])
 
-    room.on(RoomEvent.RoomMetadataChanged, handleMetadataChanged)
-    return () => {
-      room.off(RoomEvent.RoomMetadataChanged, handleMetadataChanged)
+  let roomHost = ""
+  try {
+    if (metadata) {
+      const meta = JSON.parse(metadata)
+      roomHost = meta.host || ""
     }
-  }, [room])
+  } catch {}
 
   const isHost = localParticipant.identity === roomHost
 
@@ -218,33 +225,14 @@ function RoomUI({
       } catch {}
     }
 
-    const handlePermissionsChanged = (prevPermissions: any, participant: any) => {
-      setPermUpdate(prev => prev + 1)
-      if (participant.identity === localParticipant.identity) {
-        const canPublishNow = participant.permissions?.canPublish
-        const couldPublishBefore = prevPermissions?.canPublish
-        if (canPublishNow && !couldPublishBefore) {
-          toast.add({ title: "Host granted you the microphone!", type: "success" })
-          localParticipant.setMicrophoneEnabled(true).catch(() => {
-            toast.add({ title: "Could not automatically enable microphone.", type: "error" })
-          })
-        }
-        if (!canPublishNow && couldPublishBefore) {
-          toast.add({ title: "Host revoked your microphone access.", type: "error" })
-        }
-      }
-    }
-
     const handleDisconnected = () => {
       onLeave()
     }
 
     room.on(RoomEvent.DataReceived, handleData)
-    room.on(RoomEvent.ParticipantPermissionsChanged, handlePermissionsChanged)
     room.on(RoomEvent.Disconnected, handleDisconnected)
     return () => {
       room.off(RoomEvent.DataReceived, handleData)
-      room.off(RoomEvent.ParticipantPermissionsChanged, handlePermissionsChanged)
       room.off(RoomEvent.Disconnected, handleDisconnected)
     }
   }, [room, isHost, localParticipant, onLeave])
@@ -735,24 +723,23 @@ function ParticipantTile({
             <DropdownMenuContent align="center" side="top">
               {!canPublish && (
                 <DropdownMenuItem
-                  onSelect={() => handleModerate("grant_mic")}
+                  onClick={() => handleModerate("grant_mic")}
                   className="text-success focus:bg-success/10 focus:text-success"
                 >
                   Grant Mic
                 </DropdownMenuItem>
               )}
               {canPublish && (
-                <DropdownMenuItem onSelect={() => handleModerate("revoke_mic")}>
+                <DropdownMenuItem onClick={() => handleModerate("revoke_mic")}>
                   Revoke Mic
                 </DropdownMenuItem>
               )}
-              {canPublish && (
-                <DropdownMenuItem onSelect={() => handleModerate("mute")}>
-                  Mute Participant
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={() => handleModerate("mute")}>
+                Mute Microphone
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={() => handleModerate("kick")}
+                onClick={() => handleModerate("kick")}
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
               >
                 Kick from Space

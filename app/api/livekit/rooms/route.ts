@@ -75,6 +75,16 @@ export async function POST(req: NextRequest) {
 
   const hostSecret = crypto.randomUUID();
 
+  try {
+    const existingRooms = await roomService.listRooms([cleanRoom]);
+    if (existingRooms.length > 0) {
+      return NextResponse.json(
+        { error: { message: "Space already exists. Please join it from the lobby instead." } },
+        { status: 400 },
+      );
+    }
+  } catch {}
+
   await roomService.createRoom({
     name: cleanRoom,
     emptyTimeout: 300,
