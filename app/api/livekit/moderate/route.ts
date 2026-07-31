@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: { message: "Missing parameters" } }, { status: 400 });
   }
 
+  const cleanRoom = roomName.trim().substring(0, 30);
+  const cleanHost = hostName.trim().substring(0, 30);
+
   let roomService: RoomServiceClient;
   try {
     roomService = getRoomService();
@@ -30,11 +33,11 @@ export async function POST(req: NextRequest) {
   let isHost = false;
   let targetRoom: any = null;
   try {
-    const rooms = await roomService.listRooms([roomName]);
+    const rooms = await roomService.listRooms([cleanRoom]);
     targetRoom = rooms.length > 0 ? rooms[0] : null;
     if (targetRoom && targetRoom.metadata) {
       const meta = JSON.parse(targetRoom.metadata);
-      if (meta.host === hostName && meta.hostSecret && meta.hostSecret === hostSecret) {
+      if (meta.host === cleanHost && meta.hostSecret && meta.hostSecret === hostSecret) {
         isHost = true;
       }
     }
@@ -49,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   switch (action) {
     case "end":
-      await roomService.deleteRoom(roomName);
+      await roomService.deleteRoom(cleanRoom);
       return NextResponse.json({ data: { success: true } });
     case "kick":
       if (!targetIdentity) {
@@ -62,12 +65,12 @@ export async function POST(req: NextRequest) {
           if (!banned.includes(targetIdentity)) {
             banned.push(targetIdentity);
             meta.banned = banned;
-            await roomService.updateRoomMetadata(roomName, JSON.stringify(meta));
+            await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
           }
         } catch {}
       }
       try {
-        await roomService.removeParticipant(roomName, targetIdentity);
+        await roomService.removeParticipant(cleanRoom, targetIdentity);
       } catch (e: any) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
       }
@@ -77,8 +80,17 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
       try {
-        await roomService.updateParticipant(roomName, targetIdentity, {
-          permission: { canPublish: true, canSubscribe: true, canPublishData: true },
+        const participant = await roomService.getParticipant(cleanRoom, targetIdentity);
+        await roomService.updateParticipant(cleanRoom, targetIdentity, {
+          metadata: participant.metadata,
+          permission: { 
+            canPublish: true, 
+            canSubscribe: participant.permission?.canSubscribe ?? true, 
+            canPublishData: participant.permission?.canPublishData ?? true,
+            canUpdateOwnMetadata: participant.permission?.canUpdateOwnMetadata ?? false,
+            hidden: participant.permission?.hidden ?? false,
+            recorder: participant.permission?.recorder ?? false,
+          },
         });
       } catch (e: any) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
@@ -89,8 +101,17 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
       try {
-        await roomService.updateParticipant(roomName, targetIdentity, {
-          permission: { canPublish: false, canSubscribe: true, canPublishData: true },
+        const participant = await roomService.getParticipant(cleanRoom, targetIdentity);
+        await roomService.updateParticipant(cleanRoom, targetIdentity, {
+          metadata: participant.metadata,
+          permission: { 
+            canPublish: false, 
+            canSubscribe: participant.permission?.canSubscribe ?? true, 
+            canPublishData: participant.permission?.canPublishData ?? true,
+            canUpdateOwnMetadata: participant.permission?.canUpdateOwnMetadata ?? false,
+            hidden: participant.permission?.hidden ?? false,
+            recorder: participant.permission?.recorder ?? false,
+          },
         });
       } catch (e: any) {
         return NextResponse.json({ error: { message: e.message } }, { status: 500 });
@@ -101,10 +122,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 });
       }
       try {
-        const participant = await roomService.getParticipant(roomName, targetIdentity);
+        const participant = await roomService.getParticipant(cleanRoom, targetIdentity);
         for (const track of participant.tracks) {
           if (track.source === 2) {
-            await roomService.mutePublishedTrack(roomName, targetIdentity, track.sid, true);
+            await roomService.mutePublishedTrack(cleanRoom, targetIdentity, track.sid, true);
           }
         }
       } catch (e: any) {

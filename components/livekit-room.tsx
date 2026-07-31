@@ -129,13 +129,30 @@ function RoomUI({
 
   const isMuted = !localParticipant.isMicrophoneEnabled
 
-  let roomHost = ""
-  try {
-    if (room.metadata) {
-      const meta = JSON.parse(room.metadata)
-      roomHost = meta.host || ""
+  const [roomHost, setRoomHost] = useState("")
+
+  useEffect(() => {
+    const parseHost = (metadata?: string) => {
+      try {
+        if (metadata) {
+          const meta = JSON.parse(metadata)
+          setRoomHost(meta.host || "")
+        }
+      } catch {}
     }
-  } catch {}
+
+    parseHost(room.metadata)
+
+    const handleMetadataChanged = (metadata: string) => {
+      parseHost(metadata)
+    }
+
+    room.on(RoomEvent.RoomMetadataChanged, handleMetadataChanged)
+    return () => {
+      room.off(RoomEvent.RoomMetadataChanged, handleMetadataChanged)
+    }
+  }, [room])
+
   const isHost = localParticipant.identity === roomHost
 
   const sortedParticipants = [...participants].sort((a, b) => {

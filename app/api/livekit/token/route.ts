@@ -68,6 +68,12 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch {}
+  } else if (hostSecret) {
+    isHost = true;
+    try {
+      const meta = { host: username, hostSecret, banned: [] };
+      await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+    } catch {}
   }
 
   const at = new AccessToken(process.env.LIVEKIT_API_KEY!, process.env.LIVEKIT_API_SECRET!, {
