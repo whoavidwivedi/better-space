@@ -8,6 +8,7 @@ import {
   useIsSpeaking,
   useRoomContext,
   useTrackVolume,
+  useParticipantPermissions,
 } from "@livekit/components-react"
 import {
   RiMicLine,
@@ -121,6 +122,7 @@ function RoomUI({
 
   const [isDeafened, setIsDeafened] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [permUpdate, setPermUpdate] = useState(0)
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedMicId, setSelectedMicId] = useState<string>("default")
@@ -200,6 +202,7 @@ function RoomUI({
     }
 
     const handlePermissionsChanged = (prevPermissions: any, participant: any) => {
+      setPermUpdate(prev => prev + 1)
       if (participant.identity === localParticipant.identity) {
         const canPublishNow = participant.permissions?.canPublish
         const couldPublishBefore = prevPermissions?.canPublish
@@ -215,13 +218,19 @@ function RoomUI({
       }
     }
 
+    const handleDisconnected = () => {
+      onLeave()
+    }
+
     room.on(RoomEvent.DataReceived, handleData)
     room.on(RoomEvent.ParticipantPermissionsChanged, handlePermissionsChanged)
+    room.on(RoomEvent.Disconnected, handleDisconnected)
     return () => {
       room.off(RoomEvent.DataReceived, handleData)
       room.off(RoomEvent.ParticipantPermissionsChanged, handlePermissionsChanged)
+      room.off(RoomEvent.Disconnected, handleDisconnected)
     }
-  }, [room, isHost, localParticipant])
+  }, [room, isHost, localParticipant, onLeave])
 
   const handleSendReaction = (emojiObject: EmojiClickData) => {
     const emoji = emojiObject.emoji
@@ -628,7 +637,8 @@ function ParticipantTile({
   const isSpeaking = useIsSpeaking(participant)
   const isAudioMuted = !participant.isMicrophoneEnabled
   const name = participant.identity || "Unknown"
-  const canPublish = participant.permissions?.canPublish ?? false
+  const permissions = useParticipantPermissions({ participant })
+  const canPublish = permissions?.canPublish ?? false
 
   const [avatarSeed, setAvatarSeed] = useState(() => Math.random().toString(36).substring(2, 9))
 
