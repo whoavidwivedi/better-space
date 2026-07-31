@@ -4,8 +4,15 @@ import { RiMoonLine, RiSunLine } from "@remixicon/react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-export function ModeToggle() {
+export function ModeToggle({
+  className,
+  variant = "outline",
+}: {
+  className?: string
+  variant?: React.ComponentProps<typeof Button>["variant"]
+}) {
   const { theme, setTheme } = useTheme()
 
   const smartToggle = () => {
@@ -25,11 +32,11 @@ export function ModeToggle() {
 
   return (
     <Button
-      className="size-8 [&_svg]:size-4!"
+      className={cn("size-8 [&_svg]:size-4!", className)}
       onClick={smartToggle}
       aria-label="Switch between system/light/dark version"
       size="sm"
-      variant="outline"
+      variant={variant}
     >
       <RiSunLine className="dark:hidden" aria-hidden="true" />
       <RiMoonLine className="hidden dark:block" aria-hidden="true" />

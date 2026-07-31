@@ -2,10 +2,9 @@ import { existsSync } from "node:fs"
 import { join } from "node:path"
 
 import { site } from "@packages/config/site"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 
 import { InnerProvider, OuterProvider } from "@/app/providers"
-import { Navbar } from "@/components/common/navbar"
 import { config } from "@/lib/config"
 import { dmSans, jetbrainsMono } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
@@ -19,6 +18,11 @@ function getOgImageUrl(): string {
     return `${config.app.url}/og/home.png?t=${Date.now()}`
   }
   return `${config.app.url}/og/home?t=${Date.now()}`
+}
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 }
 
 const ogImageUrl = getOgImageUrl()
@@ -64,10 +68,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <body className="min-h-svh">
-          <InnerProvider>
-            <Navbar />
-            {children}
-          </InnerProvider>
+          <InnerProvider>{children}</InnerProvider>
         </body>
       </html>
     </OuterProvider>

@@ -20,6 +20,7 @@ const CHECKBOX = `${UI}/checkbox.tsx`
 const SPINNER = `${UI}/spinner.tsx`
 const SIDEBAR = `${UI}/sidebar.tsx`
 const GLOBALS = "web/next/src/app/globals.css"
+const LAYOUT = "web/next/src/app/layout.tsx"
 
 // init/add re-scaffold these with shadcn defaults we keep none of: a next/font/google layout, a
 // stripped utils.ts, and catalog->pinned dep drift in package.json/bun.lock. Reset to HEAD.
@@ -64,6 +65,7 @@ function patchButton() {
     const spread = el.getAttributes().findIndex((a) => Node.isJsxSpreadAttribute(a))
     el.insertAttributes(spread === -1 ? el.getAttributes().length : spread, add)
   }
+
   sf.saveSync()
   log(`patched: ${BUTTON}`)
 }
@@ -200,8 +202,66 @@ function patchGlobals() {
   log(`patched: ${GLOBALS}`)
 }
 
+// layout.tsx: per-page Navbar ownership (no global <Navbar /> in the root layout) plus the
+// mobile viewport export (viewportFit for iOS safe-area support). init re-scaffolds the layout, so
+// re-assert both after every restore.
+function patchLayout() {
+  const sf = project.addSourceFileAtPath(LAYOUT)
+
+  const navbarImport = sf.getImportDeclaration((d) =>
+    d.getModuleSpecifierValue().endsWith("/navbar"),
+  )
+  if (navbarImport) navbarImport.remove()
+
+  const navbarEl = sf
+    .getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement)
+    .find((el) => el.getTagNameNode().getText() === "Navbar")
+  if (navbarEl) navbarEl.replaceWithText("")
+
+  const vpExport = sf.getVariableStatement((s) => {
+    const decls = s.getDeclarations()
+    return decls.length === 1 && decls[0].getName() === "viewport"
+  })
+  if (!vpExport) {
+    const metadata = sf.getVariableStatement((s) => {
+      const decls = s.getDeclarations()
+      return decls.length === 1 && decls[0].getName() === "metadata"
+    })
+    if (!metadata)
+      throw new Error("shadcn-customize: `metadata` export not found in layout.tsx; shape changed")
+    const index = sf.getStatements().findIndex((st) => st === metadata)
+    sf.insertStatements(
+      index,
+      'export const viewport: Viewport = {\n  width: "device-width",\n  initialScale: 1,\n  viewportFit: "cover",\n}\n',
+    )
+  }
+
+  const vpImport = sf.getImportDeclaration((d) =>
+    d.getNamedImports().some((n) => n.getName() === "Viewport"),
+  )
+  if (!vpImport) {
+    const metaImport = sf.getImportDeclaration(
+      (d) =>
+        d.getModuleSpecifierValue() === "next" &&
+        d.getNamedImports().some((n) => n.getName() === "Metadata"),
+    )
+    if (!metaImport)
+      throw new Error(
+        'shadcn-customize: `Metadata` type import from "next" not found in layout.tsx; shape changed',
+      )
+    // Match the statement's existing syntax: `import type` must stay bare (no `type` prefix on
+    // the named import), a plain import gets a `type`-prefixed named import.
+    const isTypeOnlyImport = metaImport.isTypeOnly()
+    metaImport.addNamedImport({ name: "Viewport", isTypeOnly: !isTypeOnlyImport })
+  }
+
+  sf.saveSync()
+  log(`patched: ${LAYOUT}`)
+}
+
 patchButton()
 patchCheckbox()
 patchSpinner()
 patchSidebar()
 patchGlobals()
+patchLayout()

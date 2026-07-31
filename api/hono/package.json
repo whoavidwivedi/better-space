@@ -20,9 +20,7 @@
     "@arcjet/ip": "catalog:",
     "@hono/node-server": "catalog:",
     "@hono/standard-validator": "catalog:",
-    "@packages/auth": "workspace:*",
     "@packages/config": "workspace:*",
-    "@packages/db": "workspace:*",
     "@packages/env": "workspace:*",
     "@scalar/hono-api-reference": "catalog:",
     "better-auth": "catalog:",
@@ -30,6 +28,7 @@
     "hono": "catalog:",
     "hono-openapi": "catalog:",
     "hono-rate-limiter": "catalog:",
+    "livekit-server-sdk": "catalog:",
     "ws": "catalog:",
     "zod": "catalog:"
   },

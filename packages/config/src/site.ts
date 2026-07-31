@@ -1,8 +1,8 @@
 // Brand identity for this app: the single source a fork edits to rebrand. web reads it via lib/config.ts.
 export const site = {
-  name: "Temp",
-  description: "Temp is just getting started. Tell its story here.",
-  tagline: "Your tagline, ready when you are.",
+  name: "Better Space",
+  description: "Live audio rooms in your browser. Pick a name, no signup, and talk.",
+  tagline: "Real-time voice. Zero accounts.",
   social: {
     github: "",
     x: "",
