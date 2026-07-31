@@ -479,6 +479,7 @@ function RoomUI({
                   roomHost={roomHost}
                   roomName={roomName}
                   localUserName={userName}
+                  hostSecret={hostSecret}
                   hasRequestedMic={micRequests.includes(participant.identity)}
                   onClearRequest={() =>
                     setMicRequests((prev) => prev.filter((id) => id !== participant.identity))
@@ -683,47 +684,47 @@ function ParticipantTile({
 
   return (
     <div className="relative flex w-full flex-col items-center">
-      {isHost && name !== localUserName && (
-        <div className="absolute top-2 right-2 z-20">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline" size="icon" className="size-8 rounded-lg shadow-sm">
-                  <RiMoreFill size={14} />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="start">
-              {!canPublish && (
-                <DropdownMenuItem
-                  onSelect={() => handleModerate("grant_mic")}
-                  className="text-success"
-                >
-                  Grant Mic
-                </DropdownMenuItem>
-              )}
-              {canPublish && (
-                <DropdownMenuItem onSelect={() => handleModerate("revoke_mic")}>
-                  Revoke Mic
-                </DropdownMenuItem>
-              )}
-              {canPublish && (
-                <DropdownMenuItem onSelect={() => handleModerate("mute")}>
-                  Mute Participant
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onSelect={() => handleModerate("kick")}
-                className="text-destructive"
-              >
-                Kick from Space
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
-
       <div className="relative">
+        {isHost && name !== localUserName && (
+          <div className="absolute -top-1 -right-1 z-20">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="icon" className="size-8 rounded-full shadow-sm">
+                    <RiMoreFill size={14} />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="start" side="top">
+                {!canPublish && (
+                  <DropdownMenuItem
+                    onSelect={() => handleModerate("grant_mic")}
+                    className="text-success"
+                  >
+                    Grant Mic
+                  </DropdownMenuItem>
+                )}
+                {canPublish && (
+                  <DropdownMenuItem onSelect={() => handleModerate("revoke_mic")}>
+                    Revoke Mic
+                  </DropdownMenuItem>
+                )}
+                {canPublish && (
+                  <DropdownMenuItem onSelect={() => handleModerate("mute")}>
+                    Mute Participant
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onSelect={() => handleModerate("kick")}
+                  className="text-destructive"
+                >
+                  Kick from Space
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
         <div
           className={`rounded-full transition-shadow ${canPublish && isSpeaking ? "ring-primary ring-offset-background ring-2 ring-offset-2" : ""}`}
         >
