@@ -37,6 +37,7 @@
     "globby": "catalog:",
     "lefthook": "catalog:",
     "lint-staged": "catalog:",
+    "next": "^16.2.11",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "portless": "catalog:",
