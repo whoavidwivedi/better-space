@@ -205,7 +205,7 @@ function RoomUI({
       await fetch("/api/livekit/moderate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomName, targetIdentity: userName, token, action: "end" }),
+        body: JSON.stringify({ roomName, token, action: "end" }),
       })
     } catch {
       toast.add({ title: "Failed to end space", type: "error" })
@@ -313,7 +313,7 @@ function RoomUI({
           fetch("/api/livekit/moderate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomName: deps.roomName, targetIdentity: deps.userName, token: deps.token, action: "end" }),
+            body: JSON.stringify({ roomName: deps.roomName, token: deps.token, action: "end" }),
           }).catch(() => {})
         } else {
           deps.onLeave()
