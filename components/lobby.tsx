@@ -34,13 +34,6 @@ export function Lobby() {
   const [isLoading, setIsLoading] = useState(true)
   const [userName, setUserName] = useState("")
   const [isJoining, setIsJoining] = useState(false)
-  const [, setTick] = useState(0)
-
-  useEffect(() => {
-
-    const interval = setInterval(() => setTick((t) => t + 1), 1000)
-    return () => clearInterval(interval)
-  }, [])
 
   const [hasJoined, setHasJoined] = useState(false)
   const [token, setToken] = useState("")
@@ -69,8 +62,21 @@ export function Lobby() {
 
   useEffect(() => {
     fetchRooms()
-    const interval = setInterval(fetchRooms, 5000)
-    return () => clearInterval(interval)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchRooms()
+      }
+    }
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchRooms()
+      }
+    }, 5000)
+    document.addEventListener("visibilitychange", handleVisibility)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", handleVisibility)
+    }
   }, [])
 
   const handleJoin = async (room: string) => {

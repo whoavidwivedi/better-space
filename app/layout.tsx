@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next"
 
-import { InnerProvider, OuterProvider } from "@/app/providers"
-import { config } from "@/lib/config"
+import { Providers } from "@/app/providers"
 import { dmSans, jetbrainsMono } from "@/lib/fonts"
 import { site } from "@/lib/site"
 import { cn } from "@/lib/utils"
@@ -23,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: site.name,
-    url: config.app.url,
+    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   },
   twitter: {
     card: "summary_large_image",
@@ -36,16 +35,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <OuterProvider>
-      <html
-        className={cn(dmSans.variable, jetbrainsMono.variable, "antialiased")}
-        lang="en"
-        suppressHydrationWarning
-      >
-        <body className="min-h-svh">
-          <InnerProvider>{children}</InnerProvider>
-        </body>
-      </html>
-    </OuterProvider>
+    <html
+      className={cn(dmSans.variable, jetbrainsMono.variable, "antialiased")}
+      lang="en"
+      suppressHydrationWarning
+    >
+      <body className="min-h-svh">
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   )
 }

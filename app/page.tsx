@@ -1,5 +1,3 @@
-"use client"
-
 import { site } from "@/lib/site"
 import {
   RiArrowRightLine,
@@ -24,7 +22,7 @@ import {
   RiVolumeUpLine,
 } from "@remixicon/react"
 import Link from "next/link"
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { type ReactNode } from "react"
 
 import { Navbar } from "@/components/common/navbar"
 import {
@@ -252,53 +250,6 @@ function HeroVisual() {
   )
 }
 
-function AnimatedWaveform({ bars = 7 }: { bars?: number }) {
-  const [levels, setLevels] = useState<number[]>(() => Array.from({ length: bars }, () => 14))
-  const driftRef = useRef(Array.from({ length: bars }, () => Math.random() * 2 - 1))
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-
-    let animationFrameId = 0
-    let lastTime = 0
-
-    const animate = (time: number) => {
-      animationFrameId = requestAnimationFrame(animate)
-      if (time - lastTime < 55) return
-      lastTime = time
-
-      setLevels((prev) =>
-        prev.map((value, i) => {
-          driftRef.current[i] = Math.min(
-            1,
-            Math.max(-1, driftRef.current[i] + (Math.random() - 0.5) * 0.9),
-          )
-          const drift = driftRef.current[i]
-          const peak = 8 + Math.abs(drift) * 30
-          const dip = 0.3 + Math.abs(drift) * 0.7
-          const next = peak * (drift >= 0 ? 1 : dip)
-          return next * 0.6 + value * 0.4
-        }),
-      )
-    }
-
-    animationFrameId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [bars])
-
-  return (
-    <span aria-hidden="true" className="flex h-6 items-center gap-1">
-      {levels.map((level, i) => (
-        <span
-          key={i}
-          className="bg-primary w-1 rounded-full transition-[height] duration-100 ease-out"
-          style={{ height: `${level}px` }}
-        />
-      ))}
-    </span>
-  )
-}
-
 function FeatureMock({ mock }: { mock: "audio" | "host" | "shortcuts" | null }) {
   if (mock === "audio") {
     return (
@@ -315,7 +266,6 @@ function FeatureMock({ mock }: { mock: "audio" | "host" | "shortcuts" | null }) 
             </Avatar>
           ))}
         </div>
-        <AnimatedWaveform />
       </div>
     )
   }
@@ -521,7 +471,7 @@ export default function LandingPage() {
           <div className="bg-primary/10 absolute left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full blur-3xl" />
         </div>
 
-        <div className="border-border relative z-10 border-t px-4 pb-12 md:px-6">
+        <div className="border-border relative z-10 border-t px-4 pb-28 md:px-6 md:pb-12">
           <div className="mx-auto w-full max-w-4xl">
             <div className="border-border flex flex-col items-start justify-between gap-10 py-14 md:flex-row md:items-center">
               <div className="max-w-sm">

@@ -23,6 +23,8 @@ import {
   RiHeadphoneLine,
   RiMoreFill,
   RiVolumeMuteLine,
+  RiVolumeUpLine,
+  RiShieldCheckLine,
   RiUserVoiceLine,
   RiCloseLine,
   RiErrorWarningLine,
@@ -30,7 +32,7 @@ import {
 import { EmojiClickData, Theme } from "emoji-picker-react"
 import EmojiPicker from "emoji-picker-react"
 import { RoomEvent, Track } from "livekit-client"
-import React, { useEffect, useState, useRef, useMemo } from "react"
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { ModeToggle } from "@/components/common/mode-toggle"
@@ -135,8 +137,33 @@ function RoomUI({
   const [hostDisconnectTime, setHostDisconnectTime] = useState<number | null>(null)
   const [disconnectCountdown, setDisconnectCountdown] = useState(60)
 
-  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([])
+  const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedMicId, setSelectedMicId] = useState<string>("default")
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string>("default")
+  const [isPlayingTestSound, setIsPlayingTestSound] = useState(false)
+  const localMicPub = localParticipant.getTrackPublication(Track.Source.Microphone)
+  const localMicVolume = useTrackVolume(localMicPub?.audioTrack)
+
+  const micItems = useMemo(() => {
+    if (audioInputDevices.length === 0) {
+      return [{ value: "default", label: "Default Microphone" }]
+    }
+    return audioInputDevices.map((device, i) => ({
+      value: device.deviceId || `mic-${i}`,
+      label: device.label || `Microphone ${i + 1}`,
+    }))
+  }, [audioInputDevices])
+
+  const speakerItems = useMemo(() => {
+    if (audioOutputDevices.length === 0) {
+      return [{ value: "default", label: "Default Speaker" }]
+    }
+    return audioOutputDevices.map((device, i) => ({
+      value: device.deviceId || `speaker-${i}`,
+      label: device.label || `Speaker ${i + 1}`,
+    }))
+  }, [audioOutputDevices])
 
   const [hasRequestedMicLocal, setHasRequestedMicLocal] = useState(false)
 
@@ -454,19 +481,27 @@ function RoomUI({
     localParticipant.setAttributes({ isDeafened: nextDeafened ? "true" : "false" }).catch(() => {})
   }
 
-  const fetchDevices = async () => {
-    if (!navigator.mediaDevices) return
+  const fetchDevices = useCallback(async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) return
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      setAudioDevices(devices.filter((d) => d.kind === "audioinput"))
+      const inputs = devices.filter((d) => d.kind === "audioinput")
+      const outputs = devices.filter((d) => d.kind === "audiooutput")
+      setAudioInputDevices(inputs)
+      setAudioOutputDevices(outputs)
+
+      const activeInput = room.getActiveDevice("audioinput")
+      if (activeInput) setSelectedMicId(activeInput)
+      const activeOutput = room.getActiveDevice("audiooutput")
+      if (activeOutput) setSelectedSpeakerId(activeOutput)
     } catch {}
-  }
+  }, [room])
 
   useEffect(() => {
     fetchDevices()
     navigator.mediaDevices?.addEventListener?.("devicechange", fetchDevices)
     return () => navigator.mediaDevices?.removeEventListener?.("devicechange", fetchDevices)
-  }, [])
+  }, [fetchDevices])
 
   const processedTracks = useRef(new WeakSet<any>())
   useEffect(() => {
@@ -486,13 +521,56 @@ function RoomUI({
     }
   }, [localParticipant, isMuted])
 
-  const handleDeviceChange = async (deviceId: string | null) => {
+  const handleMicChange = async (deviceId: string | null) => {
     if (!deviceId) return
     setSelectedMicId(deviceId)
     try {
       await room.switchActiveDevice("audioinput", deviceId)
     } catch {
-      toast.add({ title: "Could not switch device", type: "error" })
+      toast.add({ title: "Could not switch microphone", type: "error" })
+    }
+  }
+
+  const handleSpeakerChange = async (deviceId: string | null) => {
+    if (!deviceId) return
+    setSelectedSpeakerId(deviceId)
+    try {
+      await room.switchActiveDevice("audiooutput", deviceId)
+    } catch {
+      toast.add({ title: "Could not switch speaker", type: "error" })
+    }
+  }
+
+  const playTestSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      setIsPlayingTestSound(true)
+
+      const playTone = (freq: number, start: number, duration: number) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = "sine"
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + start)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(ctx.currentTime + start)
+        osc.stop(ctx.currentTime + start + duration)
+      }
+
+      playTone(523.25, 0, 0.2)
+      playTone(659.25, 0.15, 0.2)
+      playTone(783.99, 0.3, 0.35)
+
+      setTimeout(() => {
+        setIsPlayingTestSound(false)
+        ctx.close().catch(() => {})
+      }, 700)
+    } catch {
+      setIsPlayingTestSound(false)
     }
   }
 
@@ -665,13 +743,17 @@ function RoomUI({
             <Popover
               onOpenChange={(open) => {
                 if (!open) return
-                navigator.mediaDevices
-                  ?.getUserMedia({ audio: true })
-                  .then((stream) => {
-                    stream.getTracks().forEach((t) => t.stop())
-                    fetchDevices()
-                  })
-                  .catch(() => fetchDevices())
+                if (audioInputDevices.length === 0 || audioInputDevices.some((d) => !d.label)) {
+                  navigator.mediaDevices
+                    ?.getUserMedia({ audio: true })
+                    .then((stream) => {
+                      stream.getTracks().forEach((t) => t.stop())
+                      fetchDevices()
+                    })
+                    .catch(() => fetchDevices())
+                } else {
+                  fetchDevices()
+                }
               }}
             >
               <PopoverTrigger
@@ -680,38 +762,132 @@ function RoomUI({
                     variant="outline"
                     size="icon"
                     className="text-muted-foreground size-10 shrink-0"
+                    aria-label="Audio settings"
                   >
                     <RiSettings3Line size={18} />
                   </Button>
                 }
               />
-              <PopoverContent className="w-64 p-4" align="center">
-                <PopoverHeader>
-                  <PopoverTitle>Audio Settings</PopoverTitle>
-                  <PopoverDescription>Choose the microphone you want to use.</PopoverDescription>
+              <PopoverContent className="w-80 p-4 shadow-xl" align="center" side="top" sideOffset={12}>
+                <PopoverHeader className="space-y-1">
+                  <PopoverTitle className="text-sm font-semibold flex items-center gap-2">
+                    <RiSettings3Line className="size-4 text-primary" aria-hidden="true" />
+                    Audio Settings
+                  </PopoverTitle>
+                  <PopoverDescription className="text-xs text-muted-foreground">
+                    Configure microphone and output playback.
+                  </PopoverDescription>
                 </PopoverHeader>
-                <Field>
-                  <FieldLabel htmlFor="mic-select">Microphone</FieldLabel>
-                  <Select value={selectedMicId} onValueChange={handleDeviceChange}>
-                    <SelectTrigger id="mic-select" className="w-full">
-                      <SelectValue placeholder="Select a microphone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {audioDevices.length === 0 ? (
-                        <p className="text-muted-foreground p-2 text-sm">No microphones found</p>
-                      ) : (
-                        audioDevices.map((device, i) => (
-                          <SelectItem
-                            key={device.deviceId || `mic-${i}`}
-                            value={device.deviceId || `mic-${i}`}
-                          >
-                            {device.label || `Microphone ${i + 1}`}
-                          </SelectItem>
-                        ))
+
+                <div className="mt-3 space-y-3 text-sm">
+                  {/* Microphone selection */}
+                  <Field className="gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <FieldLabel htmlFor="mic-select" className="text-xs font-medium flex items-center gap-1.5">
+                        <RiMicLine className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                        Microphone
+                      </FieldLabel>
+                      {isMuted && (
+                        <span className="text-[10px] text-muted-foreground font-mono">Muted</span>
                       )}
-                    </SelectContent>
-                  </Select>
-                </Field>
+                    </div>
+                    <Select
+                      value={selectedMicId}
+                      onValueChange={handleMicChange}
+                      items={micItems}
+                    >
+                      <SelectTrigger id="mic-select" className="w-full h-8 text-xs">
+                        <SelectValue placeholder="Select a microphone">
+                          {(val: string | null) => {
+                            const found = micItems.find((m) => m.value === val)
+                            return found?.label || "Default Microphone"
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {micItems.map((item) => (
+                          <SelectItem
+                            key={item.value}
+                            value={item.value}
+                            className="text-xs"
+                          >
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {/* Live Mic Level Test Bar */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Input Level</span>
+                        <span>{isMuted ? "0%" : `${Math.min(100, Math.round(localMicVolume * 100 * 2.5))}%`}</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary transition-all duration-75 ease-out rounded-full"
+                          style={{
+                            width: isMuted ? "0%" : `${Math.min(100, Math.round(localMicVolume * 100 * 2.5))}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </Field>
+
+                  {/* Speaker / Output device selection */}
+                  {audioOutputDevices.length > 0 && (
+                    <Field className="gap-1.5 pt-1 border-t border-border/50">
+                      <div className="flex items-center justify-between pt-1">
+                        <FieldLabel htmlFor="speaker-select" className="text-xs font-medium flex items-center gap-1.5">
+                          <RiHeadphoneLine className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                          Speaker / Headphones
+                        </FieldLabel>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={playTestSound}
+                          disabled={isPlayingTestSound}
+                          className="h-6 px-2 text-[11px] text-primary hover:text-primary gap-1"
+                        >
+                          <RiVolumeUpLine className="size-3" aria-hidden="true" />
+                          {isPlayingTestSound ? "Testing..." : "Test"}
+                        </Button>
+                      </div>
+                      <Select
+                        value={selectedSpeakerId}
+                        onValueChange={handleSpeakerChange}
+                        items={speakerItems}
+                      >
+                        <SelectTrigger id="speaker-select" className="w-full h-8 text-xs">
+                          <SelectValue placeholder="Default speaker">
+                            {(val: string | null) => {
+                              const found = speakerItems.find((s) => s.value === val)
+                              return found?.label || "Default Speaker"
+                            }}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {speakerItems.map((item) => (
+                            <SelectItem
+                              key={item.value}
+                              value={item.value}
+                              className="text-xs"
+                            >
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+
+                  {/* Audio enhancement status */}
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-[11px] text-muted-foreground border border-border/40">
+                    <RiShieldCheckLine className="size-3.5 text-primary shrink-0" aria-hidden="true" />
+                    <span>Noise suppression & echo cancellation active</span>
+                  </div>
+                </div>
               </PopoverContent>
             </Popover>
 

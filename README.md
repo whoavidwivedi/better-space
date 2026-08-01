@@ -3,66 +3,62 @@
   
   # Better Space
 
-  A real-time spatial audio room built with Next.js, WebRTC, and Tailwind CSS.
+  High-fidelity, zero-account real-time audio spaces built with Next.js 16, LiveKit, and Base UI.
 </div>
 
 <br/>
 
 ## Features
 
-- **Real-time Voice Chat:** Low-latency WebRTC audio powered by PeerJS.
-- **Dynamic Avatars:** Procedurally generated participant avatars using Dicebear.
-- **Audio Visualization:** Real-time audio waveform visualizers based on microphone input.
-- **Live Reactions:** Send temporary floating reactions to the room using Framer Motion.
-- **Integrated Text Chat:** Synchronized text messaging alongside the audio stream.
-- **Mobile Support:** Responsive UI with a floating control dock optimized for mobile browsers.
-- **Signaling:** Room state, presence, and connection signaling handled via Supabase Realtime.
+- **Zero Accounts:** Pick a name and jump in. No password, no signup friction.
+- **Studio-Grade Voice:** Real-time WebRTC audio with LiveKit, featuring Krisp AI noise suppression and echo cancellation.
+- **Audio Controls & Device Switching:** Switch microphone and output speaker devices in real time with a live input level meter and built-in speaker test.
+- **Host & Moderation Tools:** Host-controlled permissions (grant/revoke mic, mute participants, kick users, co-host controls).
+- **Live Reactions:** Emoji reactions with real-time room sync.
+- **Real-Time Audio Visualizer:** Dynamic 60fps waveform animation reacting to voice volume.
+- **Mobile-First Responsive UI:** Floating glassmorphic dock with safe-area support.
 
 ## Tech Stack
 
-- **Framework:** [Next.js 14](https://nextjs.org/) (App Router, Turbopack)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
-- **Realtime Signaling:** [Supabase](https://supabase.com/)
-- **WebRTC:** [PeerJS](https://peerjs.com/)
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router, Turbopack) & React 19
+- **Realtime Audio:** [LiveKit](https://livekit.io/) & `@livekit/krisp-noise-filter`
+- **UI & Primitives:** [Base UI](https://base-ui.com/) & [Tailwind CSS 4](https://tailwindcss.com/)
+- **Icons:** [Remix Icon](https://remixicon.com/)
 - **Avatars:** [DiceBear](https://www.dicebear.com/)
-- **Icons:** Lucide React & Hugeicons
+- **Package Manager:** [Bun](https://bun.sh/)
 
 ## Getting Started
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/whoavidwivedi/spacex.git
-   cd spacex
-   ```
+### 1. Clone the repository
+```bash
+git clone https://github.com/whoavidwivedi/spacex.git
+cd spacex
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 2. Install dependencies
+```bash
+bun install
+```
 
-3. **Set up Environment Variables**
-   Create a `.env.local` file and add your Supabase credentials:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
+### 3. Set up Environment Variables
+Create a `.env.local` file with your LiveKit credentials:
+```env
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+NEXT_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-4. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+### 4. Run the development server
+```bash
+bun run dev
+```
 
-5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000) to join the room.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-<br />
+## Scripts
 
-## Avatar Preview
-
-<div align="center">
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Alice" width="80" />
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Bob" width="80" />
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Charlie" width="80" />
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Dave" width="80" />
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Eve" width="80" />
-</div>
+- `bun run dev` — Start the local development server
+- `bun run build` — Create an optimized production build
+- `bun run lint` — Run ESLint checks
+- `bun run typecheck` — Run TypeScript type checks
