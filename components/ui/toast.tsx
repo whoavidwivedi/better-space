@@ -30,7 +30,7 @@ function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
     <ToastPrimitive.Viewport
       data-slot="toast-viewport"
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-28 z-50",
+        "pointer-events-none fixed inset-x-0 bottom-6 z-50",
         className,
       )}
       {...props}
@@ -44,8 +44,8 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
       data-slot="toast"
       className={cn(
         "group/toast pointer-events-auto absolute left-1/2 bottom-0 w-max -translate-x-1/2 origin-bottom",
-        "inline-flex items-center justify-center overflow-hidden rounded-full border border-border/5",
-        "bg-foreground text-background shadow-xl px-5 py-2.5 text-sm font-medium tracking-tight",
+        "inline-flex items-center justify-center overflow-hidden rounded-full border border-border/10",
+        "bg-background/90 backdrop-blur-xl text-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] px-6 py-3 text-sm font-medium tracking-tight",
         "[--offset-y:calc(var(--toast-index)*-3.5rem)]",
         "data-expanded:[transform:translateY(var(--offset-y))]",
         "data-starting-style:scale-95 data-starting-style:opacity-0 data-starting-style:translate-y-4",
@@ -82,7 +82,7 @@ function ToastDescription({ className, ...props }: ToastPrimitive.Description.Pr
   return (
     <ToastPrimitive.Description
       data-slot="toast-description"
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn("text-sm text-muted-foreground opacity-90", className)}
       {...props}
     />
   )
@@ -212,7 +212,7 @@ function ToastList() {
             : undefined
         }
       >
-        <ToastContent>
+        <ToastContent className="gap-3">
           <ToastIcon type={toastItem.type} />
           <span className="truncate flex-1">{toastItem.title}</span>
           <ToastCountdownRing />

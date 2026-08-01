@@ -3,18 +3,20 @@
 import { site } from "@/lib/site"
 import {
   RiArrowRightLine,
-  RiArrowRightUpLine,
   RiEmotionHappyLine,
   RiGithubLine,
   RiGlobalLine,
   RiGroupLine,
   RiHeadphoneLine,
+  RiInstagramLine,
   RiKeyboardBoxLine,
+  RiLinkedinLine,
   RiLinksLine,
   RiMic2Line,
   RiMicOffLine,
   RiMicLine,
   RiShieldCheckLine,
+  RiTwitterXLine,
   RiUserAddLine,
   RiUserUnfollowLine,
   RiVoiceprintLine,
@@ -32,11 +34,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
-
-const GITHUB_URL = "https://github.com/whoavidwivedi/better-space"
 
 const SPEAKERS = [
   { name: "Maya", muted: false, host: true, listener: false },
@@ -57,11 +56,6 @@ const HIGHLIGHTS = [
     title: "Runs in your browser",
     description: "No install. Any device, any platform, one link.",
     icon: RiGlobalLine,
-  },
-  {
-    title: "Open source",
-    description: "Self-host it, fork it, or contribute on GitHub.",
-    icon: RiGithubLine,
   },
 ]
 
@@ -154,8 +148,7 @@ const FAQS = [
   },
   {
     question: "What does it cost?",
-    answer:
-      "Nothing while Better Space is in beta. The project is open source, so you can also self-host it on your own infrastructure whenever you like.",
+    answer: "Nothing while Better Space is in beta.",
   },
 ]
 
@@ -208,11 +201,6 @@ function SpeakerAvatar({ speaker }: { speaker: (typeof SPEAKERS)[number] }) {
       </div>
       <span className="flex items-center gap-1 text-xs font-medium">
         {speaker.name}
-        {speaker.host && (
-          <Badge variant="outline" className="h-4 px-1 text-[10px] uppercase">
-            Host
-          </Badge>
-        )}
       </span>
       <span className="text-muted-foreground -mt-1 flex items-center gap-0.5 text-[10px]">
         {speaker.listener ? (
@@ -235,13 +223,6 @@ function HeroVisual() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">design-critique</span>
-            <Badge variant="outline" className="border-success/20 bg-success/10 text-success">
-              <span
-                className="bg-success size-1.5 rounded-full motion-safe:animate-pulse"
-                aria-hidden="true"
-              />
-              Live
-            </Badge>
           </div>
           <span className="text-muted-foreground text-xs">{SPEAKERS.length} speakers</span>
         </div>
@@ -384,59 +365,43 @@ function FeatureMock({ mock }: { mock: "audio" | "host" | "shortcuts" | null }) 
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-svh flex-col">
+      <div className="flex min-h-svh flex-col">
       <Navbar />
 
       <main className="flex-1">
         <section
           aria-labelledby="hero-heading"
-          className="relative isolate px-4 pt-24 pb-20 md:px-6"
+          className="relative isolate min-h-svh overflow-hidden px-4 pt-24 pb-20 md:px-6"
         >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 -z-10 overflow-hidden"
-          >
-            <div className="bg-primary/5 absolute -top-40 left-1/2 size-96 -translate-x-1/2 rounded-full blur-3xl" />
-          </div>
-
           <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-            <Eyebrow>
-              <span
-                className="bg-success size-1.5 rounded-full motion-safe:animate-pulse"
-                aria-hidden="true"
-              />
-              Live audio rooms
-            </Eyebrow>
+            <Eyebrow>Live audio rooms</Eyebrow>
 
-            <h1 id="hero-heading" className="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">
+            <h1 id="hero-heading" className="mt-6 text-5xl font-bold tracking-tight text-balance sm:text-7xl">
               {site.name}
             </h1>
 
-            <p className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">{site.tagline}</p>
-
-            <p className="text-muted-foreground mt-4 max-w-xl text-lg">{site.description}</p>
+            <p className="text-muted-foreground mt-6 max-w-xl text-lg">
+              {site.description}
+            </p>
 
             <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
               <Button
                 render={<Link href="/lobby" />}
-                className="h-12 w-full max-w-sm px-6 text-base sm:w-auto"
+                className="h-10 w-full max-w-sm px-5 text-sm sm:w-auto"
               >
                 Enter Lobby
                 <RiArrowRightLine />
               </Button>
-              <Button
-                variant="outline"
-                render={<Link href={GITHUB_URL} target="_blank" rel="noreferrer" />}
-                className="h-12 w-full max-w-sm px-6 text-base sm:w-auto"
-              >
-                View Source
-                <RiArrowRightUpLine />
-              </Button>
             </div>
 
-            <p className="text-muted-foreground mt-5 text-sm">
-              Works in any browser. Just add a microphone.
-            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-muted-foreground text-xs">
+              {["Zero accounts", "Real-time voice", "No install"].map((item, index) => (
+                <span key={item} className="flex items-center gap-1.5">
+                  {index > 0 && <span className="text-border" aria-hidden="true">/</span>}
+                  {item}
+                </span>
+              ))}
+            </div>
 
             <HeroVisual />
           </div>
@@ -551,64 +516,142 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-border border-t px-4 pb-20 md:px-6 md:pb-4">
-        <div className="mx-auto flex w-full max-w-4xl flex-col justify-between gap-8 py-10 md:flex-row">
-          <div className="max-w-xs">
-            <p className="font-bold">{site.name}</p>
-            <p className="text-muted-foreground mt-2 text-sm">{site.description}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8">
-            <nav aria-label="Product" className="flex flex-col gap-2 text-sm">
-              <p className="text-muted-foreground font-medium">Product</p>
-              <Link
-                href="/lobby"
-                className="hover:text-foreground text-muted-foreground transition-colors"
-              >
-                Lobby
-              </Link>
-              <Link
-                href="#features"
-                className="hover:text-foreground text-muted-foreground transition-colors"
-              >
-                Features
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="hover:text-foreground text-muted-foreground transition-colors"
-              >
-                How it works
-              </Link>
-              <Link
-                href="#faq"
-                className="hover:text-foreground text-muted-foreground transition-colors"
-              >
-                FAQ
-              </Link>
-            </nav>
-
-            <nav aria-label="Project" className="flex flex-col gap-2 text-sm">
-              <p className="text-muted-foreground font-medium">Project</p>
-              <a
-                href={GITHUB_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
-              >
-                <RiGithubLine className="size-4" aria-hidden="true" />
-                GitHub
-              </a>
-            </nav>
-          </div>
+      <footer className="relative overflow-hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-24 z-0">
+          <div className="bg-primary/10 absolute left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full blur-3xl" />
         </div>
 
-        <div className="border-border mx-auto flex w-full max-w-4xl flex-col items-center justify-between gap-2 border-t pt-6 pb-2 md:flex-row">
-          <p className="text-muted-foreground text-xs">
-            &copy; {new Date().getFullYear()} {site.name}.
-          </p>
-          <p className="text-muted-foreground text-xs">Zero accounts. Just voice.</p>
+        <div className="border-border relative z-10 border-t px-4 pb-12 md:px-6">
+          <div className="mx-auto w-full max-w-4xl">
+            <div className="border-border flex flex-col items-start justify-between gap-10 py-14 md:flex-row md:items-center">
+              <div className="max-w-sm">
+                <p className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Hear the difference.
+                </p>
+                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+                  {site.name} is {site.tagline.toLowerCase()}. Built to feel like you are in the
+                  room — not on a call.
+                </p>
+                <Button
+                  render={<Link href="/lobby" />}
+                  className="mt-6 h-9 px-4 text-sm"
+                >
+                  Enter Lobby
+                  <RiArrowRightLine />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-10">
+                <nav aria-label="Product" className="flex flex-col gap-2.5 text-sm">
+                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                    Product
+                  </p>
+                  <Link
+                    href="/lobby"
+                    className="hover:text-foreground text-muted-foreground transition-colors"
+                  >
+                    Lobby
+                  </Link>
+                  <Link
+                    href="#features"
+                    className="hover:text-foreground text-muted-foreground transition-colors"
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="#how-it-works"
+                    className="hover:text-foreground text-muted-foreground transition-colors"
+                  >
+                    How it works
+                  </Link>
+                  <Link
+                    href="#faq"
+                    className="hover:text-foreground text-muted-foreground transition-colors"
+                  >
+                    FAQ
+                  </Link>
+                </nav>
+
+                <nav aria-label="Creator" className="flex flex-col gap-2.5 text-sm">
+                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                    Creator
+                  </p>
+                  <a
+                    href={site.creator.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RiGlobalLine className="size-4" aria-hidden="true" />
+                    {site.creator.handle}
+                  </a>
+                  <a
+                    href={site.creator.social.github}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RiGithubLine className="size-4" aria-hidden="true" />
+                    GitHub
+                  </a>
+                  <a
+                    href={site.creator.social.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RiInstagramLine className="size-4" aria-hidden="true" />
+                    Instagram
+                  </a>
+                  <a
+                    href={site.creator.social.x}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RiTwitterXLine className="size-4" aria-hidden="true" />
+                    X (Twitter)
+                  </a>
+                  <a
+                    href={site.creator.social.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RiLinkedinLine className="size-4" aria-hidden="true" />
+                    LinkedIn
+                  </a>
+                </nav>
+              </div>
+            </div>
+
+            <div className="border-border mx-auto flex w-full flex-col items-center justify-between gap-3 border-t pt-6 md:flex-row">
+              <p className="text-muted-foreground text-xs">
+                &copy; {new Date().getFullYear()} {site.name} by{" "}
+                <a
+                  href={site.creator.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-foreground underline-offset-2 transition-colors hover:underline"
+                >
+                  {site.creator.handle}
+                </a>
+                .
+              </p>
+              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                {["Zero accounts", "Real-time voice", "Built in the browser"].map(
+                  (item, index) => (
+                    <span key={item} className="flex items-center gap-1.5">
+                      {index > 0 && <span className="text-border" aria-hidden="true">/</span>}
+                      {item}
+                    </span>
+                  ),
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
-    </div>
+      </div>
   )
 }

@@ -521,16 +521,6 @@ function RoomUI({
       <header className="border-border bg-background/80 sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b px-4 backdrop-blur-md md:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <h1 className="truncate text-sm font-semibold">{roomName}</h1>
-          <Badge
-            variant="outline"
-            className="border-success/20 bg-success/10 text-success shrink-0 gap-1.5"
-          >
-            <span
-              className="bg-success size-1.5 rounded-full motion-safe:animate-pulse"
-              aria-hidden="true"
-            />
-            Live
-          </Badge>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -759,7 +749,7 @@ function RoomUI({
                     >
                       <RiUserVoiceLine size={18} />
                       {micRequests.length > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white shadow-sm ring-2 ring-background dark:bg-red-600">
+                        <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-destructive text-destructive-foreground px-1 text-[10px] font-bold tabular-nums shadow-sm ring-2 ring-background">
                           {micRequests.length}
                         </span>
                       )}

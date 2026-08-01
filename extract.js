@@ -1,9 +1,9 @@
-const fs = require('fs');
-const readline = require('readline');
+import { createReadStream } from 'fs';
+import { createInterface } from 'readline';
 
 async function extract() {
-  const fileStream = fs.createReadStream('/Users/whoavidwivedi/.gemini/antigravity/brain/4ac1ad1a-91f3-4d29-996e-7724dac85179/.system_generated/logs/transcript_full.jsonl');
-  const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+  const fileStream = createReadStream('/Users/whoavidwivedi/.gemini/antigravity/brain/4ac1ad1a-91f3-4d29-996e-7724dac85179/.system_generated/logs/transcript_full.jsonl');
+  const rl = createInterface({ input: fileStream, crlfDelay: Infinity });
 
   let latestContent = null;
   

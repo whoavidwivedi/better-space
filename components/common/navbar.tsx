@@ -108,6 +108,29 @@ export function Navbar({ links = DEFAULT_LINKS }: { links?: NavLink[] }) {
     (link) => !link.external && isActive(pathname, link.href, { exact: false }),
   )
 
+  const bottomNavRef = useRef<HTMLDivElement>(null)
+  const [bottomNavWidth, setBottomNavWidth] = useState<number>(0)
+  const [navOpen, setNavOpen] = useState(false)
+
+  useEffect(() => {
+    const node = bottomNavRef.current
+    if (!node) return
+
+    const measure = () => {
+      const rect = node.getBoundingClientRect()
+      if (rect.width > 0) setBottomNavWidth(rect.width)
+    }
+    measure()
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    window.addEventListener("resize", measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", measure)
+    }
+  }, [navOpen])
+
   return (
     <>
       <header
@@ -150,12 +173,19 @@ export function Navbar({ links = DEFAULT_LINKS }: { links?: NavLink[] }) {
               ),
             )}
           </nav>
+
+          <div className="hidden justify-self-end md:block">
+            <ModeToggle />
+          </div>
         </div>
       </header>
 
       <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 -translate-x-1/2 md:hidden">
-        <div className="border-border bg-card/95 flex h-12 items-center rounded-lg border shadow-lg backdrop-blur-md">
-          <Popover>
+        <div
+          ref={bottomNavRef}
+          className="border-border bg-card/95 flex h-12 items-center rounded-lg border shadow-lg backdrop-blur-md"
+        >
+          <Popover open={navOpen} onOpenChange={setNavOpen}>
             <PopoverTrigger
               render={
                 <button
@@ -177,7 +207,16 @@ export function Navbar({ links = DEFAULT_LINKS }: { links?: NavLink[] }) {
                 </button>
               }
             />
-            <PopoverContent side="top" align="center" className="w-56 p-2">
+            <PopoverContent
+              side="top"
+              align="center"
+              positionMethod="fixed"
+              className="p-2"
+              style={{
+                width: bottomNavWidth > 0 ? bottomNavWidth : undefined,
+                maxWidth: "calc(100vw - 2rem)",
+              }}
+            >
               <p className="text-muted-foreground px-3 pt-1.5 text-xs font-medium tracking-wide uppercase">
                 Pages
               </p>

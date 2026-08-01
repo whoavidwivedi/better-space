@@ -37,10 +37,6 @@ export function Lobby() {
   const [, setTick] = useState(0)
 
   useEffect(() => {
-    const saved = localStorage.getItem("space_username")
-    if (saved) {
-      setUserName(saved)
-    }
 
     const interval = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(interval)
@@ -80,7 +76,6 @@ export function Lobby() {
   const handleJoin = async (room: string) => {
     if (!userName.trim()) return
     setIsJoining(true)
-    localStorage.setItem("space_username", userName.trim())
     const savedSecret = localStorage.getItem(`space_host_secret_${room}`) || ""
     setHostSecret(savedSecret)
     try {
