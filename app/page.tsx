@@ -1,7 +1,10 @@
 import { site } from "@/lib/site"
 import {
   RiArrowRightLine,
+  RiCheckLine,
+  RiCommandLine,
   RiEmotionHappyLine,
+  RiEqualizerLine,
   RiGithubLine,
   RiGlobalLine,
   RiGroupLine,
@@ -14,12 +17,15 @@ import {
   RiMicOffLine,
   RiMicLine,
   RiShieldCheckLine,
+  RiSoundModuleLine,
+  RiSparklingLine,
   RiTwitterXLine,
   RiUserAddLine,
   RiUserUnfollowLine,
   RiVoiceprintLine,
   RiVolumeMuteLine,
   RiVolumeUpLine,
+  RiWifiLine,
 } from "@remixicon/react"
 import Link from "next/link"
 import { type ReactNode } from "react"
@@ -32,73 +38,75 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 
 const SPEAKERS = [
-  { name: "Maya", muted: false, host: true, listener: false },
-  { name: "Theo", muted: false, listener: false },
-  { name: "Rina", muted: true, listener: false },
-  { name: "Sam", muted: false, listener: false },
-  { name: "Zoe", muted: true, listener: true },
-  { name: "Kai", muted: false, listener: true },
+  { name: "Maya", role: "Host", speaking: true, muted: false, host: true, listener: false },
+  { name: "Theo", role: "Speaker", speaking: false, muted: false, listener: false },
+  { name: "Rina", role: "Speaker", speaking: false, muted: true, listener: false },
+  { name: "Sam", role: "Speaker", speaking: false, muted: false, listener: false },
+  { name: "Zoe", role: "Listener", speaking: false, muted: true, listener: true },
+  { name: "Kai", role: "Listener", speaking: false, muted: true, listener: true },
 ]
 
-const HIGHLIGHTS = [
-  {
-    title: "Zero accounts",
-    description: "Pick a name and jump in. No signup, no friction.",
-    icon: RiUserAddLine,
-  },
-  {
-    title: "Runs in your browser",
-    description: "No install. Any device, any platform, one link.",
-    icon: RiGlobalLine,
-  },
+const STATS = [
+  { label: "Audio Latency", value: "< 50ms", icon: RiWifiLine },
+  { label: "Account Friction", value: "Zero", icon: RiUserAddLine },
+  { label: "Noise Filter", value: "AI-Powered", icon: RiSparklingLine },
+  { label: "Browser Support", value: "100%", icon: RiGlobalLine },
 ]
 
 const FEATURES = [
   {
-    title: "High-fidelity audio",
+    title: "Lossless Studio Audio",
     description:
-      "Crystal-clear voice with echo cancellation, noise suppression, and studio-grade processing baked in.",
+      "Crystal-clear voice powered by WebRTC and LiveKit, equipped with Krisp AI background noise suppression and real-time echo cancellation.",
     icon: RiVoiceprintLine,
+    badge: "AI Powered",
     wide: true,
     mock: "audio" as const,
   },
   {
-    title: "Zero accounts",
-    description: "Pick a name and jump in. No signup, no password, no friction.",
-    icon: RiUserAddLine,
-    wide: false,
-    mock: null,
-  },
-  {
-    title: "Live reactions",
-    description: "React with emoji without interrupting the conversation.",
-    icon: RiEmotionHappyLine,
-    wide: false,
-    mock: null,
-  },
-  {
-    title: "Host controls",
+    title: "Device Management & Audio Test",
     description:
-      "Grant and revoke the mic, mute, or remove someone with a tap. Your room, your rules.",
+      "Seamlessly switch microphones and speakers with a live input level meter and built-in sound check chime.",
+    icon: RiSoundModuleLine,
+    badge: "New",
+    wide: false,
+    mock: "device" as const,
+  },
+  {
+    title: "Zero-Account Onboarding",
+    description: "Pick a nickname and join in one click. No passwords, no credit cards, no tracking.",
+    icon: RiUserAddLine,
+    badge: null,
+    wide: false,
+    mock: null,
+  },
+  {
+    title: "Host & Moderation Suite",
+    description:
+      "Grant or revoke microphones, mute individual speakers, appoint co-hosts, and maintain full room governance.",
     icon: RiShieldCheckLine,
+    badge: "Moderation",
     wide: true,
     mock: "host" as const,
   },
   {
-    title: "Invite links",
-    description: "Copy one link to share the space. Anyone can drop in.",
-    icon: RiLinksLine,
+    title: "Live Room Reactions",
+    description: "Send floating emoji reactions in real-time to celebrate, agree, or react without interrupting speech.",
+    icon: RiEmotionHappyLine,
+    badge: null,
     wide: false,
-    mock: null,
+    mock: "reactions" as const,
   },
   {
-    title: "Keyboard shortcuts",
-    description: "Mute, deafen, and switch themes without leaving the keyboard.",
+    title: "Pro Keyboard Shortcuts",
+    description: "Toggle mic, deafen room audio, or raise your hand effortlessly from your keyboard.",
     icon: RiKeyboardBoxLine,
+    badge: "Fast",
     wide: true,
     mock: "shortcuts" as const,
   },
@@ -106,141 +114,178 @@ const FEATURES = [
 
 const STEPS = [
   {
-    title: "Pick a name",
-    description: "No account needed. Type your name and you are ready to go.",
-    icon: RiUserAddLine,
-  },
-  {
-    title: "Start or join a space",
-    description: "Browse active spaces, or start your own and invite friends.",
+    step: "01",
+    title: "Enter the Lobby",
+    description: "Explore ongoing public spaces or launch your own room in seconds.",
     icon: RiGroupLine,
   },
   {
-    title: "Talk",
-    description: "Speak when you have the mic. Listen, react, and hand it off.",
+    step: "02",
+    title: "Pick your Name & Devices",
+    description: "Choose your audio input/output devices and test your levels before speaking.",
+    icon: RiEqualizerLine,
+  },
+  {
+    step: "03",
+    title: "Talk & Collaborate",
+    description: "Engage in ultra-low latency spatial voice conversation with zero friction.",
     icon: RiMic2Line,
   },
 ]
 
-
 const FAQS = [
   {
-    question: "Do I need an account?",
+    question: "Do I need to create an account or sign in?",
     answer:
-      "No. Better Space is deliberately zero-account. Pick any name, and you can start or join a space in a few seconds. Nothing to install and nothing to remember.",
+      "No. Better Space is completely account-free. Enter any nickname, and you are immediately placed into the space. No signup, no passwords, and nothing stored on external databases.",
   },
   {
-    question: "What do I need to join a space?",
+    question: "How does the audio quality and noise cancellation work?",
     answer:
-      "Just a modern browser and a microphone. Audio is delivered over a secure WebRTC connection, with echo cancellation and noise suppression applied automatically.",
+      "Audio streams over secure, low-latency WebRTC channels powered by LiveKit Cloud. We incorporate Krisp AI neural noise suppression to eliminate background chatter, fan noise, and keyboard clicks automatically.",
   },
   {
-    question: "Who can start a space?",
+    question: "Can I test my microphone and output speakers before joining?",
     answer:
-      "Anyone. Open the lobby, give your space a name, and you are the host. You control who gets the mic, who gets muted, and when the space ends.",
+      "Yes! Better Space includes a full audio settings panel with real-time mic volume metering, input/output device selector, and a native Web Audio speaker test chime.",
   },
   {
-    question: "How do host controls work?",
+    question: "What powers host controls and moderation?",
     answer:
-      "The host can grant or revoke the microphone, mute a speaker, or remove someone from the space. Speakers who join without the mic start as listeners and can request it with one tap.",
+      "The room creator receives host permissions to grant microphone access, mute speakers, kick disruptive participants, and assign co-hosts directly from the participant drawer.",
   },
   {
-    question: "What does it cost?",
-    answer: "Nothing while Better Space is in beta.",
+    question: "Is Better Space free to use?",
+    answer:
+      "Yes, Better Space is free and open-source during our public release.",
   },
 ]
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span className="border-border bg-muted text-muted-foreground inline-flex h-8 items-center gap-2 rounded-full border px-4 text-sm font-medium">
+    <span className="border-border bg-muted/60 text-muted-foreground inline-flex h-8 items-center gap-2 rounded-full border px-4 text-xs font-medium backdrop-blur-sm">
       {children}
     </span>
   )
 }
 
-function SectionHeading({ eyebrow, id, title }: { eyebrow: string; id: string; title: string }) {
+function SectionHeading({ eyebrow, id, title, description }: { eyebrow: string; id: string; title: string; description?: string }) {
   return (
     <div className="flex flex-col items-center text-center">
       <Eyebrow>{eyebrow}</Eyebrow>
       <h2 id={id} className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
         {title}
       </h2>
-    </div>
-  )
-}
-
-function SpeakerAvatar({ speaker }: { speaker: (typeof SPEAKERS)[number] }) {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative">
-        <div
-          className={`rounded-full transition-shadow ${
-            speaker.host ? "ring-primary ring-offset-background ring-2 ring-offset-2" : ""
-          }`}
-        >
-          <Avatar className="border-border bg-muted size-14 border">
-            <AvatarImage
-              src={`https://api.dicebear.com/7.x/notionists/svg?seed=${speaker.name.toLowerCase()}&backgroundColor=ffffff`}
-              alt=""
-              className="object-contain"
-            />
-            <AvatarFallback>{speaker.name[0]}</AvatarFallback>
-          </Avatar>
-        </div>
-        {!speaker.listener && (
-          <span className="bg-background border-border absolute -right-1 -bottom-1 rounded-full border p-0.5">
-            {speaker.muted ? (
-              <RiMicOffLine className="text-muted-foreground size-3.5" aria-hidden="true" />
-            ) : (
-              <RiMic2Line className="text-primary size-3.5" aria-hidden="true" />
-            )}
-          </span>
-        )}
-      </div>
-      <span className="flex items-center gap-1 text-xs font-medium">
-        {speaker.name}
-      </span>
-      <span className="text-muted-foreground -mt-1 flex items-center gap-0.5 text-[10px]">
-        {speaker.listener ? (
-          <>
-            <RiHeadphoneLine className="size-3" aria-hidden="true" />
-            Listener
-          </>
-        ) : (
-          "Speaker"
-        )}
-      </span>
+      {description && (
+        <p className="text-muted-foreground mt-3 max-w-xl text-base sm:text-lg">
+          {description}
+        </p>
+      )}
     </div>
   )
 }
 
 function HeroVisual() {
   return (
-    <div className="mt-16 w-full max-w-lg">
-      <div className="bg-card border-border rounded-2xl border p-5 text-left shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">design-critique</span>
+    <div className="mt-14 w-full max-w-xl">
+      <div className="bg-card/90 border-border/80 relative rounded-2xl border p-6 text-left shadow-2xl backdrop-blur-md">
+        <div className="flex items-center justify-between border-b pb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="bg-success size-2.5 animate-pulse rounded-full" />
+            <span className="text-sm font-semibold tracking-tight">design-sync</span>
+            <Badge variant="outline" className="bg-muted/50 text-[10px] font-medium">
+              LiveKit 28ms
+            </Badge>
           </div>
-          <span className="text-muted-foreground text-xs">{SPEAKERS.length} speakers</span>
+          <div className="flex items-center gap-2">
+            <span className="bg-success/10 text-success border-success/20 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium">
+              <RiSparklingLine className="size-3" />
+              AI Noise Filter On
+            </span>
+          </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-3 gap-4">
           {SPEAKERS.map((speaker) => (
-            <SpeakerAvatar key={speaker.name} speaker={speaker} />
+            <div key={speaker.name} className="flex flex-col items-center gap-2">
+              <div className="relative">
+                <div
+                  className={`rounded-full transition-all duration-300 ${
+                    speaker.speaking
+                      ? "ring-success ring-offset-background ring-2 ring-offset-2 scale-105"
+                      : speaker.host
+                        ? "ring-primary ring-offset-background ring-2 ring-offset-2"
+                        : ""
+                  }`}
+                >
+                  <Avatar className="border-border bg-muted size-14 border shadow-sm">
+                    <AvatarImage
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${speaker.name.toLowerCase()}&backgroundColor=ffffff`}
+                      alt={speaker.name}
+                      className="object-contain"
+                    />
+                    <AvatarFallback>{speaker.name[0]}</AvatarFallback>
+                  </Avatar>
+                </div>
+                {!speaker.listener && (
+                  <span className="bg-background border-border absolute -right-1 -bottom-1 rounded-full border p-0.5 shadow-xs">
+                    {speaker.muted ? (
+                      <RiMicOffLine className="text-muted-foreground size-3.5" aria-hidden="true" />
+                    ) : (
+                      <RiMic2Line className="text-primary size-3.5" aria-hidden="true" />
+                    )}
+                  </span>
+                )}
+              </div>
+              <span className="flex items-center gap-1 text-xs font-semibold">
+                {speaker.name}
+                {speaker.host && (
+                  <span className="bg-primary/10 text-primary rounded px-1 text-[9px] font-bold">
+                    HOST
+                  </span>
+                )}
+              </span>
+              <span className="text-muted-foreground -mt-1 flex items-center gap-0.5 text-[10px]">
+                {speaker.speaking ? (
+                  <span className="text-success font-medium flex items-center gap-1">
+                    <span className="flex gap-0.5 items-center">
+                      <span className="size-1 bg-success rounded-full animate-bounce" />
+                      <span className="size-1 bg-success rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="size-1 bg-success rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </span>
+                    Speaking
+                  </span>
+                ) : speaker.listener ? (
+                  <>
+                    <RiHeadphoneLine className="size-3" aria-hidden="true" />
+                    Listener
+                  </>
+                ) : (
+                  "Speaker"
+                )}
+              </span>
+            </div>
           ))}
         </div>
 
-        <div className="border-border mt-5 flex items-center gap-2 border-t pt-4">
-          <span className="bg-muted text-muted-foreground flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-3 text-xs font-medium">
-            <RiLinksLine className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">better.space/design-critique</span>
+        {/* Floating reaction simulation */}
+        <div className="absolute top-20 right-6 flex flex-col gap-1.5 animate-pulse">
+          <span className="bg-card border-border shadow-md rounded-full px-2.5 py-1 text-xs font-medium border flex items-center gap-1">
+            <span>🔥</span>
+            <span className="text-[10px] text-muted-foreground">Theo reacted</span>
           </span>
-          <span className="bg-primary text-primary-foreground flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium">
+        </div>
+
+        <div className="border-border mt-6 flex items-center gap-2 border-t pt-4">
+          <span className="bg-muted/80 text-muted-foreground flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-3 text-xs font-medium">
+            <RiLinksLine className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">better.space/space/design-sync</span>
+          </span>
+          <span className="bg-primary text-primary-foreground flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium shadow-xs">
             <RiVolumeUpLine className="size-4" aria-hidden="true" />
             Deafen
           </span>
-          <span className="bg-muted text-muted-foreground flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium">
+          <span className="bg-muted hover:bg-muted/80 text-muted-foreground flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors">
             <RiEmotionHappyLine className="size-4" aria-hidden="true" />
             React
           </span>
@@ -250,21 +295,49 @@ function HeroVisual() {
   )
 }
 
-function FeatureMock({ mock }: { mock: "audio" | "host" | "shortcuts" | null }) {
+function FeatureMock({ mock }: { mock: "audio" | "device" | "host" | "reactions" | "shortcuts" | null }) {
   if (mock === "audio") {
     return (
-      <div className="bg-background border-border mt-6 flex items-center justify-between gap-4 rounded-lg border p-3">
-        <div className="flex -space-x-2">
-          {["maya", "theo", "sam"].map((seed) => (
-            <Avatar key={seed} className="border-border bg-muted size-9 border">
-              <AvatarImage
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=ffffff`}
-                alt=""
-                className="object-contain"
-              />
-              <AvatarFallback>{seed[0].toUpperCase()}</AvatarFallback>
-            </Avatar>
+      <div className="bg-muted/40 border-border mt-5 flex flex-col gap-3 rounded-lg border p-3.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+            <RiSparklingLine className="text-primary size-4" />
+            Krisp AI Noise Suppression
+          </span>
+          <span className="text-success font-medium flex items-center gap-1">
+            <RiCheckLine className="size-3.5" />
+            Active
+          </span>
+        </div>
+        <div className="flex items-center gap-1 h-4">
+          {[40, 75, 30, 95, 60, 85, 45, 100, 70, 50, 80, 65, 30, 90, 45, 80].map((h, i) => (
+            <div
+              key={i}
+              className="bg-primary/80 flex-1 rounded-full"
+              style={{ height: `${h}%` }}
+            />
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (mock === "device") {
+    return (
+      <div className="bg-muted/40 border-border mt-5 flex flex-col gap-2.5 rounded-lg border p-3.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground font-medium">Mic Input</span>
+          <span className="text-foreground font-semibold">MacBook Pro Mic</span>
+        </div>
+        <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+          <div className="bg-success h-full w-3/4 rounded-full" />
+        </div>
+        <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+          <span>Speaker Output</span>
+          <span className="text-primary font-medium flex items-center gap-1">
+            <RiVolumeUpLine className="size-3" />
+            Test Chime
+          </span>
         </div>
       </div>
     )
@@ -272,40 +345,55 @@ function FeatureMock({ mock }: { mock: "audio" | "host" | "shortcuts" | null }) 
 
   if (mock === "host") {
     return (
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         <span className="text-success border-success/20 bg-success/10 flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium">
           <RiMicLine className="size-3.5" aria-hidden="true" />
           Grant Mic
         </span>
         <span className="border-border bg-muted text-muted-foreground flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium">
           <RiVolumeMuteLine className="size-3.5" aria-hidden="true" />
-          Mute
+          Mute Speaker
         </span>
         <span className="text-destructive border-destructive/20 bg-destructive/10 flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium">
           <RiUserUnfollowLine className="size-3.5" aria-hidden="true" />
-          Kick
+          Remove
         </span>
+      </div>
+    )
+  }
+
+  if (mock === "reactions") {
+    return (
+      <div className="mt-5 flex items-center gap-2">
+        {["🔥", "👏", "❤️", "🎉", "💡", "😂"].map((emoji) => (
+          <span
+            key={emoji}
+            className="border-border bg-card hover:scale-110 flex size-8 items-center justify-center rounded-lg border text-sm shadow-xs transition-transform"
+          >
+            {emoji}
+          </span>
+        ))}
       </div>
     )
   }
 
   if (mock === "shortcuts") {
     return (
-      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm">
-        <span className="text-muted-foreground flex items-center gap-2">
-          Mute
+      <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
+        <div className="border-border bg-muted/40 flex items-center justify-between rounded-lg border p-2.5">
+          <span className="text-muted-foreground font-medium">Toggle Mic</span>
           <KbdGroup>
             <Kbd>&#8984;</Kbd>
             <Kbd>D</Kbd>
           </KbdGroup>
-        </span>
-        <span className="text-muted-foreground flex items-center gap-2">
-          Deafen
+        </div>
+        <div className="border-border bg-muted/40 flex items-center justify-between rounded-lg border p-2.5">
+          <span className="text-muted-foreground font-medium">Deafen Audio</span>
           <KbdGroup>
             <Kbd>&#8984;</Kbd>
             <Kbd>E</Kbd>
           </KbdGroup>
-        </span>
+        </div>
       </div>
     )
   }
@@ -315,133 +403,178 @@ function FeatureMock({ mock }: { mock: "audio" | "host" | "shortcuts" | null }) 
 
 export default function LandingPage() {
   return (
-      <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-svh flex-col selection:bg-primary selection:text-primary-foreground">
       <Navbar />
 
       <main className="flex-1">
+        {/* Hero Section */}
         <section
           aria-labelledby="hero-heading"
-          className="relative isolate min-h-svh overflow-hidden px-4 pt-24 pb-20 md:px-6"
+          className="relative isolate min-h-[90vh] overflow-hidden px-4 pt-24 pb-20 md:px-6 flex flex-col justify-center items-center"
         >
-          <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-            <Eyebrow>Live audio rooms</Eyebrow>
+          {/* Ambient background aura */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[36rem] w-[45rem] -translate-x-1/2 rounded-full bg-radial from-primary/15 via-primary/5 to-transparent blur-3xl"
+          />
 
-            <h1 id="hero-heading" className="mt-6 text-5xl font-bold tracking-tight text-balance sm:text-7xl">
-              {site.name}
+          <div className="mx-auto flex w-full max-w-4xl flex-col items-center text-center">
+            <Eyebrow>
+              <span className="bg-success size-2 rounded-full animate-pulse" />
+              Live WebRTC Voice Spaces
+            </Eyebrow>
+
+            <h1
+              id="hero-heading"
+              className="mt-6 text-5xl font-extrabold tracking-tight text-balance sm:text-7xl lg:text-8xl"
+            >
+              Talk in real-time.
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground">
+                No accounts needed.
+              </span>
             </h1>
 
-            <p className="text-muted-foreground mt-6 max-w-xl text-lg">
-              {site.description}
+            <p className="text-muted-foreground mt-6 max-w-2xl text-lg sm:text-xl font-normal leading-relaxed">
+              Better Space is a high-fidelity spatial voice room built for teams, creators, and friends. 
+              Equipped with Krisp AI noise cancellation, live reactions, and instant link sharing.
             </p>
 
             <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
               <Button
                 render={<Link href="/lobby" />}
-                className="h-10 w-full max-w-sm px-5 text-sm sm:w-auto"
+                className="h-11 w-full max-w-xs px-6 text-sm font-semibold shadow-lg sm:w-auto transition-all hover:scale-[1.02]"
               >
                 Enter Lobby
-                <RiArrowRightLine />
+                <RiArrowRightLine className="size-4 ml-1" />
               </Button>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-muted-foreground text-xs">
-              {["Zero accounts", "Real-time voice", "No install"].map((item, index) => (
-                <span key={item} className="flex items-center gap-1.5">
-                  {index > 0 && <span className="text-border" aria-hidden="true">/</span>}
-                  {item}
-                </span>
-              ))}
+              <Button
+                variant="outline"
+                render={<Link href="#how-it-works" />}
+                className="h-11 w-full max-w-xs px-5 text-sm sm:w-auto"
+              >
+                How it works
+              </Button>
             </div>
 
             <HeroVisual />
           </div>
         </section>
 
+        {/* Quick Stats Bar */}
         <section
-          aria-label="Why Better Space"
-          className="border-border border-t border-dashed px-4 py-16 md:px-6"
+          aria-label="Platform Highlights"
+          className="border-border border-y bg-muted/30 px-4 py-8 md:px-6"
         >
-          <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3">
-            {HIGHLIGHTS.map((highlight) => (
-              <div key={highlight.title} className="flex flex-col items-center gap-2 text-center">
-                <highlight.icon className="text-primary size-6" aria-hidden="true" />
-                <h3 className="font-semibold">{highlight.title}</h3>
-                <p className="text-muted-foreground max-w-52 text-sm">{highlight.description}</p>
+          <div className="mx-auto grid w-full max-w-5xl grid-cols-2 gap-6 sm:grid-cols-4">
+            {STATS.map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center text-center">
+                <stat.icon className="text-primary size-5 mb-1 opacity-80" aria-hidden="true" />
+                <span className="text-2xl font-bold tracking-tight">{stat.value}</span>
+                <span className="text-muted-foreground text-xs font-medium">{stat.label}</span>
               </div>
             ))}
           </div>
         </section>
 
+        {/* Features Bento Grid */}
         <section aria-labelledby="features-heading" id="features" className="px-4 py-24 md:px-6">
-          <div className="mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-5xl">
             <SectionHeading
               eyebrow="Features"
               id="features-heading"
-              title="Everything you need to talk"
+              title="Everything you need to talk freely"
+              description="Engineered for crystal-clear fidelity, zero latency, and effortless collaboration."
             />
 
-            <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className={`bg-card border-border rounded-xl border p-5 ${feature.wide ? "lg:col-span-2" : ""}`}
+                  className={`bg-card border-border hover:border-border/80 flex flex-col rounded-2xl border p-6 shadow-xs transition-all ${
+                    feature.wide ? "lg:col-span-2" : ""
+                  }`}
                 >
-                  <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
-                    <feature.icon className="text-primary size-5" aria-hidden="true" />
+                  <div className="flex items-center justify-between">
+                    <div className="bg-muted/80 flex size-10 items-center justify-center rounded-xl">
+                      <feature.icon className="text-primary size-5" aria-hidden="true" />
+                    </div>
+                    {feature.badge && (
+                      <Badge variant="secondary" className="text-[10px] font-medium">
+                        {feature.badge}
+                      </Badge>
+                    )}
                   </div>
-                  <h3 className="mt-4 font-semibold">{feature.title}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm">{feature.description}</p>
-                  <FeatureMock mock={feature.mock} />
+                  <h3 className="mt-4 text-base font-semibold tracking-tight">{feature.title}</h3>
+                  <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+                  <div className="mt-auto">
+                    <FeatureMock mock={feature.mock} />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
+        {/* How It Works */}
         <section
           aria-labelledby="how-heading"
           id="how-it-works"
-          className="border-border bg-muted/50 border-t px-4 py-24 md:px-6"
+          className="border-border bg-muted/40 border-t px-4 py-24 md:px-6"
         >
-          <div className="mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-5xl">
             <SectionHeading
-              eyebrow="How it works"
+              eyebrow="How It Works"
               id="how-heading"
-              title="In the room in under a minute"
+              title="In the room in three simple steps"
+              description="Skip signups and downloads. Jump straight into the conversation."
             />
 
-            <ol className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {STEPS.map((step, index) => (
-                <li key={step.title} className="bg-card border-border rounded-xl border p-5">
-                  <span className="text-muted-foreground font-mono text-xs font-medium">
-                    {String(index + 1).padStart(2, "0")}
+            <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-3">
+              {STEPS.map((step) => (
+                <div
+                  key={step.step}
+                  className="bg-card border-border relative flex flex-col rounded-2xl border p-6 shadow-xs"
+                >
+                  <span className="text-muted-foreground/60 font-mono text-xs font-bold">
+                    STEP {step.step}
                   </span>
-                  <div className="bg-muted mt-3 flex size-8 items-center justify-center rounded-lg">
-                    <step.icon className="text-muted-foreground size-4" aria-hidden="true" />
+                  <div className="bg-muted/80 my-4 flex size-10 items-center justify-center rounded-xl">
+                    <step.icon className="text-primary size-5" aria-hidden="true" />
                   </div>
-                  <h3 className="mt-3 font-semibold">{step.title}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm">{step.description}</p>
-                </li>
+                  <h3 className="text-base font-semibold tracking-tight">{step.title}</h3>
+                  <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
               ))}
-            </ol>
+            </div>
           </div>
         </section>
 
-
+        {/* FAQ Section */}
         <section
           aria-labelledby="faq-heading"
           id="faq"
-          className="border-border bg-muted/50 border-t px-4 py-24 md:px-6"
+          className="border-border bg-muted/20 border-t px-4 py-24 md:px-6"
         >
           <div className="mx-auto w-full max-w-2xl">
-            <SectionHeading eyebrow="FAQ" id="faq-heading" title="Questions, answered" />
+            <SectionHeading
+              eyebrow="FAQ"
+              id="faq-heading"
+              title="Frequently Asked Questions"
+              description="Everything you need to know about Better Space."
+            />
 
-            <Accordion className="mt-10">
+            <Accordion className="mt-12">
               {FAQS.map((faq) => (
-                <AccordionItem key={faq.question} value={faq.question}>
-                  <AccordionTrigger>{faq.question}</AccordionTrigger>
+                <AccordionItem key={faq.question} value={faq.question} className="border-border">
+                  <AccordionTrigger className="text-left font-medium text-sm sm:text-base">
+                    {faq.question}
+                  </AccordionTrigger>
                   <AccordionContent>
-                    <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{faq.answer}</p>
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -449,159 +582,147 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section aria-labelledby="cta-heading" className="px-4 py-24 md:px-6">
+        {/* Call to Action */}
+        <section aria-labelledby="cta-heading" className="relative px-4 py-28 md:px-6 overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 -bottom-20 -z-10 h-64 bg-radial from-primary/10 to-transparent blur-3xl"
+          />
+
           <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-            <Eyebrow>Ready when you are</Eyebrow>
-            <h2 id="cta-heading" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Hear the difference
+            <Eyebrow>Instant Access</Eyebrow>
+            <h2 id="cta-heading" className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">
+              Ready to talk?
             </h2>
-            <p className="text-muted-foreground mt-4 max-w-xl text-lg">
-              Jump into a live space right now. No account required.
+            <p className="text-muted-foreground mt-4 max-w-xl text-base sm:text-lg">
+              Start a new space or drop into an ongoing conversation. Completely free.
             </p>
-            <Button render={<Link href="/lobby" />} className="mt-8 h-12 px-6 text-base">
+            <Button
+              render={<Link href="/lobby" />}
+              className="mt-8 h-12 px-7 text-base font-semibold shadow-xl"
+            >
               Enter Lobby
-              <RiArrowRightLine />
+              <RiArrowRightLine className="ml-1 size-5" />
             </Button>
           </div>
         </section>
       </main>
 
-      <footer className="relative overflow-hidden">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-24 z-0">
-          <div className="bg-primary/10 absolute left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full blur-3xl" />
-        </div>
-
-        <div className="border-border relative z-10 border-t px-4 pb-28 md:px-6 md:pb-12">
-          <div className="mx-auto w-full max-w-4xl">
-            <div className="border-border flex flex-col items-start justify-between gap-10 py-14 md:flex-row md:items-center">
-              <div className="max-w-sm">
-                <p className="text-3xl font-bold tracking-tight md:text-4xl">
-                  Hear the difference.
-                </p>
-                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-                  {site.name} is {site.tagline.toLowerCase()}. Built to feel like you are in the
-                  room — not on a call.
-                </p>
-                <Button
-                  render={<Link href="/lobby" />}
-                  className="mt-6 h-9 px-4 text-sm"
-                >
-                  Enter Lobby
-                  <RiArrowRightLine />
-                </Button>
+      {/* Footer */}
+      <footer className="border-border relative z-10 border-t bg-card/50 px-4 pb-20 md:px-6 md:pb-12">
+        <div className="mx-auto w-full max-w-5xl pt-14">
+          <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center">
+            <div className="max-w-sm">
+              <div className="flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground size-7 flex items-center justify-center rounded-lg font-bold text-sm">
+                  B
+                </span>
+                <span className="font-bold text-lg">{site.name}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-10">
-                <nav aria-label="Product" className="flex flex-col gap-2.5 text-sm">
-                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    Product
-                  </p>
-                  <Link
-                    href="/lobby"
-                    className="hover:text-foreground text-muted-foreground transition-colors"
-                  >
-                    Lobby
-                  </Link>
-                  <Link
-                    href="#features"
-                    className="hover:text-foreground text-muted-foreground transition-colors"
-                  >
-                    Features
-                  </Link>
-                  <Link
-                    href="#how-it-works"
-                    className="hover:text-foreground text-muted-foreground transition-colors"
-                  >
-                    How it works
-                  </Link>
-                  <Link
-                    href="#faq"
-                    className="hover:text-foreground text-muted-foreground transition-colors"
-                  >
-                    FAQ
-                  </Link>
-                </nav>
-
-                <nav aria-label="Creator" className="flex flex-col gap-2.5 text-sm">
-                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    Creator
-                  </p>
-                  <a
-                    href={site.creator.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <RiGlobalLine className="size-4" aria-hidden="true" />
-                    {site.creator.handle}
-                  </a>
-                  <a
-                    href={site.creator.social.github}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <RiGithubLine className="size-4" aria-hidden="true" />
-                    GitHub
-                  </a>
-                  <a
-                    href={site.creator.social.instagram}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <RiInstagramLine className="size-4" aria-hidden="true" />
-                    Instagram
-                  </a>
-                  <a
-                    href={site.creator.social.x}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <RiTwitterXLine className="size-4" aria-hidden="true" />
-                    X (Twitter)
-                  </a>
-                  <a
-                    href={site.creator.social.linkedin}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <RiLinkedinLine className="size-4" aria-hidden="true" />
-                    LinkedIn
-                  </a>
-                </nav>
-              </div>
+              <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+                {site.name} is {site.tagline.toLowerCase()}. Built to feel like you are in the
+                same room — not on a call.
+              </p>
             </div>
 
-            <div className="border-border mx-auto flex w-full flex-col items-center justify-between gap-3 border-t pt-6 md:flex-row">
-              <p className="text-muted-foreground text-xs">
-                &copy; {new Date().getFullYear()} {site.name} by{" "}
+            <div className="grid grid-cols-2 gap-10">
+              <nav aria-label="Product Links" className="flex flex-col gap-2.5 text-sm">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Product
+                </p>
+                <Link
+                  href="/lobby"
+                  className="hover:text-foreground text-muted-foreground transition-colors"
+                >
+                  Lobby
+                </Link>
+                <Link
+                  href="#features"
+                  className="hover:text-foreground text-muted-foreground transition-colors"
+                >
+                  Features
+                </Link>
+                <Link
+                  href="#how-it-works"
+                  className="hover:text-foreground text-muted-foreground transition-colors"
+                >
+                  How it works
+                </Link>
+                <Link
+                  href="#faq"
+                  className="hover:text-foreground text-muted-foreground transition-colors"
+                >
+                  FAQ
+                </Link>
+              </nav>
+
+              <nav aria-label="Social Links" className="flex flex-col gap-2.5 text-sm">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Connect
+                </p>
                 <a
                   href={site.creator.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-foreground underline-offset-2 transition-colors hover:underline"
+                  className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
                 >
-                  {site.creator.handle}
+                  <RiGlobalLine className="size-4" aria-hidden="true" />
+                  Website
                 </a>
-                .
-              </p>
-              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                {["Zero accounts", "Real-time voice", "Built in the browser"].map(
-                  (item, index) => (
-                    <span key={item} className="flex items-center gap-1.5">
-                      {index > 0 && <span className="text-border" aria-hidden="true">/</span>}
-                      {item}
-                    </span>
-                  ),
-                )}
-              </div>
+                <a
+                  href={site.creator.social.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <RiGithubLine className="size-4" aria-hidden="true" />
+                  GitHub
+                </a>
+                <a
+                  href={site.creator.social.x}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <RiTwitterXLine className="size-4" aria-hidden="true" />
+                  Twitter
+                </a>
+                <a
+                  href={site.creator.social.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <RiLinkedinLine className="size-4" aria-hidden="true" />
+                  LinkedIn
+                </a>
+              </nav>
+            </div>
+          </div>
+
+          <div className="border-border mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 text-xs text-muted-foreground md:flex-row">
+            <p>
+              &copy; {new Date().getFullYear()} {site.name}. Crafted by{" "}
+              <a
+                href={site.creator.website}
+                target="_blank"
+                rel="noreferrer"
+                className="text-foreground hover:underline"
+              >
+                {site.creator.handle}
+              </a>
+              .
+            </p>
+            <div className="flex items-center gap-2">
+              <span>Zero accounts</span>
+              <span>•</span>
+              <span>LiveKit WebRTC</span>
+              <span>•</span>
+              <span>Krisp AI</span>
             </div>
           </div>
         </div>
       </footer>
-      </div>
+    </div>
   )
 }
