@@ -1,5 +1,5 @@
 // Better Space Service Worker
-const CACHE_NAME = 'better-space-v1'
+const CACHE_NAME = 'better-space-v2'
 const PRECACHE_ASSETS = [
   '/',
   '/lobby',
