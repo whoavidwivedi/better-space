@@ -503,7 +503,7 @@ export function Lobby() {
                       <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                         <span>Host: {room.host}</span>
                         {isUserHost && (
-                          <span className="py-0.2 inline-flex items-center gap-0.5 rounded border border-primary/20 bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                          <span className="inline-flex items-center gap-0.5 rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                             <RiShieldCheckLine className="size-2.5" /> You
                           </span>
                         )}

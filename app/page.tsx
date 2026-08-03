@@ -18,7 +18,6 @@ import {
   RiShieldStarLine,
   RiTimerLine,
   RiTwitterXLine,
-  RiUserAddLine,
   RiUserSmileLine,
   RiUserStarLine,
   RiUserUnfollowLine,
@@ -172,7 +171,7 @@ const FEATURES = [
     description:
       "Float emoji reactions across the room and control your mic with effortless keyboard shortcuts.",
     icon: RiKeyboardBoxLine,
-    wide: true,
+    wide: false,
     mock: "shortcuts" as const,
   },
 ]
@@ -305,11 +304,11 @@ function SpeakerAvatar({ speaker }: { speaker: (typeof SPEAKERS)[number] }) {
       </div>
       <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
         {speaker.host ? (
-          <span className="py-0.2 inline-flex items-center gap-0.5 rounded border-primary/20 bg-primary/10 px-1 font-medium text-primary">
+          <span className="inline-flex items-center gap-0.5 rounded border-primary/20 bg-primary/10 px-1 py-0.5 font-medium text-primary">
             <RiShieldCheckLine className="size-2.5" /> Host
           </span>
         ) : speaker.cohost ? (
-          <span className="py-0.2 inline-flex items-center gap-0.5 rounded border-primary/20 bg-primary/10 px-1 font-medium text-primary">
+          <span className="inline-flex items-center gap-0.5 rounded border-primary/20 bg-primary/10 px-1 py-0.5 font-medium text-primary">
             <RiShieldStarLine className="size-2.5" /> Co-host
           </span>
         ) : speaker.listener ? (
@@ -330,7 +329,7 @@ function HeroVisual() {
       <div className="rounded-2xl border border-border bg-card p-5 text-left shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="inline-flex size-2 animate-pulse rounded-full bg-emerald-500" />
+            <span className="inline-flex size-2 motion-safe:animate-pulse rounded-full bg-emerald-500" />
             <span className="text-sm font-semibold text-foreground">
               design-critique-7x9q
             </span>
@@ -353,11 +352,11 @@ function HeroVisual() {
             <RiLinksLine className="size-4 shrink-0" aria-hidden="true" />
             <span className="truncate">better.space/space/design-critique</span>
           </span>
-          <span className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground">
+          <span className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground">
             <RiVolumeUpLine className="size-4" aria-hidden="true" />
             Deafen
           </span>
-          <span className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-muted px-3 text-xs font-medium text-muted-foreground hover:text-foreground">
+          <span className="flex h-9 items-center gap-1.5 rounded-lg bg-muted px-3 text-xs font-medium text-muted-foreground hover:text-foreground">
             <RiEmotionHappyLine className="size-4" aria-hidden="true" />
             React
           </span>
@@ -388,7 +387,7 @@ function FeatureMock({
           ))}
         </div>
         <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
+          <span className="size-2 motion-safe:animate-pulse rounded-full bg-emerald-500" />
           Auto Audio Recovery Active
         </div>
       </div>

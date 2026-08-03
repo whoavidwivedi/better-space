@@ -70,7 +70,7 @@ export function AvatarPicker({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
             <span>{selectedAvatar}</span>
-            <span className="py-0.2 inline-flex items-center gap-0.5 rounded border border-primary/20 bg-primary/10 px-1 text-[9px] font-medium text-primary">
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/20 bg-primary/10 px-1 py-0.5 text-[9px] font-medium text-primary">
               <RiLockLine className="size-2.5" /> Locked
             </span>
           </div>
@@ -163,6 +163,7 @@ export function AvatarPicker({
                   alt={trimmedQuery}
                   className="pointer-events-none size-full object-cover"
                   loading="lazy"
+                  fetchPriority="low"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-primary/90 py-0.5 text-center text-[6px] leading-none font-bold text-primary-foreground">
                   Custom
@@ -198,6 +199,7 @@ export function AvatarPicker({
                     alt={preset}
                     className="pointer-events-none size-full object-cover"
                     loading="lazy"
+                    fetchPriority="low"
                   />
                 </div>
                 {isSelected && (

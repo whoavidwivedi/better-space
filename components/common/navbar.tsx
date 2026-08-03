@@ -144,7 +144,7 @@ export function Navbar({
                 >
                   <span className="flex h-7 items-center gap-1.5 rounded-full bg-primary px-2.5 text-xs text-primary-foreground">
                     <span
-                      className="size-1.5 animate-pulse rounded-full bg-primary-foreground/90"
+                      className="size-1.5 motion-safe:animate-pulse rounded-full bg-primary-foreground/90"
                       aria-hidden="true"
                     />
                     {activeLink?.label ?? cta?.label ?? "Menu"}
