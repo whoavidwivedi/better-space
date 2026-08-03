@@ -8,7 +8,7 @@ import React, { useEffect, useState } from "react"
 import { Navbar } from "@/components/common/navbar"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
@@ -88,40 +88,40 @@ export function SpaceJoin() {
     <div className="flex min-h-svh flex-col">
       <Navbar />
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4 md:p-6">
-        <Link
-          href="/lobby"
-          className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <RiArrowLeftLine className="size-4" aria-hidden="true" />
-          Back to lobby
-        </Link>
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4 md:p-6 text-center">
+        <div className="flex flex-col items-center">
+          <Link
+            href="/lobby"
+            className="text-muted-foreground hover:text-foreground mb-10 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+          >
+            <RiArrowLeftLine className="size-4" aria-hidden="true" />
+            Lobby
+          </Link>
 
-        <div className="bg-card border-border rounded-xl border p-6 shadow-sm">
-          <h1 className="text-xl font-semibold tracking-tight">{room}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{room}</h1>
+          <p className="text-muted-foreground mt-3 text-base">
             Tell us what to call you, then jump into the conversation.
           </p>
 
           <form
-            className="mt-6 space-y-4"
+            className="mt-10 w-full space-y-5 text-left"
             onSubmit={(e) => {
               e.preventDefault()
               handleJoin(userName)
             }}
           >
             <Field>
-              <FieldLabel htmlFor="join-user-name">Your Name</FieldLabel>
               <Input
                 id="join-user-name"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="What should we call you?"
+                placeholder="Your name..."
                 maxLength={15}
                 autoFocus
+                className="h-12 text-base rounded-xl bg-muted/50 border-transparent hover:bg-muted/80 focus:bg-background transition-colors"
               />
             </Field>
-            <Button type="submit" className="w-full" disabled={!userName.trim() || isJoining}>
+            <Button type="submit" className="h-12 w-full text-base rounded-xl font-medium" disabled={!userName.trim() || isJoining}>
               {isJoining ? <Spinner className="mr-2" /> : null}
               Join Space
             </Button>
