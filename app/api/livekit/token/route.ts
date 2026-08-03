@@ -65,6 +65,12 @@ export async function GET(req: NextRequest) {
       if (meta.host === username) {
         if (meta.hostSecret && hostSecret === meta.hostSecret) {
           isHost = true;
+        } else {
+          // Security Fix: Prevent unauthorized users from claiming the host's identity
+          return NextResponse.json(
+            { error: { message: "Invalid host secret or username already taken by host" } },
+            { status: 403 },
+          );
         }
       }
     } catch {}
