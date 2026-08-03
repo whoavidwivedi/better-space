@@ -9,8 +9,7 @@ out/
 build/
 dist/
 
-# lockfiles
-bun.lock
+# lockfiles (bun.lock is committed for reproducible installs)
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
