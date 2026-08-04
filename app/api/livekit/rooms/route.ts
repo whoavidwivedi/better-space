@@ -44,7 +44,16 @@ export async function GET() {
         name: r.name,
         numParticipants: r.numParticipants,
         host,
-        participants: participants.map((p) => p.identity).slice(0, 3),
+        participants: participants.map((p) => {
+          let avatar = p.identity;
+          try {
+            if (p.metadata) {
+              const meta = JSON.parse(p.metadata);
+              if (meta.avatar) avatar = meta.avatar;
+            }
+          } catch {}
+          return { identity: p.identity, avatar };
+        }).slice(0, 3),
       };
     }),
   );
@@ -54,7 +63,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { roomName, hostName } = body;
+  const { roomName, hostName, avatar } = body;
 
   if (!roomName || !hostName) {
     return NextResponse.json(
@@ -116,6 +125,7 @@ export async function POST(req: NextRequest) {
 
   const at = new AccessToken(process.env.LIVEKIT_API_KEY!, process.env.LIVEKIT_API_SECRET!, {
     identity: cleanHost,
+    metadata: JSON.stringify({ avatar: avatar?.trim() || cleanHost }),
   });
   at.addGrant({
     room: cleanRoom,

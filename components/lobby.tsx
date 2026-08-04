@@ -3,6 +3,8 @@
 
 import { RiAddLine, RiTeamLine, RiArrowRightSLine } from "@remixicon/react"
 import React, { useState, useEffect, useRef } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { RiShuffleLine } from "@remixicon/react"
 
 import { Navbar } from "@/components/common/navbar"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
@@ -24,13 +26,19 @@ type RoomInfo = {
   name: string
   numParticipants: number
   host: string
-  participants: string[]
+  participants: { identity: string; avatar: string }[]
 }
 
 export function Lobby() {
   const [rooms, setRooms] = useState<RoomInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [userName, setUserName] = useState("")
+  const [createUserName, setCreateUserName] = useState("")
+  const [joinUserName, setJoinUserName] = useState("")
+  const [activeUserName, setActiveUserName] = useState("")
+
+  const [createAvatarSeed, setCreateAvatarSeed] = useState(() => Math.random().toString(36).substring(2, 9))
+  const [joinAvatarSeed, setJoinAvatarSeed] = useState(() => Math.random().toString(36).substring(2, 9))
+  const [isJoinProfileLocked, setIsJoinProfileLocked] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
 
   const [hasJoined, setHasJoined] = useState(false)
@@ -77,20 +85,23 @@ export function Lobby() {
     }
   }, [])
 
-  const handleJoin = async (room: string) => {
-    if (!userName.trim()) return
+  const handleJoin = async (roomName: string) => {
+    const uName = joinUserName.trim();
+    if (!uName) return;
     setIsJoining(true)
-    const savedSecret = localStorage.getItem(`space_host_secret_${room}`) || ""
+    const savedSecret = localStorage.getItem(`space_host_secret_${roomName}`) || ""
     setHostSecret(savedSecret)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
-      const query = new URLSearchParams({ room, username: userName.trim() })
+      const query = new URLSearchParams({ room: roomName, username: uName.trim(), avatar: joinAvatarSeed })
       if (savedSecret) query.set("hostSecret", savedSecret)
       const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
       if (data.data?.token) {
+        setActiveUserName(uName)
+        localStorage.setItem(`space_profile_${roomName}`, JSON.stringify({ userName: uName, avatarSeed: joinAvatarSeed }))
         setToken(data.data.token)
-        setActiveRoomName(room)
+        setActiveRoomName(roomName)
         setHasJoined(true)
         setIsJoinOpen(false)
         setIsCreateOpen(false)
@@ -108,20 +119,24 @@ export function Lobby() {
   }
 
   const handleCreateAndJoin = async () => {
-    if (!newSpaceName.trim() || !userName.trim()) return
+    const uName = createUserName.trim()
+    if (!uName) return
+    if (!newSpaceName.trim() || !uName) return
     setIsJoining(true)
-    localStorage.setItem("space_username", userName.trim())
+    localStorage.setItem("space_username", uName)
     try {
       const res = await fetch("/api/livekit/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomName: newSpaceName, hostName: userName }),
+        body: JSON.stringify({ roomName: newSpaceName, hostName: uName, avatar: createAvatarSeed }),
       })
       const data = await res.json()
       if (res.ok && data.data?.token) {
         setToken(data.data.token)
         setActiveRoomName(newSpaceName)
-        const secret = data.data.hostSecret || ""
+        const secret = data.data.hostSecret
+        setActiveUserName(uName)
+        localStorage.setItem(`space_profile_${newSpaceName}`, JSON.stringify({ userName: uName, avatarSeed: createAvatarSeed }))
         setHostSecret(secret)
         if (secret) localStorage.setItem(`space_host_secret_${data.data.roomName}`, secret)
         setHasJoined(true)
@@ -141,20 +156,34 @@ export function Lobby() {
   }
 
   const onRoomClick = (roomName: string, el?: HTMLElement) => {
-    if (userName.trim()) {
-      handleJoin(roomName)
+    const profileStr = localStorage.getItem(`space_profile_${roomName}`)
+    if (profileStr) {
+      try {
+        const profile = JSON.parse(profileStr)
+        if (profile.userName && profile.avatarSeed) {
+          setJoinUserName(profile.userName)
+          setJoinAvatarSeed(profile.avatarSeed)
+          setIsJoinProfileLocked(true)
+        } else {
+          setIsJoinProfileLocked(false)
+        }
+      } catch {
+        setIsJoinProfileLocked(false)
+      }
     } else {
-      setSelectedRoom(roomName)
-      joinAnchorRef.current = el ?? null
-      setIsJoinOpen(true)
+      setIsJoinProfileLocked(false)
     }
+
+    setSelectedRoom(roomName)
+    joinAnchorRef.current = el ?? null
+    setIsJoinOpen(true)
   }
 
   if (hasJoined && token) {
     return (
       <SpaceRoomLiveKit
         roomName={activeRoomName}
-        userName={userName}
+        userName={activeUserName}
         token={token}
         hostSecret={hostSecret}
         onLeave={() => {
@@ -213,17 +242,36 @@ export function Lobby() {
                   />
                 </Field>
                 <Field>
+                  <div className="flex flex-col items-center gap-4 mb-4 mt-2">
+                    <div className="relative group/avatar inline-block">
+                      <Avatar className="border-border bg-muted size-20 border-2">
+                        <AvatarImage
+                          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${createAvatarSeed}&backgroundColor=ffffff`}
+                          alt="Avatar preview"
+                          className="object-contain"
+                        />
+                        <AvatarFallback />
+                      </Avatar>
+                      <button
+                        type="button"
+                        onClick={() => setCreateAvatarSeed(Math.random().toString(36).substring(2, 9))}
+                        className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md transition-transform hover:scale-110 focus:outline-none"
+                      >
+                        <RiShuffleLine size={14} />
+                      </button>
+                    </div>
+                  </div>
                   <FieldLabel htmlFor="create-user-name">Your Name</FieldLabel>
                   <Input
                     id="create-user-name"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    value={createUserName}
+                    onChange={(e) => setCreateUserName(e.target.value)}
                     placeholder="What should we call you?"
                     maxLength={15}
                   />
                 </Field>
                 <div className="pt-2">
-                  {userName.trim() && rooms.some((r) => r.host === userName.trim()) && (
+                  {createUserName.trim() && rooms.some((r) => r.host === createUserName.trim()) && (
                     <div className="text-destructive text-sm font-medium mb-3">
                       You are already hosting a space.
                     </div>
@@ -233,9 +281,9 @@ export function Lobby() {
                     className="w-full"
                     disabled={
                       !newSpaceName.trim() || 
-                      !userName.trim() || 
+                      !createUserName.trim() ||
                       isJoining || 
-                      rooms.some((r) => r.host === userName.trim())
+                      rooms.some((r) => r.host === createUserName.trim())
                     }
                   >
                     {isJoining ? <Spinner className="mr-2" /> : null}
@@ -266,7 +314,7 @@ export function Lobby() {
             {rooms.map((room) => {
               const disconnectTimeStr = typeof window !== "undefined" ? localStorage.getItem(`space_host_disconnected_${room.name}`) : null;
               let timeLeft = 0;
-              if (disconnectTimeStr && room.host === userName) {
+              if (disconnectTimeStr && room.host === activeUserName) {
                 const disconnectTime = parseInt(disconnectTimeStr, 10);
                 const elapsed = Date.now() - disconnectTime;
                 if (elapsed < 60000) {
@@ -300,12 +348,12 @@ export function Lobby() {
                     <div className="flex -space-x-2">
                       {room.participants.slice(0, 5).map((p) => (
                         <div
-                          key={p}
+                          key={p.identity}
                           className="bg-muted border-card relative size-8 overflow-hidden rounded-full border-2 shadow-sm"
                         >
                           <img
-                            src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p}&backgroundColor=ffffff`}
-                            alt={p}
+                            src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p.avatar || p.identity}&backgroundColor=ffffff`}
+                            alt={p.identity}
                             className="size-full object-cover"
                           />
                         </div>
@@ -352,18 +400,40 @@ export function Lobby() {
             }}
           >
             <Field>
+              <div className="flex flex-col items-center gap-4 mb-4 mt-2">
+                <div className="relative group/avatar inline-block">
+                  <Avatar className="border-border bg-muted size-20 border-2">
+                    <AvatarImage
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${joinAvatarSeed}&backgroundColor=ffffff`}
+                      alt="Avatar preview"
+                      className="object-contain"
+                    />
+                    <AvatarFallback />
+                  </Avatar>
+                  {!isJoinProfileLocked && (
+                    <button
+                      type="button"
+                      onClick={() => setJoinAvatarSeed(Math.random().toString(36).substring(2, 9))}
+                      className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md transition-transform hover:scale-110 focus:outline-none"
+                    >
+                      <RiShuffleLine size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
               <FieldLabel htmlFor="join-user-name">Your Name</FieldLabel>
               <Input
                 id="join-user-name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                value={joinUserName}
+                onChange={(e) => setJoinUserName(e.target.value)}
+                disabled={isJoinProfileLocked}
                 placeholder="What should we call you?"
                 maxLength={15}
                 autoFocus
               />
             </Field>
             <div className="pt-2">
-              <Button type="submit" className="w-full" disabled={!userName.trim() || isJoining}>
+              <Button type="submit" className="w-full" disabled={!joinUserName.trim() || isJoining}>
                 {isJoining ? <Spinner className="mr-2" /> : null}
                 Join Space
               </Button>
