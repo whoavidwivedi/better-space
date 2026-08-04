@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const room = req.nextUrl.searchParams.get("room");
   const usernameQuery = req.nextUrl.searchParams.get("username");
   const hostSecretQuery = req.nextUrl.searchParams.get("hostSecret");
+  const avatarQuery = req.nextUrl.searchParams.get("avatar");
 
   if (!room || !usernameQuery) {
     return NextResponse.json(
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
   const username = usernameQuery.trim().substring(0, 30);
   const cleanRoom = room.trim().substring(0, 30);
   const hostSecret = hostSecretQuery?.trim() ?? "";
+  const avatar = avatarQuery?.trim() ?? "";
 
   if (!/^[a-zA-Z0-9_-]+$/.test(cleanRoom)) {
     return NextResponse.json({ error: { message: "Invalid room name" } }, { status: 400 });
@@ -91,6 +93,7 @@ export async function GET(req: NextRequest) {
 
   const at = new AccessToken(process.env.LIVEKIT_API_KEY!, process.env.LIVEKIT_API_SECRET!, {
     identity: username,
+    metadata: JSON.stringify({ avatar }),
   });
   at.addGrant({
     room: cleanRoom,

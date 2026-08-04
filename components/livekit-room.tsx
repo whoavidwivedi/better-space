@@ -134,6 +134,7 @@ function RoomUI({
   const [copied, setCopied] = useState(false)
   const [permUpdate, setPermUpdate] = useState(0)
 
+  const intentionalLeaveRef = useRef(false)
   const [hostDisconnectTime, setHostDisconnectTime] = useState<number | null>(null)
   const [disconnectCountdown, setDisconnectCountdown] = useState(60)
 
@@ -228,6 +229,8 @@ function RoomUI({
 
   const handleEndSpace = async () => {
     setIsEndSpaceOpen(false)
+    intentionalLeaveRef.current = true
+    localStorage.removeItem(`space_host_disconnected_${roomName}`)
     try {
       await fetch("/api/livekit/moderate", {
         method: "POST",
@@ -367,7 +370,7 @@ function RoomUI({
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (isHost) {
+      if (isHost && !intentionalLeaveRef.current) {
         if (shouldHostTimerRunRef.current) {
           localStorage.setItem(`space_host_disconnected_${roomName}`, Date.now().toString())
         } else {
@@ -378,7 +381,7 @@ function RoomUI({
     window.addEventListener("beforeunload", handleBeforeUnload)
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
-      if (isHost) {
+      if (isHost && !intentionalLeaveRef.current) {
         if (shouldHostTimerRunRef.current) {
           localStorage.setItem(`space_host_disconnected_${roomName}`, Date.now().toString())
         } else {
@@ -1067,7 +1070,13 @@ function ParticipantTile({
 
   useEffect(() => {
     let count = 0
-    const targetSeed = participant.sid || Math.random().toString(36).substring(2, 10)
+    let targetSeed = participant.identity || participant.sid || Math.random().toString(36).substring(2, 10)
+    try {
+      if (participant.metadata) {
+        const meta = JSON.parse(participant.metadata)
+        if (meta.avatar) targetSeed = meta.avatar
+      }
+    } catch {}
     const interval = setInterval(() => {
       setAvatarSeed(Math.random().toString(36).substring(2, 9))
       count++
@@ -1077,7 +1086,7 @@ function ParticipantTile({
       }
     }, 120)
     return () => clearInterval(interval)
-  }, [participant.sid])
+  }, [participant.sid, participant.identity, participant.metadata])
 
   const trackPub = participant.getTrackPublication(Track.Source.Microphone)
   const volume = useTrackVolume(trackPub?.track)

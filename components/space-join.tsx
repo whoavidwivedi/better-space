@@ -4,6 +4,8 @@ import { RiArrowLeftLine } from "@remixicon/react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import React, { useEffect, useState } from "react"
+import { RiShuffleLine } from "@remixicon/react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { Navbar } from "@/components/common/navbar"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
@@ -23,13 +25,27 @@ export function SpaceJoin() {
   const [hasJoined, setHasJoined] = useState(false)
   const [token, setToken] = useState("")
   const [hostSecret, setHostSecret] = useState("")
+  const [avatarSeed, setAvatarSeed] = useState(() => Math.random().toString(36).substring(2, 9))
+  const [isProfileLocked, setIsProfileLocked] = useState(false)
 
   useEffect(() => {
+    const profileStr = localStorage.getItem(`space_profile_${room}`)
+    if (profileStr) {
+      try {
+        const profile = JSON.parse(profileStr)
+        if (profile.userName && profile.avatarSeed) {
+          setUserName(profile.userName)
+          setAvatarSeed(profile.avatarSeed)
+          setIsProfileLocked(true)
+          return
+        }
+      } catch {}
+    }
     const saved = localStorage.getItem("space_username")
     if (saved) {
       setUserName(saved)
     }
-  }, [])
+  }, [room])
 
   useEffect(() => {
     const savedSecret = localStorage.getItem(`space_host_secret_${room}`)
@@ -42,9 +58,10 @@ export function SpaceJoin() {
     if (!name.trim()) return
     setIsJoining(true)
     localStorage.setItem("space_username", name.trim())
+    localStorage.setItem(`space_profile_${room}`, JSON.stringify({ userName: name.trim(), avatarSeed }))
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
-      const query = new URLSearchParams({ room, username: name.trim() })
+      const query = new URLSearchParams({ room, username: name.trim(), avatar: avatarSeed })
       const savedSecret = localStorage.getItem(`space_host_secret_${room}`) || ""
       if (savedSecret) query.set("hostSecret", savedSecret)
       const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
@@ -110,11 +127,33 @@ export function SpaceJoin() {
               handleJoin(userName)
             }}
           >
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <div className="relative group/avatar inline-block">
+                <Avatar className="border-border bg-muted size-24 border-2">
+                  <AvatarImage
+                    src={`https://api.dicebear.com/7.x/notionists/svg?seed=${avatarSeed}&backgroundColor=ffffff`}
+                    alt="Avatar preview"
+                    className="object-contain"
+                  />
+                  <AvatarFallback />
+                </Avatar>
+                {!isProfileLocked && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarSeed(Math.random().toString(36).substring(2, 9))}
+                    className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full bg-foreground text-background shadow-md transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  >
+                    <RiShuffleLine size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
             <Field>
               <Input
                 id="join-user-name"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
+                disabled={isProfileLocked}
                 placeholder="Your name..."
                 maxLength={15}
                 autoFocus
