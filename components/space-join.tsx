@@ -97,7 +97,7 @@ export function SpaceJoin() {
             <RiArrowLeftLine className="size-4" aria-hidden="true" />
             Lobby
           </Link>
-
+          
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{room}</h1>
           <p className="text-muted-foreground mt-3 text-base">
             Tell us what to call you, then jump into the conversation.
