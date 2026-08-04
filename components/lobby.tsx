@@ -6,9 +6,7 @@ import React, { useState, useEffect, useRef } from "react"
 
 import { Navbar } from "@/components/common/navbar"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -173,10 +171,10 @@ export function Lobby() {
       <Navbar />
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col p-4 md:p-6">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="mb-12 mt-6 flex flex-col justify-between gap-6 md:flex-row md:items-end border-b border-border pb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Active Spaces</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-3xl font-bold tracking-tight">Active Spaces</h1>
+            <p className="text-muted-foreground mt-2">
               Select an active space to join the conversation.
             </p>
           </div>
@@ -184,8 +182,8 @@ export function Lobby() {
           <Popover open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <PopoverTrigger
               render={
-                <Button className="w-full gap-2 sm:w-auto">
-                  <RiAddLine size={16} />
+                <Button className="w-full gap-2 sm:w-auto font-medium">
+                  <RiAddLine size={18} />
                   Start Space
                 </Button>
               }
@@ -254,19 +252,17 @@ export function Lobby() {
             <Spinner />
           </div>
         ) : rooms.length === 0 ? (
-          <Empty className="border-border bg-card rounded-xl border border-dashed py-24">
-            <EmptyMedia variant="icon">
-              <RiTeamLine />
-            </EmptyMedia>
-            <EmptyHeader>
-              <EmptyTitle>It&apos;s quiet in here.</EmptyTitle>
-              <EmptyDescription>
-                No active spaces right now. Be the first to start one.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <div className="flex flex-1 flex-col items-center justify-center py-32 text-center">
+            <div className="bg-muted flex size-16 items-center justify-center rounded-2xl mb-6">
+              <RiTeamLine className="text-muted-foreground size-8" />
+            </div>
+            <h3 className="text-xl font-semibold tracking-tight">It&apos;s quiet in here.</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm text-sm">
+              No active spaces right now. Be the first to start one.
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {rooms.map((room) => {
               const disconnectTimeStr = typeof window !== "undefined" ? localStorage.getItem(`space_host_disconnected_${room.name}`) : null;
               let timeLeft = 0;
@@ -282,51 +278,49 @@ export function Lobby() {
                 <button
                   key={room.name}
                   onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                  className="bg-card border-border hover:border-border/80 flex flex-col rounded-xl border p-5 text-left shadow-sm transition-colors relative overflow-hidden"
+                  className="bg-card flex flex-col rounded-2xl border-none p-6 text-left shadow-sm transition-all hover:scale-[1.01] hover:shadow-md relative overflow-hidden ring-1 ring-border/50"
                 >
                   {timeLeft > 0 && (
                     <div className="absolute top-0 left-0 right-0 bg-warning text-warning-foreground text-[10px] font-bold text-center py-0.5 animate-pulse">
                       Host disconnected. Rejoin within {timeLeft}s!
                     </div>
                   )}
-                  <div className={`mb-6 flex w-full items-start justify-between ${timeLeft > 0 ? 'mt-2' : ''}`}>
+                  <div className={`mb-8 flex w-full items-start justify-between ${timeLeft > 0 ? 'mt-2' : ''}`}>
                     <div className="truncate pr-4">
-                      <h3 className="truncate text-lg font-semibold">{room.name}</h3>
+                      <h3 className="truncate text-lg font-semibold tracking-tight">{room.name}</h3>
                       <p className="text-muted-foreground mt-1 text-sm">Host: {room.host}</p>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="bg-success/10 text-success border-success/20 shrink-0"
-                    >
+                    <div className="flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success shrink-0">
+                      <span className="size-1.5 rounded-full bg-success animate-pulse" />
                       Live
-                    </Badge>
+                    </div>
                   </div>
 
-                <div className="mt-auto flex w-full items-center justify-between">
-                  <div className="flex -space-x-2">
-                    {room.participants.slice(0, 5).map((p) => (
-                      <div
-                        key={p}
-                        className="bg-muted border-background relative size-7 overflow-hidden rounded-full border-2"
-                      >
-                        <img
-                          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p}&backgroundColor=ffffff`}
-                          alt={p}
-                          className="size-full object-cover"
-                        />
-                      </div>
-                    ))}
-                    {room.participants.length > 5 && (
-                      <div className="bg-muted border-background text-muted-foreground flex size-7 items-center justify-center rounded-full border-2 text-[10px] font-medium">
-                        +{room.participants.length - 5}
-                      </div>
-                    )}
-                  </div>
+                  <div className="mt-auto flex w-full items-center justify-between">
+                    <div className="flex -space-x-2">
+                      {room.participants.slice(0, 5).map((p) => (
+                        <div
+                          key={p}
+                          className="bg-muted border-card relative size-8 overflow-hidden rounded-full border-2 shadow-sm"
+                        >
+                          <img
+                            src={`https://api.dicebear.com/7.x/notionists/svg?seed=${p}&backgroundColor=ffffff`}
+                            alt={p}
+                            className="size-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {room.participants.length > 5 && (
+                        <div className="bg-muted border-card text-muted-foreground flex size-8 items-center justify-center rounded-full border-2 text-[10px] font-medium shadow-sm">
+                          +{room.participants.length - 5}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="text-muted-foreground flex items-center gap-1 text-sm font-medium">
-                    {room.numParticipants} {room.numParticipants === 1 ? "speaker" : "speakers"}
-                    <RiArrowRightSLine size={16} />
-                  </div>
+                    <div className="text-muted-foreground flex items-center gap-1 text-sm font-medium">
+                      {room.numParticipants} {room.numParticipants === 1 ? "speaker" : "speakers"}
+                      <RiArrowRightSLine size={18} className="opacity-50" />
+                    </div>
                   </div>
                 </button>
               )
