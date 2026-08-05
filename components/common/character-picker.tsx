@@ -11,13 +11,13 @@ import {
 import { useState, useMemo } from "react"
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { CHARACTER_COLLECTIONS, USERPIC_NAMES, userpicUrl, randomUserpic } from "@/lib/userpics"
 
@@ -62,8 +62,8 @@ export function CharacterPicker({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
         render={
           trigger ? (
             (trigger as React.ReactElement)
@@ -82,86 +82,85 @@ export function CharacterPicker({
           )
         }
       />
-      <DialogContent
-        className="sm:w-[min(32rem,calc(100vw-2rem))] max-h-[85svh] sm:max-h-[min(36rem,85svh)] flex flex-col"
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={8}
+        className="w-[min(22rem,calc(100vw-1.5rem))] sm:w-[min(28rem,calc(100vw-2rem))] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-border bg-card shadow-2xl"
       >
-        <div className="flex flex-col gap-3 sm:gap-4 min-h-0">
+        <div className="flex flex-col gap-3">
           {/* Header */}
-          <DialogHeader className="pr-8 shrink-0">
+          <PopoverHeader>
             <div className="flex items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-full bg-muted border border-border">
-                <RiUser3Line size={14} className="text-foreground" />
+              <div className="flex size-6 sm:size-7 items-center justify-center rounded-full bg-muted border border-border shrink-0">
+                <RiUser3Line size={13} className="text-foreground" />
               </div>
               <div>
-                <DialogTitle className="font-display text-base sm:text-lg font-bold">
-                  Choose Avatar Persona
-                </DialogTitle>
-                <DialogDescription className="font-mono text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                  Select your persona for voice spaces.
-                </DialogDescription>
+                <PopoverTitle className="font-display text-sm sm:text-base font-bold text-foreground">
+                  Choose Persona
+                </PopoverTitle>
+                <PopoverDescription className="font-mono text-[10px] sm:text-xs text-muted-foreground">
+                  Pick your avatar for voice spaces.
+                </PopoverDescription>
               </div>
             </div>
-          </DialogHeader>
+          </PopoverHeader>
 
-          {/* Quick Actions & Series Filter */}
-          <div className="flex flex-col gap-2 sm:gap-2.5 shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 -mx-1 px-1">
+          {/* Category Pills & Shuffle */}
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 -mx-0.5 px-0.5 pb-0.5">
+              <button
+                type="button"
+                onClick={() => setSelectedCol("all")}
+                className={`whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold border transition-colors shrink-0 ${
+                  selectedCol === "all"
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-muted/50 text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                All
+              </button>
+              {CHARACTER_COLLECTIONS.map((col) => (
                 <button
+                  key={col.id}
                   type="button"
-                  onClick={() => setSelectedCol("all")}
-                  className={`whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold border transition-colors shrink-0 ${
-                    selectedCol === "all"
+                  onClick={() => setSelectedCol(col.id)}
+                  className={`whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold border transition-colors shrink-0 ${
+                    selectedCol === col.id
                       ? "bg-foreground text-background border-foreground"
                       : "bg-muted/50 text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
-                  All
+                  {col.name.split(" ")[0]}
                 </button>
-                {CHARACTER_COLLECTIONS.map((col) => (
-                  <button
-                    key={col.id}
-                    type="button"
-                    onClick={() => setSelectedCol(col.id)}
-                    className={`whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold border transition-colors shrink-0 ${
-                      selectedCol === col.id
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-muted/50 text-muted-foreground border-border hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {col.name.split(" ")[0]}
-                  </button>
-                ))}
-              </div>
-
-              {/* Instant Shuffle */}
-              <button
-                type="button"
-                onClick={handleRandomize}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border border-border bg-muted/80 hover:bg-muted text-[11px] sm:text-xs font-mono font-semibold text-foreground transition-all active:scale-95 shrink-0"
-                title="Pick a random persona"
-              >
-                <RiShuffleLine size={13} />
-                <span className="hidden sm:inline">Shuffle</span>
-              </button>
+              ))}
             </div>
 
-            {/* Search Input */}
-            <div className="relative">
-              <RiSearchLine size={15} className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search personas..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl bg-muted/40 py-2 pl-9 pr-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 border border-border focus:border-foreground focus:outline-none transition-colors"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={handleRandomize}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border bg-muted/80 hover:bg-muted text-[10px] sm:text-[11px] font-mono font-semibold text-foreground transition-all active:scale-95 shrink-0"
+              title="Pick a random persona"
+            >
+              <RiShuffleLine size={12} />
+              <span className="hidden sm:inline">Shuffle</span>
+            </button>
           </div>
 
-          {/* Avatar Grid — scrollable */}
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-2.5 overflow-y-auto overscroll-contain pr-0.5 py-1 min-h-0 flex-1">
+          {/* Search */}
+          <div className="relative">
+            <RiSearchLine size={14} className="text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg bg-muted/40 py-1.5 pl-8 pr-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 border border-border focus:border-foreground focus:outline-none transition-colors"
+            />
+          </div>
+
+          {/* Avatar Grid */}
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 sm:gap-2 max-h-56 sm:max-h-64 overflow-y-auto overscroll-contain py-0.5 pr-0.5">
             {filtered.map((name) => {
               const isSelected = value === name
               return (
@@ -171,9 +170,9 @@ export function CharacterPicker({
                   onClick={() => handleSelect(name)}
                   aria-label={name}
                   aria-pressed={isSelected}
-                  className="group relative flex flex-col items-center justify-center p-1 rounded-2xl hover:bg-muted/40 transition-all active:scale-95 focus:outline-none"
+                  className="group relative flex items-center justify-center p-0.5 rounded-xl hover:bg-muted/40 transition-all active:scale-95 focus:outline-none"
                 >
-                  <div className="relative size-14 sm:size-14 md:size-16">
+                  <div className="relative size-12 sm:size-13">
                     <img
                       src={userpicUrl(name)}
                       alt={name}
@@ -186,8 +185,8 @@ export function CharacterPicker({
                     />
                     {isSelected && (
                       <div className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/20">
-                        <div className="size-5 rounded-full bg-foreground text-background flex items-center justify-center shadow-xs">
-                          <RiCheckLine size={12} className="stroke-[3]" />
+                        <div className="size-4.5 sm:size-5 rounded-full bg-foreground text-background flex items-center justify-center shadow-xs">
+                          <RiCheckLine size={11} className="stroke-[3]" />
                         </div>
                       </div>
                     )}
@@ -197,7 +196,7 @@ export function CharacterPicker({
             })}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   )
 }
