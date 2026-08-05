@@ -8,6 +8,7 @@ import {
   RiAddLine,
 } from "@remixicon/react"
 import { userpicUrl } from "@/lib/userpics"
+import { STARTER_TEMPLATES, StarterTemplate } from "@/lib/presets"
 
 type SpaceCard = {
   name: string
@@ -19,35 +20,17 @@ type SpaceCard = {
   isLive: boolean
 }
 
-const STARTER_TEMPLATES: SpaceCard[] = [
-  {
-    name: "techtwitter-india",
-    title: "#TechTwitter India: Devs, Startups & Craft",
-    topic: "#TechTwitter India",
-    host: "OSLO-1",
-    speakers: ["OSLO-1", "Funny Bunny-2", "Upstream-3", "Afterclap-4"],
-    isLive: false,
-  },
-  {
-    name: "design-systems",
-    title: "Design Systems, Motion & Craft",
-    topic: "Design & UX",
-    host: "OSLO-1",
-    speakers: ["OSLO-1", "OSLO-3", "Upstream-2", "Afterclap-8"],
-    isLive: false,
-  },
-  {
-    name: "indie-founders",
-    title: "Building & Shipping using ZeroStarter",
-    topic: "Startups & Build",
-    host: "Upstream-5",
-    speakers: ["Upstream-5", "Funny Bunny-2", "Teamwork-1"],
-    isLive: false,
-  },
-]
+const DEFAULT_ROOMS: SpaceCard[] = STARTER_TEMPLATES.map((t) => ({
+  name: t.name,
+  title: t.title,
+  topic: t.topic,
+  host: "OSLO-1",
+  speakers: t.speakers,
+  isLive: false,
+}))
 
 export function LiveSpacesRadar() {
-  const [rooms, setRooms] = useState<SpaceCard[]>(STARTER_TEMPLATES)
+  const [rooms, setRooms] = useState<SpaceCard[]>(DEFAULT_ROOMS)
 
   useEffect(() => {
     // Attempt to fetch actual live rooms if available
@@ -55,18 +38,21 @@ export function LiveSpacesRadar() {
       .then((res) => res.json())
       .then((data) => {
         if (data.data && data.data.length > 0) {
-          const liveList: SpaceCard[] = data.data.map((r: any) => ({
-            name: r.name,
-            title: r.name.replace(/[-_]/g, " ").toUpperCase(),
-            topic: "Live Broadcast",
-            host: r.host || "OSLO-1",
-            speakers: r.participants?.map((p: any) => p.avatar || p.identity) || ["OSLO-1"],
-            listenersCount: Math.max(r.numParticipants, 1),
-            isLive: true,
-          }))
+          const liveList: SpaceCard[] = data.data.map((r: any) => {
+            const matchingTemplate = STARTER_TEMPLATES.find((t) => t.name === r.name)
+            return {
+              name: r.name,
+              title: matchingTemplate ? matchingTemplate.title : r.name.replace(/[-_]/g, " ").toUpperCase(),
+              topic: matchingTemplate ? matchingTemplate.topic : "Live Broadcast",
+              host: r.host || "OSLO-1",
+              speakers: r.participants?.map((p: any) => p.avatar || p.identity) || ["OSLO-1"],
+              listenersCount: Math.max(r.numParticipants, 1),
+              isLive: true,
+            }
+          })
 
           // Merge live rooms first, followed by remaining starter templates (up to 3 total)
-          const remainingTemplates = STARTER_TEMPLATES.filter(
+          const remainingTemplates = DEFAULT_ROOMS.filter(
             (tmpl) => !liveList.some((l) => l.name.toLowerCase() === tmpl.name.toLowerCase())
           )
           setRooms([...liveList, ...remainingTemplates].slice(0, 3))

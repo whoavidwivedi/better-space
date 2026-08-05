@@ -16,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 
 import { randomUserpic, userpicUrl } from "@/lib/userpics"
+import { STARTER_TEMPLATES } from "@/lib/presets"
 
 export function SpaceJoin() {
   const params = useParams<{ name?: string | string[] }>()
@@ -62,6 +63,8 @@ export function SpaceJoin() {
       setUserName(savedName)
     }
   }, [params?.name])
+
+  const matchingPreset = STARTER_TEMPLATES.find((t) => t.name === (spaceName || initialRoom))
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,12 +153,28 @@ export function SpaceJoin() {
 
           {/* Heading */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">
-              Enter Voice Space
-            </h1>
-            <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm">
-              Customize your space name, pick an avatar, and enter your display name.
-            </p>
+            {matchingPreset ? (
+              <>
+                <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-2.5 py-0.5 rounded-full mb-2">
+                  Template
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">
+                  {matchingPreset.title}
+                </h1>
+                <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm font-mono">
+                  /space/{matchingPreset.name} &middot; {matchingPreset.desc}
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">
+                  Enter Voice Space
+                </h1>
+                <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm">
+                  {spaceName ? `/space/${spaceName}` : "Customize your space name, pick an avatar, and enter your display name."}
+                </p>
+              </>
+            )}
           </div>
 
           <form

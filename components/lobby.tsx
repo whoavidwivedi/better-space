@@ -31,6 +31,9 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import { userpicUrl, randomUserpic } from "@/lib/userpics"
+import { STARTER_TEMPLATES } from "@/lib/presets"
+
+const STARTER_PRESETS = STARTER_TEMPLATES
 
 type RoomInfo = {
   name: string
@@ -38,24 +41,6 @@ type RoomInfo = {
   host: string
   participants: { identity: string; avatar: string }[]
 }
-
-const STARTER_PRESETS = [
-  {
-    name: "techtwitter-india",
-    title: "#TechTwitter India",
-    desc: "Devs, founders, startups & craft discussions",
-  },
-  {
-    name: "design-systems",
-    title: "Design Systems & Motion",
-    desc: "UI craft, design tokens & interactions",
-  },
-  {
-    name: "indie-founders",
-    title: "Shipping Micro-SaaS",
-    desc: "Solo founders, indie hacking & launches",
-  },
-]
 
 export function Lobby() {
   const [rooms, setRooms] = useState<RoomInfo[]>([])

@@ -622,7 +622,7 @@ function RoomUI({
       <header className="border-border bg-card/80 sticky top-0 z-40 flex h-12 sm:h-14 items-center justify-between gap-2 sm:gap-3 border-b px-2.5 sm:px-4 backdrop-blur-md md:px-6">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <span className="size-1.5 sm:size-2 rounded-full bg-foreground inline-block shrink-0" />
-          <h1 className="truncate font-mono text-[11px] sm:text-xs font-bold text-foreground max-w-[120px] sm:max-w-xs md:max-w-none">
+          <h1 className="truncate font-mono text-[11px] sm:text-xs font-bold text-foreground max-w-[150px] sm:max-w-xs md:max-w-none">
             /space/{roomName}
           </h1>
         </div>
