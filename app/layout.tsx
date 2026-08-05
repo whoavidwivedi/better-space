@@ -22,33 +22,47 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work"),
   title: {
     default: `${site.name} - ${site.tagline}`,
     template: `%s | ${site.name}`,
   },
   description: site.description,
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work"),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
+    locale: "en_US",
     siteName: site.name,
     title: `${site.name} - ${site.tagline}`,
     description: site.description,
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work",
+    url: "/",
     images: [
       {
         url: "/og-image.png",
+        secureUrl: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: site.name,
+        type: "image/png",
+        alt: `${site.name} - ${site.tagline}`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
+    site: `@${site.creator.handle}`,
+    creator: `@${site.creator.handle}`,
     title: `${site.name} - ${site.tagline}`,
     description: site.description,
-    images: ["/og-image.png"],
-    creator: `@${site.creator.handle}`,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${site.name} - ${site.tagline}`,
+      },
+    ],
   },
 }
 

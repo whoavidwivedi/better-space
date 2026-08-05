@@ -17,6 +17,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Bend } from "@/components/canvasui/Bend"
 import { cn } from "@/lib/utils"
 import {
   CHARACTER_COLLECTIONS,
@@ -156,41 +157,56 @@ export function CharacterPicker({
             </div>
 
             {/* Avatar Grid */}
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 sm:gap-2 max-h-52 sm:max-h-60 overflow-y-auto overscroll-contain py-0.5 pr-0.5 -mr-0.5">
-              {filtered.map((name) => {
-                const isSelected = value === name
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => handleSelect(name)}
-                    aria-label={name}
-                    aria-pressed={isSelected}
-                    className="group relative flex items-center justify-center p-0.5 rounded-xl hover:bg-muted/40 transition-all active:scale-95 focus:outline-none"
-                  >
-                    <div className="relative size-12 sm:size-13">
-                      <img
-                        src={userpicUrl(name)}
-                        alt={name}
-                        className={cn(
-                          "size-full rounded-full border-2 object-cover bg-muted transition-all",
-                          isSelected
-                            ? "border-foreground ring-2 ring-foreground shadow-sm scale-105"
-                            : "border-border/80 group-hover:border-foreground/60 group-hover:scale-105"
-                        )}
-                      />
-                      {isSelected && (
-                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/20">
-                          <div className="size-4.5 sm:size-5 rounded-full bg-foreground text-background flex items-center justify-center shadow-xs">
-                            <RiCheckLine size={11} className="stroke-[3]" />
+            <Bend
+              className="-mx-0.5 h-52 sm:h-60"
+              zone={240}
+              angle={80}
+              rounding={150}
+              perspective={700}
+              ease={240}
+              smoothing={0.1}
+              tumble={0.5}
+              tilt={0.5}
+              direction="in"
+              top
+              bottom
+            >
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 sm:gap-2 px-0.5 py-0.5">
+                {filtered.map((name) => {
+                  const isSelected = value === name
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => handleSelect(name)}
+                      aria-label={name}
+                      aria-pressed={isSelected}
+                      className="group relative flex items-center justify-center p-0.5 rounded-xl hover:bg-muted/40 transition-all active:scale-95 focus:outline-none"
+                    >
+                      <div className="relative size-12 sm:size-13">
+                        <img
+                          src={userpicUrl(name)}
+                          alt={name}
+                          className={cn(
+                            "size-full rounded-full border-2 object-cover bg-muted transition-all",
+                            isSelected
+                              ? "border-foreground ring-2 ring-foreground shadow-sm scale-105"
+                              : "border-border/80 group-hover:border-foreground/60 group-hover:scale-105"
+                          )}
+                        />
+                        {isSelected && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/20">
+                            <div className="size-4.5 sm:size-5 rounded-full bg-foreground text-background flex items-center justify-center shadow-xs">
+                              <RiCheckLine size={11} className="stroke-[3]" />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </Bend>
           </div>
 
           {/* Selected Persona Footer */}

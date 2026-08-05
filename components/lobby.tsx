@@ -8,6 +8,7 @@ import {
   RiSearchLine,
   RiShuffleLine,
   RiEditLine,
+  RiCloseLine,
 } from "@remixicon/react"
 import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
@@ -344,14 +345,14 @@ export function Lobby() {
               <PopoverContent
                 side="bottom"
                 align="end"
-                className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card p-0 shadow-2xl"
+                className="w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card p-0 shadow-2xl"
               >
                 <PopoverHeader className="px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border/70">
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-3">
                     <div className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-muted border border-border shrink-0">
                       <RiTeamLine size={14} className="text-foreground" />
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <PopoverTitle className="font-display text-base font-bold text-foreground leading-tight">
                         Launch New Space
                       </PopoverTitle>
@@ -359,20 +360,33 @@ export function Lobby() {
                         Name your room and set your display identity.
                       </PopoverDescription>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateOpen(false)}
+                      aria-label="Close"
+                      className="grid size-7 sm:size-8 shrink-0 place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground/25 cursor-pointer"
+                    >
+                      <RiCloseLine size={15} aria-hidden="true" />
+                    </button>
                   </div>
                 </PopoverHeader>
 
                 <form
-                  className="flex flex-col p-5 sm:p-6"
+                  className="flex flex-col gap-5 p-5 sm:p-6"
                   onSubmit={(e) => {
                     e.preventDefault()
                     handleCreateAndJoin()
                   }}
                 >
                   <Field className="space-y-1.5">
-                    <FieldLabel htmlFor="create-space-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
-                      Space Name
-                    </FieldLabel>
+                    <div className="flex items-baseline justify-between">
+                      <FieldLabel htmlFor="create-space-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
+                        Space Name
+                      </FieldLabel>
+                      <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70" aria-hidden="true">
+                        {newSpaceName.length}/30
+                      </span>
+                    </div>
                     <Input
                       id="create-space-name"
                       value={newSpaceName}
@@ -382,56 +396,15 @@ export function Lobby() {
                       placeholder="e.g. design-crit"
                       maxLength={30}
                       autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                       autoFocus
                     />
                   </Field>
 
                   <Field className="space-y-1.5">
-                    <div className="flex items-center justify-center gap-3 mb-2 mt-1">
-                      <div className="relative group inline-block">
-                        <CharacterPicker
-                          value={createAvatarSeed}
-                          onSelect={setCreateAvatarSeed}
-                          size="md"
-                          trigger={
-                            <button
-                              type="button"
-                              className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground cursor-pointer"
-                              title="Click to choose avatar persona"
-                            >
-                              <Avatar className="size-16 sm:size-20 border border-border shadow-xs transition-transform group-hover:scale-105">
-                                <AvatarImage
-                                  src={userpicUrl(createAvatarSeed)}
-                                  alt="Avatar preview"
-                                  className="object-cover"
-                                />
-                                <AvatarFallback />
-                              </Avatar>
-                              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider bg-card px-2 py-0.5 rounded-full border border-border">
-                                  Change
-                                </span>
-                              </div>
-                              <div className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md border-2 border-background">
-                                <RiEditLine size={13} />
-                              </div>
-                            </button>
-                          }
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setCreateAvatarSeed(randomUserpic())}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground transition-all active:scale-95 shadow-xs cursor-pointer"
-                        title="Randomize avatar"
-                      >
-                        <RiShuffleLine size={13} />
-                        <span>Shuffle</span>
-                      </button>
-                    </div>
-
                     <FieldLabel htmlFor="create-user-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
                       Your Display Name
                     </FieldLabel>
@@ -441,12 +414,12 @@ export function Lobby() {
                       onChange={(e) => setCreateUserName(e.target.value)}
                       placeholder="What should people call you?"
                       maxLength={20}
-                      autoComplete="off"
+                      autoComplete="nickname"
                       className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                     />
                   </Field>
 
-                  <div className="mt-5 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 flex flex-col sm:flex-row items-center justify-between gap-2 px-5 sm:px-6 py-3 border-t border-border/70 bg-muted/30">
+                  <div className="mt-1 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 flex flex-col sm:flex-row items-center justify-between gap-2 px-5 sm:px-6 py-3.5 border-t border-border/70 bg-muted/30">
                     {createUserName.trim() && rooms.some((r) => r.host === createUserName.trim()) ? (
                       <span className="font-mono text-[10px] sm:text-xs font-medium text-destructive">
                         Already hosting an active space.
@@ -458,7 +431,7 @@ export function Lobby() {
                     )}
                     <Button
                       type="submit"
-                      className="font-mono text-xs font-bold uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-foreground/90 px-5 h-9 shrink-0"
+                      className="font-mono text-xs font-bold uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-foreground/90 px-5 h-10 shrink-0 focus-visible:ring-4 focus-visible:ring-foreground/25"
                       disabled={
                         !newSpaceName.trim() ||
                         !createUserName.trim() ||

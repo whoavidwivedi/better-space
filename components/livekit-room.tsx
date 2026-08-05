@@ -684,7 +684,7 @@ function RoomUI({
                 <Popover open={isEndSpaceOpen} onOpenChange={setIsEndSpaceOpen}>
                   <PopoverTrigger
                     render={
-                      <Button variant="destructive" size="sm" className="h-8 font-mono text-xs rounded-xl font-bold">
+                      <Button variant="destructive" size="sm" className="h-8 font-mono text-xs rounded-xl font-bold bg-red-600 text-white hover:bg-red-700">
                         End Space
                       </Button>
                     }
@@ -701,7 +701,7 @@ function RoomUI({
                       </PopoverDescription>
                     </PopoverHeader>
                     <div className="flex flex-col gap-2 pt-3 font-mono text-xs">
-                      <Button variant="destructive" onClick={handleEndSpace} className="rounded-xl font-bold">
+                      <Button variant="destructive" onClick={handleEndSpace} className="rounded-xl font-bold bg-red-600 text-white hover:bg-red-700">
                         End for everyone
                       </Button>
                       <Button variant="outline" onClick={() => setIsEndSpaceOpen(false)} className="rounded-xl">
@@ -713,10 +713,9 @@ function RoomUI({
               )}
             </>
           ) : (
-            <Button
-              variant="ghost"
+            <Button variant="ghost"
               onClick={onLeave}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 font-mono text-xs font-bold rounded-xl"
+              className="text-red-500 hover:bg-red-500/10 hover:text-red-500 h-8 font-mono text-xs font-bold rounded-xl"
             >
               Leave
             </Button>

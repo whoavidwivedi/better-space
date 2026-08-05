@@ -1,7 +1,7 @@
 // Brand identity for this app: the single source a fork edits to rebrand.
 export const site = {
   name: "Better Space",
-  description: "Live audio rooms in your browser. Pick a name, no signup, and talk.",
+  description: "Drop into live voice rooms directly in your browser. Talk with crisp, low-latency WebRTC spatial audio. 100% ephemeral with zero logins or accounts needed.",
   tagline: "Real-time voice. Zero accounts.",
   creator: {
     handle: "whoavidwivedi",
