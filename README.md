@@ -58,7 +58,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Scripts
 
-- `bun run dev` — Start the local development server
-- `bun run build` — Create an optimized production build
-- `bun run lint` — Run ESLint checks
-- `bun run typecheck` — Run TypeScript type checks
+- `bun run dev`   Start the local development server
+- `bun run build`   Create an optimized production build
+- `bun run lint`   Run ESLint checks
+- `bun run typecheck`   Run TypeScript type checks

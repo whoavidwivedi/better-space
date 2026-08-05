@@ -1,3 +1,10 @@
+import {
+  Bricolage_Grotesque,
+  Instrument_Serif,
+  Kalam,
+  Syne,
+  Playfair_Display,
+} from "next/font/google"
 import localFont from "next/font/local"
 
 export const dmSans = localFont({
@@ -13,4 +20,40 @@ export const jetbrainsMono = localFont({
   src: "./fonts/jetbrains-mono-latin-wght-normal.woff2",
   variable: "--font-jetbrains-mono",
   weight: "100 800",
+})
+
+export const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-bricolage",
+  display: "swap",
+})
+
+export const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+})
+
+export const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "700", "800"],
+  variable: "--font-syne",
+  display: "swap",
+})
+
+export const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "600", "900"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair",
+  display: "swap",
+})
+
+export const kalam = Kalam({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-kalam",
+  display: "swap",
 })

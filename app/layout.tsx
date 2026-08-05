@@ -1,7 +1,15 @@
 import type { Metadata, Viewport } from "next"
 
 import { Providers } from "@/app/providers"
-import { dmSans, jetbrainsMono } from "@/lib/fonts"
+import {
+  dmSans,
+  jetbrainsMono,
+  bricolageGrotesque,
+  instrumentSerif,
+  kalam,
+  syne,
+  playfairDisplay,
+} from "@/lib/fonts"
 import { site } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
@@ -36,11 +44,20 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={cn(dmSans.variable, jetbrainsMono.variable, "antialiased")}
+      className={cn(
+        dmSans.variable,
+        jetbrainsMono.variable,
+        bricolageGrotesque.variable,
+        instrumentSerif.variable,
+        kalam.variable,
+        syne.variable,
+        playfairDisplay.variable,
+        "antialiased"
+      )}
       lang="en"
       suppressHydrationWarning
     >
-      <body className="min-h-svh">
+      <body className="min-h-svh selection:bg-foreground selection:text-background font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

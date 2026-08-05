@@ -4,9 +4,9 @@ import { RiArrowLeftLine } from "@remixicon/react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import React, { useEffect, useState } from "react"
-import { RiShuffleLine } from "@remixicon/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+import { CharacterPicker } from "@/components/common/character-picker"
 import { Navbar } from "@/components/common/navbar"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,8 @@ import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
+
+import { userpicUrl } from "@/lib/userpics"
 
 export function SpaceJoin() {
   const params = useParams<{ name: string }>()
@@ -131,21 +133,15 @@ export function SpaceJoin() {
               <div className="relative group/avatar inline-block">
                 <Avatar className="border-border bg-muted size-24 border-2">
                   <AvatarImage
-                    src={`https://api.dicebear.com/7.x/notionists/svg?seed=${avatarSeed}&backgroundColor=ffffff`}
+                    src={userpicUrl(avatarSeed)}
                     alt="Avatar preview"
-                    className="object-contain"
+                    className="object-cover"
                   />
                   <AvatarFallback />
                 </Avatar>
                 {!isProfileLocked && (
-                  <button
-                    type="button"
-                    onClick={() => setAvatarSeed(Math.random().toString(36).substring(2, 9))}
-                    className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full bg-foreground text-background shadow-md transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  >
-                    <RiShuffleLine size={16} />
-                  </button>
-                )}
+                    <CharacterPicker value={avatarSeed} onSelect={setAvatarSeed} size="md" />
+                  )}
               </div>
             </div>
             <Field>
