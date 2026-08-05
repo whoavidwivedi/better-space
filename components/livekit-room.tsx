@@ -633,15 +633,15 @@ function RoomUI({
       <div className="absolute inset-0 bg-studio-grid pointer-events-none opacity-40" />
 
       {/* Header Bar */}
-      <header className="border-border bg-card/80 sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b px-4 backdrop-blur-md md:px-6">
+      <header className="border-border bg-card/80 sticky top-0 z-40 flex h-14 items-center justify-between gap-2.5 sm:gap-3 border-b px-3 sm:px-4 backdrop-blur-md md:px-6">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="size-2 rounded-full bg-emerald-500 status-pulse-live inline-block" />
-          <h1 className="truncate font-mono text-xs font-bold text-foreground">
+          <span className="size-2 rounded-full bg-emerald-500 status-pulse-live inline-block shrink-0" />
+          <h1 className="truncate font-mono text-xs font-bold text-foreground max-w-[140px] sm:max-w-xs md:max-w-none">
             /space/{roomName}
           </h1>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ModeToggle />
 
           <HoverCard>
@@ -706,7 +706,7 @@ function RoomUI({
                   <PopoverContent
                     side="bottom"
                     align="end"
-                    className="w-72 rounded-2xl p-4 border border-border bg-card shadow-xl"
+                    className="w-[min(18rem,calc(100vw-2rem))] rounded-2xl p-4 border border-border bg-card shadow-xl"
                   >
                     <PopoverHeader>
                       <PopoverTitle className="text-sm font-bold">End Studio Space</PopoverTitle>
@@ -740,22 +740,22 @@ function RoomUI({
 
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-4 pb-[calc(8rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-          <section aria-labelledby="participants-heading" className="space-y-6">
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-3 sm:p-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+          <section aria-labelledby="participants-heading" className="space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
               <h2
                 id="participants-heading"
-                className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                className="flex items-center gap-2 font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 <RiGroupLine className="size-4" aria-hidden="true" />
                 Live Stage Participants ({participants.length})
               </h2>
-              <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="font-mono text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
                 WebRTC Active
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedParticipants.map((participant) => (
                 <ParticipantTile
                   key={participant.sid || participant.identity}
@@ -790,8 +790,8 @@ function RoomUI({
         )}
 
         {/* Tactile Hardware Bottom Audio Controls Bar */}
-        <div className="border-border bg-card/90 fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 rounded-2xl border p-2 shadow-2xl backdrop-blur-md">
-          <div className="flex items-center gap-2">
+        <div className="border-border bg-card/95 fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 rounded-2xl border p-1.5 sm:p-2 shadow-2xl backdrop-blur-md">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Audio Settings Popover */}
             <Popover
               onOpenChange={(open) => {
@@ -814,15 +814,15 @@ function RoomUI({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="text-muted-foreground size-10 shrink-0 rounded-xl"
+                    className="text-muted-foreground size-9 sm:size-10 shrink-0 rounded-xl"
                     aria-label="Audio settings"
                   >
-                    <RiSettings3Line size={18} />
+                    <RiSettings3Line size={17} />
                   </Button>
                 }
               />
               <PopoverContent
-                className="w-80 p-5 shadow-2xl rounded-2xl border border-border bg-card"
+                className="w-[min(20rem,calc(100vw-2rem))] p-4 sm:p-5 shadow-2xl rounded-2xl border border-border bg-card"
                 align="center"
                 side="top"
                 sideOffset={12}
@@ -954,13 +954,13 @@ function RoomUI({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="text-muted-foreground size-10 shrink-0 rounded-xl"
+                    className="text-muted-foreground size-9 sm:size-10 shrink-0 rounded-xl"
                   >
-                    <RiEmotionLine size={18} />
+                    <RiEmotionLine size={17} />
                   </Button>
                 }
               />
-              <PopoverContent className="z-50 w-auto rounded-2xl border border-border p-0 shadow-2xl">
+              <PopoverContent className="z-50 w-auto rounded-2xl border border-border p-0 shadow-2xl max-w-[calc(100vw-2rem)] overflow-hidden">
                 <EmojiPicker
                   onEmojiClick={handleSendReaction}
                   theme={Theme.AUTO}
@@ -979,11 +979,11 @@ function RoomUI({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="text-muted-foreground relative size-10 shrink-0 rounded-xl"
+                      className="text-muted-foreground relative size-9 sm:size-10 shrink-0 rounded-xl"
                     >
-                      <RiUserVoiceLine size={18} />
+                      <RiUserVoiceLine size={17} />
                       {micRequests.length > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground px-1 font-mono text-[10px] font-bold tabular-nums shadow-xs">
+                        <span className="absolute -top-1.5 -right-1.5 flex h-4 sm:h-5 min-w-4 sm:min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground px-1 font-mono text-[9px] sm:text-[10px] font-bold tabular-nums shadow-xs">
                           {micRequests.length}
                         </span>
                       )}
@@ -991,7 +991,7 @@ function RoomUI({
                   }
                 />
                 <PopoverContent
-                  className="w-80 p-0 shadow-2xl overflow-hidden rounded-2xl border border-border bg-card"
+                  className="w-[min(20rem,calc(100vw-2rem))] p-0 shadow-2xl overflow-hidden rounded-2xl border border-border bg-card"
                   align="center"
                   side="top"
                   sideOffset={12}
@@ -1067,7 +1067,7 @@ function RoomUI({
                   onClick={toggleDeafen}
                   variant={isDeafened ? "destructive" : "secondary"}
                   size="lg"
-                  className="h-10 px-4 gap-2 rounded-xl font-mono text-xs font-bold"
+                  className="h-9 sm:h-10 px-3 sm:px-4 gap-1.5 sm:gap-2 rounded-xl font-mono text-xs font-bold shrink-0"
                 >
                   {isDeafened ? <RiVolumeMuteLine size={16} /> : <RiHeadphoneLine size={16} />}
                   <span className="hidden sm:inline">Deafen</span>
@@ -1078,7 +1078,7 @@ function RoomUI({
                   disabled={isDeafened}
                   variant={isMuted ? "destructive" : "default"}
                   size="lg"
-                  className="h-10 px-5 gap-2 rounded-xl font-mono text-xs font-bold shadow-xs"
+                  className="h-9 sm:h-10 px-3.5 sm:px-5 gap-1.5 sm:gap-2 rounded-xl font-mono text-xs font-bold shadow-xs shrink-0"
                 >
                   {isMuted ? (
                     <>
@@ -1098,10 +1098,10 @@ function RoomUI({
                 onClick={requestMic}
                 disabled={hasRequestedMicLocal}
                 size="lg"
-                className="h-10 px-5 gap-2 rounded-xl font-mono text-xs font-bold"
+                className="h-9 sm:h-10 px-3.5 sm:px-5 gap-1.5 sm:gap-2 rounded-xl font-mono text-xs font-bold shrink-0"
               >
                 <RiMicLine size={16} />
-                {hasRequestedMicLocal ? "Request Sent" : "Request Microphone"}
+                <span>{hasRequestedMicLocal ? "Requested" : "Request Mic"}</span>
               </Button>
             )}
           </div>

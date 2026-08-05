@@ -56,7 +56,7 @@ export function CharacterPicker({
           </button>
         }
       />
-      <PopoverContent side="top" align="center" className="w-80 p-4 rounded-2xl border-2 border-foreground bg-card shadow-2xl font-mono text-xs">
+      <PopoverContent side="top" align="center" className="w-[min(20rem,calc(100vw-2rem))] p-3.5 sm:p-4 rounded-2xl border-2 border-foreground bg-card shadow-2xl font-mono text-xs">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between border-b border-foreground/15 pb-2">
             <span className="font-display text-xs font-black uppercase tracking-wider text-foreground">
@@ -101,7 +101,7 @@ export function CharacterPicker({
           </div>
 
           {/* Avatar Grid */}
-          <div className="grid max-h-56 grid-cols-5 gap-2 overflow-y-auto pr-1">
+          <div className="grid max-h-56 grid-cols-4 sm:grid-cols-5 gap-2 overflow-y-auto pr-1">
             {filtered.map((name) => {
               const isSelected = value === name
               return (

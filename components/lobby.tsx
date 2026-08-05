@@ -252,21 +252,21 @@ export function Lobby() {
     <div className="flex min-h-svh flex-col bg-background text-foreground selection:bg-foreground selection:text-background">
       <Navbar />
 
-      <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col p-4 sm:p-6 md:p-8">
+      <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col p-3.5 sm:p-6 md:p-8">
         {/* Minimal Header */}
-        <div className="minimal-card mb-8 mt-2 flex flex-col justify-between gap-6 md:flex-row md:items-center rounded-3xl border border-border bg-card p-6 sm:p-8">
+        <div className="minimal-card mb-6 sm:mb-8 mt-1 sm:mt-2 flex flex-col justify-between gap-4 sm:gap-6 md:flex-row md:items-center rounded-2xl sm:rounded-3xl border border-border bg-card p-4 sm:p-6 md:p-8">
           <div>
-            <div className="inline-flex items-center gap-2 font-mono text-[11px] font-bold text-muted-foreground uppercase mb-2">
+            <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase mb-1.5 sm:mb-2">
               <span className="size-2 rounded-full bg-foreground animate-ping" />
               <span>LIVE ROOMS</span>
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-black tracking-tight">Active Broadcasts</h1>
-            <p className="text-muted-foreground mt-1 text-sm font-normal">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">Active Broadcasts</h1>
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-normal">
               Drop into any active studio space with your vector persona.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full md:w-auto justify-between sm:justify-end">
             {/* Active Avatar Preview */}
             <div className="flex items-center gap-2.5 bg-muted/40 p-1.5 pl-2.5 rounded-full border border-border">
               <div className="relative">
@@ -308,7 +308,7 @@ export function Lobby() {
               <PopoverContent
                 side="bottom"
                 align="end"
-                className="w-96 rounded-3xl p-6 border border-border bg-card shadow-xl"
+                className="w-[min(24rem,calc(100vw-2rem))] rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-border bg-card shadow-xl"
               >
                 <PopoverHeader>
                   <PopoverTitle className="font-display text-lg font-bold">
@@ -414,7 +414,7 @@ export function Lobby() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {rooms.map((room) => {
               const disconnectTimeStr =
                 typeof window !== "undefined"
@@ -433,7 +433,7 @@ export function Lobby() {
                 <button
                   key={room.name}
                   onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                  className="minimal-card relative flex flex-col rounded-3xl p-6 text-left border border-border bg-card transition-colors overflow-hidden group"
+                  className="minimal-card relative flex flex-col rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-left border border-border bg-card transition-colors overflow-hidden group"
                 >
                   {timeLeft > 0 && (
                     <div className="absolute top-0 left-0 right-0 bg-foreground text-background text-[10px] font-mono font-bold text-center py-1">
@@ -502,7 +502,7 @@ export function Lobby() {
         <PopoverContent
           side="top"
           align="center"
-          className="w-96 rounded-3xl p-6 border border-border bg-card shadow-xl"
+          className="w-[min(24rem,calc(100vw-2rem))] rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-border bg-card shadow-xl"
           anchor={joinAnchorRef.current ?? undefined}
         >
           <PopoverHeader>

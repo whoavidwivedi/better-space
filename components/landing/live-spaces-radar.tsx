@@ -81,22 +81,22 @@ export function LiveSpacesRadar() {
   }, [])
 
   return (
-    <section className="relative w-full border-b border-border/80 bg-background py-16 sm:py-24">
+    <section className="relative w-full border-b border-border/80 bg-background py-12 sm:py-20 md:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
           <div>
-            <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+            <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 sm:mb-2">
               <span>EXPLORE ACTIVE SPACES</span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
               Drop into ongoing discussions.
             </h2>
           </div>
 
           <Link
             href="/lobby"
-            className="inline-flex items-center gap-2 font-mono text-xs font-bold text-foreground hover:underline"
+            className="inline-flex items-center gap-2 font-mono text-xs font-bold text-foreground hover:underline self-start sm:self-auto"
           >
             <span>View All Spaces ({rooms.length})</span>
             <RiArrowRightLine size={16} />
@@ -104,38 +104,38 @@ export function LiveSpacesRadar() {
         </div>
 
         {/* Room Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {rooms.slice(0, 4).map((room) => (
             <Link
               key={room.name}
               href={`/space/${encodeURIComponent(room.name)}`}
-              className="group relative flex flex-col justify-between rounded-3xl border border-border bg-card/70 p-6 sm:p-7 hover:border-foreground/40 hover:bg-card/95 transition-all duration-200 active:scale-[0.99] shadow-sm hover:shadow-md overflow-hidden"
+              className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-border bg-card/70 p-5 sm:p-7 hover:border-foreground/40 hover:bg-card/95 transition-all duration-200 active:scale-[0.99] shadow-sm hover:shadow-md overflow-hidden"
             >
               {/* Card Top */}
               <div>
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <span className="rounded-full bg-muted px-3 py-1 font-mono text-[11px] font-bold text-muted-foreground uppercase">
+                <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4">
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase">
                     {room.topic}
                   </span>
-                  <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-muted-foreground">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] sm:text-xs font-semibold text-muted-foreground">
                     <span>{room.listenersCount} tuning in</span>
                   </div>
                 </div>
 
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground group-hover:text-foreground/90 transition-colors">
+                <h3 className="font-display text-lg sm:text-xl md:text-2xl font-bold text-foreground group-hover:text-foreground/90 transition-colors">
                   {room.title}
                 </h3>
               </div>
 
               {/* Card Bottom: Speakers & Join Action */}
-              <div className="mt-8 flex items-center justify-between pt-4 border-t border-border/60">
+              <div className="mt-6 sm:mt-8 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 pt-3.5 sm:pt-4 border-t border-border/60">
                 {/* Speaker Avatars */}
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2.5">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="flex -space-x-2 sm:-space-x-2.5">
                     {room.speakers.slice(0, 4).map((avatar, idx) => (
                       <div
                         key={idx}
-                        className="size-9 rounded-full border-2 border-card bg-muted overflow-hidden shadow-xs"
+                        className="size-8 sm:size-9 rounded-full border-2 border-card bg-muted overflow-hidden shadow-xs shrink-0"
                       >
                         <img
                           src={userpicUrl(avatar)}
@@ -145,13 +145,13 @@ export function LiveSpacesRadar() {
                       </div>
                     ))}
                   </div>
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <span className="font-mono text-[11px] sm:text-xs text-muted-foreground">
                     {room.speakers.length} on mic
                   </span>
                 </div>
 
                 {/* Enter Button */}
-                <div className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider group-hover:bg-foreground/90 transition-transform group-active:scale-95">
+                <div className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-1.5 sm:px-4 sm:py-2 font-mono text-xs font-bold uppercase tracking-wider group-hover:bg-foreground/90 transition-transform group-active:scale-95">
                   <span>Enter</span>
                   <RiArrowRightLine size={14} />
                 </div>

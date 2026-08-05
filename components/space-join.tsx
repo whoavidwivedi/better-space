@@ -107,31 +107,31 @@ export function SpaceJoin() {
     <div className="flex min-h-svh flex-col">
       <Navbar />
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4 md:p-6 text-center">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4 sm:p-6 text-center">
         <div className="flex flex-col items-center">
           <Link
             href="/lobby"
-            className="text-muted-foreground hover:text-foreground mb-10 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+            className="text-muted-foreground hover:text-foreground mb-6 sm:mb-8 inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-colors"
           >
             <RiArrowLeftLine className="size-4" aria-hidden="true" />
             Lobby
           </Link>
           
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{room}</h1>
-          <p className="text-muted-foreground mt-3 text-base">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-all max-w-full">{room}</h1>
+          <p className="text-muted-foreground mt-2 sm:mt-3 text-xs sm:text-sm md:text-base">
             Tell us what to call you, then jump into the conversation.
           </p>
 
           <form
-            className="mt-10 w-full space-y-5 text-left"
+            className="mt-6 sm:mt-8 w-full space-y-4 sm:space-y-5 text-left"
             onSubmit={(e) => {
               e.preventDefault()
               handleJoin(userName)
             }}
           >
-            <div className="flex flex-col items-center gap-4 mb-6">
+            <div className="flex flex-col items-center gap-4 mb-4 sm:mb-6">
               <div className="relative group/avatar inline-block">
-                <Avatar className="border-border bg-muted size-24 border-2">
+                <Avatar className="border-border bg-muted size-20 sm:size-24 border-2">
                   <AvatarImage
                     src={userpicUrl(avatarSeed)}
                     alt="Avatar preview"
@@ -153,10 +153,10 @@ export function SpaceJoin() {
                 placeholder="Your name..."
                 maxLength={15}
                 autoFocus
-                className="h-12 text-base rounded-xl bg-muted/50 border-transparent hover:bg-muted/80 focus:bg-background transition-colors"
+                className="h-11 sm:h-12 text-sm sm:text-base rounded-xl bg-muted/50 border-transparent hover:bg-muted/80 focus:bg-background transition-colors"
               />
             </Field>
-            <Button type="submit" className="h-12 w-full text-base rounded-xl font-medium" disabled={!userName.trim() || isJoining}>
+            <Button type="submit" className="h-11 sm:h-12 w-full text-sm sm:text-base rounded-xl font-medium" disabled={!userName.trim() || isJoining}>
               {isJoining ? <Spinner className="mr-2" /> : null}
               Join Space
             </Button>
