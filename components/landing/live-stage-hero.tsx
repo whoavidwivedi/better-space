@@ -31,7 +31,7 @@ export function LiveStageHero() {
 
   const handleLaunchQuick = (e: React.FormEvent) => {
     e.preventDefault()
-    const rName = spaceName.trim() || "design-lounge"
+    const rName = (spaceName.trim() || "techtwitter-india").toLowerCase().replace(/[^a-z0-9_-]/g, "-")
     localStorage.setItem("better_space_active_avatar", myAvatar)
     window.location.href = `/space/${encodeURIComponent(rName)}`
   }

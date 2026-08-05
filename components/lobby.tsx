@@ -509,14 +509,10 @@ export function Lobby() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                 {STARTER_PRESETS.map((preset) => (
-                  <button
+                  <Link
                     key={preset.name}
-                    type="button"
-                    onClick={() => {
-                      setNewSpaceName(preset.name)
-                      setIsCreateOpen(true)
-                    }}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-foreground/40 hover:bg-card/90 transition-all active:scale-98 shadow-xs text-left cursor-pointer"
+                    href={`/space/${preset.name}`}
+                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-foreground/40 hover:bg-card/90 transition-all active:scale-98 shadow-xs text-left"
                   >
                     <div>
                       <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-2 py-0.5 rounded-full mb-2">
@@ -531,10 +527,10 @@ export function Lobby() {
                     </div>
 
                     <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/60 font-mono text-xs font-bold text-foreground">
-                      <span>Launch Template</span>
+                      <span className="font-mono text-xs font-bold">Launch: {preset.name}</span>
                       <RiArrowRightLine size={14} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>

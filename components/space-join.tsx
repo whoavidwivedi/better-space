@@ -18,11 +18,26 @@ import { toast } from "@/components/ui/toast"
 import { randomUserpic, userpicUrl } from "@/lib/userpics"
 
 export function SpaceJoin() {
-  const params = useParams<{ name: string }>()
+  const params = useParams<{ name?: string | string[] }>()
   const router = useRouter()
-  const initialRoom = (params?.name ? decodeURIComponent(params.name) : "").trim()
 
-  const [spaceName, setSpaceName] = useState(initialRoom)
+  const getRouteRoom = () => {
+    if (params?.name) {
+      const raw = Array.isArray(params.name) ? params.name[0] : params.name
+      if (raw) return decodeURIComponent(raw).trim()
+    }
+    if (typeof window !== "undefined") {
+      const parts = window.location.pathname.split("/").filter(Boolean)
+      const spaceIdx = parts.indexOf("space")
+      if (spaceIdx !== -1 && parts[spaceIdx + 1]) {
+        return decodeURIComponent(parts[spaceIdx + 1]).trim()
+      }
+    }
+    return ""
+  }
+
+  const initialRoom = getRouteRoom()
+  const [spaceName, setSpaceName] = useState(() => getRouteRoom())
   const [userName, setUserName] = useState("")
   const [isJoining, setIsJoining] = useState(false)
   const [hasJoined, setHasJoined] = useState(false)
@@ -38,19 +53,26 @@ export function SpaceJoin() {
   })
 
   useEffect(() => {
-    if (initialRoom) {
-      setSpaceName(initialRoom)
+    const current = getRouteRoom()
+    if (current) {
+      setSpaceName(current)
     }
     const savedName = localStorage.getItem("space_username")
     if (savedName) {
       setUserName(savedName)
     }
-  }, [initialRoom])
+  }, [params?.name])
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const cleanRoom = spaceName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-") || initialRoom || "live-space"
+    const routeRoom = getRouteRoom()
+    const cleanRoom = (spaceName.trim() || routeRoom).toLowerCase().replace(/[^a-z0-9_-]/g, "-")
     const cleanUser = userName.trim()
+
+    if (!cleanRoom) {
+      toast.add({ title: "Please enter a space name", type: "error" })
+      return
+    }
 
     if (!cleanUser) {
       toast.add({ title: "Please enter your name", type: "error" })
