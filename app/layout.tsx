@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description: site.description,
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://betterspace.live"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work"),
   openGraph: {
     type: "website",
     siteName: site.name,
     title: `${site.name} - ${site.tagline}`,
     description: site.description,
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://betterspace.live",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work",
     images: [
       {
         url: "/og-image.png",
