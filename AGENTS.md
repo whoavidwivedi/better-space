@@ -23,3 +23,10 @@ Rules:
 - Shortest working diff wins.
 - Never compromise on security, data validation, error handling, or accessibility.
 <!-- END:ponytail-rules -->
+
+<!-- BEGIN:package-manager-rules -->
+# Package Manager & Runtime: Bun Only
+- Always use `bun` strictly (`bun run`, `bun install`, `bun add`, `bun test`).
+- Never use `npm`, `yarn`, or `pnpm`.
+<!-- END:package-manager-rules -->
+
