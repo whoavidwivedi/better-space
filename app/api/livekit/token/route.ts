@@ -56,37 +56,81 @@ export async function GET(req: NextRequest) {
 
   let isHost = false;
   let isCohost = false;
-  if (targetRoom && targetRoom.metadata) {
-    try {
-      const meta = JSON.parse(targetRoom.metadata);
-      if (meta.banned && meta.banned.includes(username)) {
-        return NextResponse.json(
-          { error: { message: "You have been kicked from this space" } },
-          { status: 403 },
-        );
-      }
-      if (meta.host === username) {
-        if (meta.hostSecret && hostSecret === meta.hostSecret) {
-          isHost = true;
-        } else if (!meta.hostSecret) {
-          isHost = true;
-        } else {
-          // Security Fix: Prevent unauthorized users from claiming the host's identity
+  let activeHostSecret = hostSecret;
+
+  if (targetRoom) {
+    if (targetRoom.metadata) {
+      try {
+        const meta = JSON.parse(targetRoom.metadata);
+        if (meta.banned && meta.banned.includes(username)) {
           return NextResponse.json(
-            { error: { message: "Invalid host secret or username already taken by host" } },
+            { error: { message: "You have been kicked from this space" } },
             { status: 403 },
           );
         }
-      }
-      if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
-        isCohost = true;
-      }
-    } catch {}
-  } else if (hostSecret) {
+        if (meta.host === username) {
+          if (meta.hostSecret && hostSecret === meta.hostSecret) {
+            isHost = true;
+            activeHostSecret = meta.hostSecret;
+          } else if (!meta.hostSecret) {
+            isHost = true;
+            activeHostSecret = hostSecret || crypto.randomUUID();
+            meta.hostSecret = activeHostSecret;
+            await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+          } else {
+            // Check if active host is already connected in room
+            let isHostConnected = false;
+            try {
+              const participants = await roomService.listParticipants(cleanRoom);
+              isHostConnected = participants.some((p) => p.identity === username);
+            } catch {}
+
+            if (isHostConnected) {
+              return NextResponse.json(
+                { error: { message: "Username already active in this space" } },
+                { status: 403 },
+              );
+            } else {
+              // Host was disconnected or rejoining from another tab; reclaim host status
+              isHost = true;
+              activeHostSecret = meta.hostSecret;
+            }
+          }
+        } else if (!meta.host || meta.host === "Unknown") {
+          // Room exists but has no designated host - assign this user as host
+          isHost = true;
+          activeHostSecret = hostSecret || crypto.randomUUID();
+          meta.host = username;
+          meta.hostSecret = activeHostSecret;
+          await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+        }
+
+        if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
+          isCohost = true;
+        }
+      } catch {}
+    } else {
+      // Room exists on LiveKit but has no metadata - initialize it with this user as host
+      isHost = true;
+      activeHostSecret = hostSecret || crypto.randomUUID();
+      try {
+        const meta = { host: username, hostSecret: activeHostSecret, banned: [], cohosts: [] };
+        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+      } catch {}
+    }
+  } else {
+    // Room does NOT exist yet: This user is creating the space!
+    // Initialize room on LiveKit and grant full Host publishing permissions
     isHost = true;
+    activeHostSecret = hostSecret || crypto.randomUUID();
     try {
-      const meta = { host: username, hostSecret, banned: [], cohosts: [] };
-      await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
+      const meta = { host: username, hostSecret: activeHostSecret, banned: [], cohosts: [] };
+      await roomService.createRoom({
+        name: cleanRoom,
+        emptyTimeout: 43200,
+        maxParticipants: 50,
+        metadata: JSON.stringify(meta),
+      });
     } catch {}
   }
 
@@ -111,5 +155,13 @@ export async function GET(req: NextRequest) {
   });
 
   const token = await at.toJwt();
-  return NextResponse.json({ data: { token } });
+  return NextResponse.json({
+    data: {
+      token,
+      hostSecret: isHost ? activeHostSecret : undefined,
+      isHost,
+      isCohost,
+      roomName: cleanRoom,
+    },
+  });
 }

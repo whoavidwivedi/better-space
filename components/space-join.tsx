@@ -72,9 +72,13 @@ export function SpaceJoin() {
       const data = await res.json()
 
       if (data.data?.token) {
+        const receivedSecret = data.data.hostSecret || savedSecret
+        if (receivedSecret) {
+          localStorage.setItem(`space_host_secret_${cleanRoom}`, receivedSecret)
+          setHostSecret(receivedSecret)
+        }
         setToken(data.data.token)
         setActiveRoomName(cleanRoom)
-        setHostSecret(savedSecret)
         setHasJoined(true)
         if (cleanRoom !== initialRoom) {
           window.history.replaceState(null, "", `/space/${encodeURIComponent(cleanRoom)}`)
