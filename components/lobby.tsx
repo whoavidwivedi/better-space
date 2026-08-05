@@ -31,7 +31,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import { userpicUrl, randomUserpic } from "@/lib/userpics"
-import { STARTER_TEMPLATES } from "@/lib/presets"
+import { STARTER_TEMPLATES, getDisplayRoomTitle } from "@/lib/presets"
 
 const STARTER_PRESETS = STARTER_TEMPLATES
 
@@ -512,7 +512,7 @@ export function Lobby() {
                     </div>
 
                     <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/60 font-mono text-xs font-bold text-foreground">
-                      <span className="font-mono text-xs font-bold">Launch: {preset.name}</span>
+                      <span className="font-mono text-xs font-bold">Launch Template</span>
                       <RiArrowRightLine size={14} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </Link>
@@ -551,7 +551,7 @@ export function Lobby() {
                   <div className={`mb-5 sm:mb-6 flex w-full items-start justify-between ${timeLeft > 0 ? "mt-3" : ""}`}>
                     <div className="truncate pr-2.5 min-w-0">
                       <h3 className="truncate font-display text-base sm:text-lg font-bold text-foreground group-hover:underline">
-                        {room.name}
+                        {getDisplayRoomTitle(room.name)}
                       </h3>
                       <p className="text-muted-foreground mt-0.5 font-mono text-[11px] sm:text-xs truncate">
                         Host: <span className="text-foreground">{room.host}</span>

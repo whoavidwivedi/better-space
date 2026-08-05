@@ -8,7 +8,7 @@ import {
   RiAddLine,
 } from "@remixicon/react"
 import { userpicUrl } from "@/lib/userpics"
-import { STARTER_TEMPLATES, StarterTemplate } from "@/lib/presets"
+import { STARTER_TEMPLATES, findTemplate, getDisplayRoomTitle, StarterTemplate } from "@/lib/presets"
 
 type SpaceCard = {
   name: string
@@ -39,10 +39,10 @@ export function LiveSpacesRadar() {
       .then((data) => {
         if (data.data && data.data.length > 0) {
           const liveList: SpaceCard[] = data.data.map((r: any) => {
-            const matchingTemplate = STARTER_TEMPLATES.find((t) => t.name === r.name)
+            const matchingTemplate = findTemplate(r.name)
             return {
               name: r.name,
-              title: matchingTemplate ? matchingTemplate.title : r.name.replace(/[-_]/g, " ").toUpperCase(),
+              title: matchingTemplate ? matchingTemplate.title : getDisplayRoomTitle(r.name),
               topic: matchingTemplate ? matchingTemplate.topic : "Live Broadcast",
               host: r.host || "OSLO-1",
               speakers: r.participants?.map((p: any) => p.avatar || p.identity) || ["OSLO-1"],

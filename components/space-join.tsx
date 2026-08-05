@@ -16,7 +16,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 
 import { randomUserpic, userpicUrl } from "@/lib/userpics"
-import { STARTER_TEMPLATES } from "@/lib/presets"
+import { STARTER_TEMPLATES, findTemplate, getDisplayRoomTitle } from "@/lib/presets"
 
 export function SpaceJoin() {
   const params = useParams<{ name?: string | string[] }>()
@@ -38,7 +38,8 @@ export function SpaceJoin() {
   }
 
   const initialRoom = getRouteRoom()
-  const [spaceName, setSpaceName] = useState(() => getRouteRoom())
+  const initialPreset = findTemplate(initialRoom)
+  const [spaceName, setSpaceName] = useState(() => initialPreset ? initialPreset.title : getRouteRoom())
   const [userName, setUserName] = useState("")
   const [isJoining, setIsJoining] = useState(false)
   const [hasJoined, setHasJoined] = useState(false)
@@ -56,7 +57,8 @@ export function SpaceJoin() {
   useEffect(() => {
     const current = getRouteRoom()
     if (current) {
-      setSpaceName(current)
+      const preset = findTemplate(current)
+      setSpaceName(preset ? preset.title : current)
     }
     const savedName = localStorage.getItem("space_username")
     if (savedName) {
@@ -64,12 +66,14 @@ export function SpaceJoin() {
     }
   }, [params?.name])
 
-  const matchingPreset = STARTER_TEMPLATES.find((t) => t.name === (spaceName || initialRoom))
+  const matchingPreset = findTemplate(spaceName || initialRoom)
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
     const routeRoom = getRouteRoom()
-    const cleanRoom = (spaceName.trim() || routeRoom).toLowerCase().replace(/[^a-z0-9_-]/g, "-")
+    const chosenName = spaceName.trim() || routeRoom
+    const preset = findTemplate(chosenName)
+    const cleanRoom = preset ? preset.name : chosenName.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
     const cleanUser = userName.trim()
 
     if (!cleanRoom) {
@@ -190,11 +194,11 @@ export function SpaceJoin() {
                 <Input
                   id="space-name-input"
                   value={spaceName}
-                  onChange={(e) => setSpaceName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-"))}
-                  placeholder="e.g. techtwitter-india"
-                  maxLength={35}
+                  onChange={(e) => setSpaceName(e.target.value)}
+                  placeholder="e.g. #TechTwitter India: Devs, Startups & Craft"
+                  maxLength={65}
                   autoComplete="off"
-                  className="h-11 sm:h-12 font-mono text-sm rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
+                  className="h-11 sm:h-12 font-display text-sm rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
                 />
               </div>
             </Field>
