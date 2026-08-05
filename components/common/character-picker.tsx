@@ -83,11 +83,11 @@ export function CharacterPicker({
         }
       />
       <DialogContent
-        className="w-[min(32rem,calc(100vw-2rem))] p-5 sm:p-6 rounded-3xl border border-border bg-card shadow-2xl"
+        className="sm:w-[min(32rem,calc(100vw-2rem))] max-h-[85svh] sm:max-h-[min(36rem,85svh)] flex flex-col"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4 min-h-0">
           {/* Header */}
-          <DialogHeader className="pr-8">
+          <DialogHeader className="pr-8 shrink-0">
             <div className="flex items-center gap-2">
               <div className="flex size-7 items-center justify-center rounded-full bg-muted border border-border">
                 <RiUser3Line size={14} className="text-foreground" />
@@ -96,7 +96,7 @@ export function CharacterPicker({
                 <DialogTitle className="font-display text-base sm:text-lg font-bold">
                   Choose Avatar Persona
                 </DialogTitle>
-                <DialogDescription className="font-mono text-xs text-muted-foreground mt-0.5">
+                <DialogDescription className="font-mono text-[11px] sm:text-xs text-muted-foreground mt-0.5">
                   Select your persona for voice spaces.
                 </DialogDescription>
               </div>
@@ -104,14 +104,14 @@ export function CharacterPicker({
           </DialogHeader>
 
           {/* Quick Actions & Series Filter */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2 sm:gap-2.5 shrink-0">
             <div className="flex items-center justify-between gap-2">
               {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 -mx-1 px-1">
                 <button
                   type="button"
                   onClick={() => setSelectedCol("all")}
-                  className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-mono font-bold border transition-colors ${
+                  className={`whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold border transition-colors shrink-0 ${
                     selectedCol === "all"
                       ? "bg-foreground text-background border-foreground"
                       : "bg-muted/50 text-muted-foreground border-border hover:text-foreground hover:bg-muted"
@@ -124,7 +124,7 @@ export function CharacterPicker({
                     key={col.id}
                     type="button"
                     onClick={() => setSelectedCol(col.id)}
-                    className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-mono font-bold border transition-colors ${
+                    className={`whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold border transition-colors shrink-0 ${
                       selectedCol === col.id
                         ? "bg-foreground text-background border-foreground"
                         : "bg-muted/50 text-muted-foreground border-border hover:text-foreground hover:bg-muted"
@@ -139,17 +139,17 @@ export function CharacterPicker({
               <button
                 type="button"
                 onClick={handleRandomize}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-muted/80 hover:bg-muted text-xs font-mono font-semibold text-foreground transition-all active:scale-95 shrink-0"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border border-border bg-muted/80 hover:bg-muted text-[11px] sm:text-xs font-mono font-semibold text-foreground transition-all active:scale-95 shrink-0"
                 title="Pick a random persona"
               >
                 <RiShuffleLine size={13} />
-                <span>Shuffle</span>
+                <span className="hidden sm:inline">Shuffle</span>
               </button>
             </div>
 
             {/* Search Input */}
             <div className="relative">
-              <RiSearchLine size={15} className="text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <RiSearchLine size={15} className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search personas..."
@@ -160,8 +160,8 @@ export function CharacterPicker({
             </div>
           </div>
 
-          {/* Avatar Grid */}
-          <div className="grid max-h-72 grid-cols-4 sm:grid-cols-6 gap-2.5 sm:gap-3 overflow-y-auto pr-1 py-1">
+          {/* Avatar Grid — scrollable */}
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-2.5 overflow-y-auto overscroll-contain pr-0.5 py-1 min-h-0 flex-1">
             {filtered.map((name) => {
               const isSelected = value === name
               return (
@@ -173,7 +173,7 @@ export function CharacterPicker({
                   aria-pressed={isSelected}
                   className="group relative flex flex-col items-center justify-center p-1 rounded-2xl hover:bg-muted/40 transition-all active:scale-95 focus:outline-none"
                 >
-                  <div className="relative size-12 sm:size-14">
+                  <div className="relative size-14 sm:size-14 md:size-16">
                     <img
                       src={userpicUrl(name)}
                       alt={name}
