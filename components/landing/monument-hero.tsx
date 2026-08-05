@@ -111,7 +111,7 @@ export function MonumentHero() {
       {/* 1. ARCHITECTURAL MASTHEAD META */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-12 border-b border-border text-xs font-mono">
         <div className="flex items-center gap-3">
-          <span className="size-2 rounded-full bg-foreground animate-ping" />
+          <span className="size-2 rounded-full bg-foreground" />
           <span className="font-bold tracking-widest uppercase">
             SPECIMEN NO. 01 — 2026 EDITION
           </span>

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client"
 
 import {
@@ -27,7 +26,6 @@ import {
   RiVolumeUpLine,
   RiShieldCheckLine,
   RiUserVoiceLine,
-  RiCloseLine,
   RiErrorWarningLine,
 } from "@remixicon/react"
 import { EmojiClickData, Theme } from "emoji-picker-react"
@@ -67,8 +65,7 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
-import { randomUserpic, userpicUrl } from "@/lib/userpics"
-import { sound } from "@/lib/sound"
+import { userpicUrl } from "@/lib/userpics"
 
 export function SpaceRoomLiveKit({
   roomName,
@@ -178,32 +175,6 @@ function RoomUI({
 
   const isMuted = !localParticipant.isMicrophoneEnabled
 
-  const canPublish = localParticipant.permissions?.canPublish
-  const prevCanPublish = useRef(canPublish)
-
-  useEffect(() => {
-    if (prevCanPublish.current === undefined) {
-      prevCanPublish.current = canPublish
-      return
-    }
-
-    if (canPublish && !prevCanPublish.current) {
-      sound.playMicToggle(true)
-      toast.add({ title: "Host granted you the microphone!", type: "success" })
-      localParticipant.setMicrophoneEnabled(true).catch(() => {
-        toast.add({ title: "Could not automatically enable microphone.", type: "error" })
-      })
-    } else if (!canPublish && prevCanPublish.current) {
-      sound.playMicToggle(false)
-      toast.add({ title: "Host revoked your microphone access.", type: "error" })
-    }
-    prevCanPublish.current = canPublish
-
-    if (canPublish) {
-      setHasRequestedMicLocal(false)
-    }
-  }, [canPublish, localParticipant])
-
   const { roomHost, roomCohosts } = useMemo(() => {
     let host = ""
     let cohosts: string[] = []
@@ -221,6 +192,30 @@ function RoomUI({
   const isCohost = roomCohosts.includes(localParticipant.identity)
   const isHostOrCohost = isHost || isCohost
 
+  const canPublish = Boolean(localParticipant.permissions?.canPublish || isHostOrCohost)
+  const prevCanPublish = useRef(canPublish)
+
+  useEffect(() => {
+    if (prevCanPublish.current === undefined) {
+      prevCanPublish.current = canPublish
+      return
+    }
+
+    if (canPublish && !prevCanPublish.current) {
+      toast.add({ title: "Host granted you the microphone!", type: "success" })
+      localParticipant.setMicrophoneEnabled(true).catch(() => {
+        toast.add({ title: "Could not automatically enable microphone.", type: "error" })
+      })
+    } else if (!canPublish && prevCanPublish.current) {
+      toast.add({ title: "Host revoked your microphone access.", type: "error" })
+    }
+    prevCanPublish.current = canPublish
+
+    if (canPublish) {
+      setHasRequestedMicLocal(false)
+    }
+  }, [canPublish, localParticipant])
+
   const sortedParticipants = [...participants].sort((a, b) => {
     if (a.identity === roomHost) return -1
     if (b.identity === roomHost) return 1
@@ -236,7 +231,6 @@ function RoomUI({
   const [isEndSpaceOpen, setIsEndSpaceOpen] = useState(false)
 
   const handleEndSpace = async () => {
-    sound.playClick(400)
     setIsEndSpaceOpen(false)
     intentionalLeaveRef.current = true
     localStorage.removeItem(`space_host_disconnected_${roomName}`)
@@ -256,7 +250,6 @@ function RoomUI({
   const reactionTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({})
 
   const displayReaction = (identity: string, emoji: string) => {
-    sound.playReaction(emoji)
     setReactions((prev) => ({ ...prev, [identity]: emoji }))
     if (reactionTimeoutsRef.current[identity]) {
       clearTimeout(reactionTimeoutsRef.current[identity])
@@ -279,7 +272,6 @@ function RoomUI({
           displayReaction(participant?.identity || data.senderIdentity, data.emoji)
         } else if (data.type === "MIC_REQUEST") {
           if (isHostOrCohost && data.identity) {
-            sound.playPop(700)
             setMicRequests((prev) =>
               prev.includes(data.identity) ? prev : [...prev, data.identity]
             )
@@ -409,8 +401,9 @@ function RoomUI({
     }
   }, [isHost, roomName])
 
-  const handleSendReaction = (emojiObject: EmojiClickData) => {
-    const emoji = emojiObject.emoji
+  const handleSendReaction = (emojiOrData: EmojiClickData | string) => {
+    const emoji = typeof emojiOrData === "string" ? emojiOrData : emojiOrData.emoji
+    if (!emoji) return
     displayReaction(userName, emoji)
     const encoder = new TextEncoder()
     const data = encoder.encode(
@@ -421,7 +414,6 @@ function RoomUI({
 
   const requestMic = () => {
     if (hasRequestedMicLocal) return
-    sound.playPop(520)
     setHasRequestedMicLocal(true)
     const encoder = new TextEncoder()
     const data = encoder.encode(JSON.stringify({ type: "MIC_REQUEST", identity: userName }))
@@ -430,7 +422,6 @@ function RoomUI({
   }
 
   const grantMicToRequest = async (targetIdentity: string) => {
-    sound.playClick(600)
     try {
       const res = await fetch("/api/livekit/moderate", {
         method: "POST",
@@ -451,7 +442,6 @@ function RoomUI({
   }
 
   const rejectMicRequest = (targetIdentity: string) => {
-    sound.playClick(300)
     setMicRequests((prev) => prev.filter((id) => id !== targetIdentity))
     const encoder = new TextEncoder()
     const data = encoder.encode(
@@ -462,7 +452,6 @@ function RoomUI({
 
   const copyInviteLink = () => {
     if (copied) return
-    sound.playClick(500)
     const url = `${window.location.origin}/space/${encodeURIComponent(roomName)}`
     navigator.clipboard.writeText(url)
     setCopied(true)
@@ -476,9 +465,7 @@ function RoomUI({
         toast.add({ title: "You cannot unmute while deafened", type: "error" })
         return
       }
-      const nextMuted = !isMuted
-      sound.playMicToggle(nextMuted)
-      await localParticipant.setMicrophoneEnabled(nextMuted)
+      await localParticipant.setMicrophoneEnabled(isMuted)
     } catch (e: any) {
       if (e.message?.includes("getUserMedia")) {
         toast.add({
@@ -493,7 +480,6 @@ function RoomUI({
 
   const toggleDeafen = () => {
     const nextDeafened = !isDeafened
-    sound.playClick(nextDeafened ? 300 : 600)
     setIsDeafened(nextDeafened)
 
     room.remoteParticipants.forEach((p) => {
@@ -633,10 +619,10 @@ function RoomUI({
       <div className="absolute inset-0 bg-studio-grid pointer-events-none opacity-40" />
 
       {/* Header Bar */}
-      <header className="border-border bg-card/80 sticky top-0 z-40 flex h-14 items-center justify-between gap-2.5 sm:gap-3 border-b px-3 sm:px-4 backdrop-blur-md md:px-6">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="size-2 rounded-full bg-emerald-500 status-pulse-live inline-block shrink-0" />
-          <h1 className="truncate font-mono text-xs font-bold text-foreground max-w-[140px] sm:max-w-xs md:max-w-none">
+      <header className="border-border bg-card/80 sticky top-0 z-40 flex h-12 sm:h-14 items-center justify-between gap-2 sm:gap-3 border-b px-2.5 sm:px-4 backdrop-blur-md md:px-6">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <span className="size-1.5 sm:size-2 rounded-full bg-foreground inline-block shrink-0" />
+          <h1 className="truncate font-mono text-[11px] sm:text-xs font-bold text-foreground max-w-[120px] sm:max-w-xs md:max-w-none">
             /space/{roomName}
           </h1>
         </div>
@@ -740,22 +726,19 @@ function RoomUI({
 
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-3 sm:p-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-          <section aria-labelledby="participants-heading" className="space-y-4 sm:space-y-6">
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-2.5 sm:p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+          <section aria-labelledby="participants-heading" className="space-y-3 sm:space-y-6">
             <div className="flex items-center justify-between">
               <h2
                 id="participants-heading"
-                className="flex items-center gap-2 font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                className="flex items-center gap-1.5 sm:gap-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
-                <RiGroupLine className="size-4" aria-hidden="true" />
-                Live Stage Participants ({participants.length})
+                <RiGroupLine className="size-3.5 sm:size-4" aria-hidden="true" />
+                Stage ({participants.length})
               </h2>
-              <span className="font-mono text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                WebRTC Active
-              </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-3 gap-y-6 gap-x-3 sm:gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedParticipants.map((participant) => (
                 <ParticipantTile
                   key={participant.sid || participant.identity}
@@ -790,8 +773,8 @@ function RoomUI({
         )}
 
         {/* Tactile Hardware Bottom Audio Controls Bar */}
-        <div className="border-border bg-card/95 fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 rounded-2xl border p-1.5 sm:p-2 shadow-2xl backdrop-blur-md">
-          <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="border-border bg-card/95 fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 rounded-xl sm:rounded-2xl border p-1 sm:p-1.5 md:p-2 shadow-2xl backdrop-blur-md">
+          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
             {/* Audio Settings Popover */}
             <Popover
               onOpenChange={(open) => {
@@ -883,7 +866,7 @@ function RoomUI({
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-emerald-500 transition-all duration-75 ease-out rounded-full"
+                          className="h-full bg-foreground transition-all duration-75 ease-out rounded-full"
                           style={{
                             width: isMuted
                               ? "0%"
@@ -940,7 +923,7 @@ function RoomUI({
 
                   {/* Audio enhancement status */}
                   <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-[10px] text-muted-foreground border border-border/40">
-                    <RiShieldCheckLine className="size-3.5 text-emerald-500 shrink-0" aria-hidden="true" />
+                    <RiShieldCheckLine className="size-3.5 text-foreground shrink-0" aria-hidden="true" />
                     <span>Noise suppression active</span>
                   </div>
                 </div>
@@ -960,7 +943,19 @@ function RoomUI({
                   </Button>
                 }
               />
-              <PopoverContent className="z-50 w-auto rounded-2xl border border-border p-0 shadow-2xl max-w-[calc(100vw-2rem)] overflow-hidden">
+              <PopoverContent className="z-50 w-auto rounded-2xl border border-border p-0 shadow-2xl max-w-[calc(100vw-2rem)] overflow-hidden bg-card">
+                <div className="flex items-center justify-between gap-1 p-2 border-b border-border bg-muted/40 overflow-x-auto">
+                  {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleSendReaction(emoji)}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-lg hover:bg-muted active:scale-95 transition-transform"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
                 <EmojiPicker
                   onEmojiClick={handleSendReaction}
                   theme={Theme.AUTO}
@@ -1061,7 +1056,7 @@ function RoomUI({
             )}
 
             {/* Mute & Deafen Controls */}
-            {localParticipant.permissions?.canPublish ? (
+            {canPublish ? (
               <>
                 <Button
                   onClick={toggleDeafen}
@@ -1087,7 +1082,7 @@ function RoomUI({
                     </>
                   ) : (
                     <>
-                      <RiMicLine size={16} className="text-emerald-400 animate-pulse" />
+                      <RiMicLine size={16} className="text-primary-foreground" />
                       <span>MIC LIVE</span>
                     </>
                   )}
@@ -1139,39 +1134,25 @@ function ParticipantTile({
   const isSpeaking = useIsSpeaking(participant)
   const isAudioMuted = !participant.isMicrophoneEnabled
   const name = participant.identity || "Unknown"
+  const isThisParticipantHost = name === roomHost
+  const isThisParticipantCohost = roomCohosts.includes(name)
   const permissions = useParticipantPermissions({ participant })
-  const canPublish = permissions?.canPublish ?? false
+  const canPublish = Boolean(permissions?.canPublish || isThisParticipantHost || isThisParticipantCohost)
 
-  const [avatarSeed, setAvatarSeed] = useState(randomUserpic)
-
-  useEffect(() => {
-    let count = 0
-    let targetSeed = participant.identity || participant.sid || ""
+  const avatarSeed = useMemo(() => {
     try {
       if (participant.metadata) {
         const meta = JSON.parse(participant.metadata)
-        if (meta.avatar) targetSeed = meta.avatar
+        if (meta.avatar) return meta.avatar
       }
     } catch {}
-    const interval = setInterval(() => {
-      setAvatarSeed(randomUserpic())
-      count++
-      if (count > 8) {
-        setAvatarSeed(targetSeed)
-        clearInterval(interval)
-      }
-    }, 120)
-    return () => clearInterval(interval)
-  }, [participant.sid, participant.identity, participant.metadata])
+    return participant.identity || participant.sid || ""
+  }, [participant.identity, participant.metadata, participant.sid])
 
   const trackPub = participant.getTrackPublication(Track.Source.Microphone)
   const volume = useTrackVolume(trackPub?.track)
 
-  const isThisParticipantHost = name === roomHost
-  const isThisParticipantCohost = roomCohosts.includes(name)
-
   const handleModerate = async (action: string) => {
-    sound.playClick(500)
     try {
       const res = await fetch("/api/livekit/moderate", {
         method: "POST",
@@ -1219,18 +1200,35 @@ function ParticipantTile({
     !isThisParticipantHost &&
     (isHost || !isThisParticipantCohost)
 
+  const isDeafenedRemote = participant.attributes?.isDeafened === "true"
+
   const avatarElement = (
     <div className="relative group/avatar inline-block cursor-pointer">
+      {/* Top Left Role Badge */}
+      {isThisParticipantHost && (
+        <span className="absolute -top-1.5 -left-1.5 z-20 bg-foreground text-background font-mono text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-background leading-none">
+          HOST
+        </span>
+      )}
+      {isThisParticipantCohost && !isThisParticipantHost && (
+        <span className="absolute -top-1.5 -left-1.5 z-20 bg-blue-600 text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs border border-background leading-none">
+          CO-HOST
+        </span>
+      )}
+
+      {/* Top Right Reaction Badge */}
+      {reaction && (
+        <div className="animate-in fade-in zoom-in-75 duration-150 absolute -top-2 -right-2 z-30 flex size-7 sm:size-8 items-center justify-center rounded-full bg-card border border-border text-base sm:text-lg shadow-md pointer-events-none select-none">
+          <span className="leading-none">{reaction}</span>
+        </div>
+      )}
+
       <div
-        className={`relative rounded-full p-1 transition-all duration-200 ${
-          canPublish && isSpeaking
-            ? "border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 scale-105"
-            : canPublish
-            ? "border border-border"
-            : "opacity-75 border border-border/40"
+        className={`relative rounded-full ${
+          canPublish ? "" : "opacity-75"
         }`}
       >
-        <Avatar className="size-16 sm:size-20 border border-border bg-card shadow-xs">
+        <Avatar className="size-14 sm:size-16 md:size-20 border border-border bg-card shadow-xs">
           <AvatarImage
             src={userpicUrl(avatarSeed)}
             alt={name}
@@ -1244,10 +1242,12 @@ function ParticipantTile({
         {/* Mic status badge */}
         <div className="absolute -bottom-1 -right-1 z-10 flex size-6 items-center justify-center rounded-full bg-card border border-border shadow-xs">
           {canPublish ? (
-            isAudioMuted ? (
+            isDeafenedRemote ? (
+              <RiVolumeMuteLine size={13} className="text-destructive" />
+            ) : isAudioMuted ? (
               <RiMicOffLine size={13} className="text-destructive" />
             ) : (
-              <RiMicLine size={13} className="text-emerald-500" />
+              <RiMicLine size={13} className="text-foreground" />
             )
           ) : (
             <RiVolumeMuteLine size={13} className="text-muted-foreground" />
@@ -1255,7 +1255,7 @@ function ParticipantTile({
         </div>
       </div>
 
-      {canModerateThisParticipant && (
+      {canModerateThisParticipant && !reaction && (
         <div className="absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-xs transition-transform group-hover/avatar:scale-110 pointer-events-none">
           <RiMoreFill size={14} />
         </div>
@@ -1264,29 +1264,9 @@ function ParticipantTile({
   )
 
   return (
-    <div className="studio-card relative flex w-full flex-col items-center rounded-3xl p-4 text-center bg-card">
-      {/* Floating Reaction Burst Overlay */}
-      {reaction && (
-        <div className="animate-reaction-drift absolute -top-8 z-30 text-3xl pointer-events-none drop-shadow-md select-none">
-          {reaction}
-        </div>
-      )}
+    <div className="relative flex w-full flex-col items-center text-center">
 
-      {/* Role Badges */}
-      <div className="absolute top-3 left-3 flex items-center gap-1">
-        {isThisParticipantHost && (
-          <span className="bg-foreground text-background font-mono text-[9px] font-black px-2 py-0.5 rounded-md">
-            HOST
-          </span>
-        )}
-        {isThisParticipantCohost && !isThisParticipantHost && (
-          <span className="bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono text-[9px] font-bold px-2 py-0.5 rounded-md border border-blue-500/20">
-            CO-HOST
-          </span>
-        )}
-      </div>
-
-      <div className="mt-3 relative">
+      <div className="relative">
         {canModerateThisParticipant ? (
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none cursor-pointer rounded-full hover:opacity-80 transition-opacity">
@@ -1296,7 +1276,7 @@ function ParticipantTile({
               {!canPublish && !isThisParticipantHost && (
                 <DropdownMenuItem
                   onClick={() => handleModerate("grant_mic")}
-                  className="text-emerald-600 focus:text-emerald-600"
+                  className="text-foreground focus:text-foreground font-semibold"
                 >
                   Grant Mic
                 </DropdownMenuItem>
@@ -1349,24 +1329,27 @@ function ParticipantTile({
         ) : (
           avatarElement
         )}
+
+        {hasRequestedMic && isHostOrCohost && (
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap rounded-full bg-amber-500 text-black px-2.5 py-0.5 font-mono text-[9px] font-bold shadow-xs">
+            Requested Mic
+          </div>
+        )}
       </div>
 
-      {hasRequestedMic && isHostOrCohost && (
-        <div className="mt-2 rounded-full bg-amber-500 text-black px-2.5 py-0.5 font-mono text-[9px] font-bold shadow-xs">
-          Requested Mic
-        </div>
-      )}
-
       {/* Participant Name */}
-      <span className="mt-3 truncate text-xs font-bold text-foreground max-w-full">
-        {name} {name === localUserName ? "(You)" : ""}
-      </span>
-      <span className="font-mono text-[10px] text-muted-foreground">
+      <div className="mt-2 flex items-center justify-center gap-1 max-w-full truncate px-1">
+        <span className="truncate text-xs font-bold text-foreground">
+          {name} {name === localUserName ? "(You)" : ""}
+        </span>
+      </div>
+
+      <span className="font-mono text-[10px] text-muted-foreground mt-0.5">
         {canPublish ? (isAudioMuted ? "Muted" : "Speaker") : "Listener"}
       </span>
 
       {canPublish && (
-        <div className="mt-2 w-full px-2">
+        <div className="mt-1.5 w-full max-w-[80px]">
           {isAudioMuted ? (
             <div className="h-3.5 w-full" />
           ) : (

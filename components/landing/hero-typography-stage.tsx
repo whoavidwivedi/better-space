@@ -107,7 +107,7 @@ export function HeroTypographyStage() {
       {/* 1. Masthead Ticker */}
       <div className="flex items-center justify-between border-b border-border/80 pb-3 mb-10 text-xs font-mono">
         <div className="flex items-center gap-2.5">
-          <span className="size-2 rounded-full bg-foreground animate-ping" />
+          <span className="size-2 rounded-full bg-foreground" />
           <span className="font-bold tracking-widest text-foreground uppercase">
             ISSUE 01 // AUDIO SPECIMEN
           </span>

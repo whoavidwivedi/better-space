@@ -5,22 +5,15 @@ import {
   RiAddLine,
   RiTeamLine,
   RiArrowRightLine,
-  RiSparklingLine,
-  RiUser3Line,
-  RiRadio2Line,
-  RiRefreshLine,
+  RiSearchLine,
+  RiShuffleLine,
+  RiEditLine,
 } from "@remixicon/react"
 import React, { useState, useEffect, useRef } from "react"
+import Link from "next/link"
 
 import { CharacterPicker } from "@/components/common/character-picker"
 import { Navbar } from "@/components/common/navbar"
-import {
-  DoodleArrow,
-  DoodleCircle,
-  DoodleSparkle,
-  DoodleUnderline,
-  DoodleAsterisk,
-} from "@/components/common/doodles"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -36,8 +29,7 @@ import {
 } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
-import { userpicUrl, randomUserpic, getCharacterCollection } from "@/lib/userpics"
-import { sound } from "@/lib/sound"
+import { userpicUrl, randomUserpic } from "@/lib/userpics"
 
 type RoomInfo = {
   name: string
@@ -46,12 +38,33 @@ type RoomInfo = {
   participants: { identity: string; avatar: string }[]
 }
 
+const STARTER_PRESETS = [
+  {
+    name: "techtwitter-india",
+    title: "#TechTwitter India",
+    desc: "Devs, founders, startups & craft discussions",
+  },
+  {
+    name: "design-systems",
+    title: "Design Systems & Motion",
+    desc: "UI craft, design tokens & interactions",
+  },
+  {
+    name: "indie-founders",
+    title: "Shipping Micro-SaaS",
+    desc: "Solo founders, indie hacking & launches",
+  },
+]
+
 export function Lobby() {
   const [rooms, setRooms] = useState<RoomInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
   const [createUserName, setCreateUserName] = useState("")
   const [joinUserName, setJoinUserName] = useState("")
   const [activeUserName, setActiveUserName] = useState("")
+
+  const [, setTick] = useState(0)
 
   const [createAvatarSeed, setCreateAvatarSeed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -69,7 +82,6 @@ export function Lobby() {
     return randomUserpic()
   })
 
-  const [isJoinProfileLocked, setIsJoinProfileLocked] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
 
   const [hasJoined, setHasJoined] = useState(false)
@@ -82,6 +94,15 @@ export function Lobby() {
   const [newSpaceName, setNewSpaceName] = useState("")
   const [selectedRoom, setSelectedRoom] = useState("")
   const joinAnchorRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("space_username")
+    if (saved) {
+      setCreateUserName(saved)
+      setActiveUserName(saved)
+      setJoinUserName(saved)
+    }
+  }, [])
 
   const fetchRooms = async () => {
     try {
@@ -116,31 +137,39 @@ export function Lobby() {
     }
   }, [])
 
+  // Timer ticker to update rejoin countdown every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick((t) => t + 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   const handleJoin = async (roomName: string) => {
     const uName = joinUserName.trim()
     if (!uName) return
     setIsJoining(true)
-    sound.playClick(500)
+    localStorage.setItem("space_username", uName)
+    localStorage.setItem("better_space_active_avatar", joinAvatarSeed)
+    localStorage.setItem(
+      `space_profile_${roomName}`,
+      JSON.stringify({ userName: uName, avatarSeed: joinAvatarSeed })
+    )
+
     const savedSecret = localStorage.getItem(`space_host_secret_${roomName}`) || ""
     setHostSecret(savedSecret)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
       const query = new URLSearchParams({
         room: roomName,
-        username: uName.trim(),
+        username: uName,
         avatar: joinAvatarSeed,
       })
       if (savedSecret) query.set("hostSecret", savedSecret)
       const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
       if (data.data?.token) {
-        sound.playPop(640)
         setActiveUserName(uName)
-        localStorage.setItem("better_space_active_avatar", joinAvatarSeed)
-        localStorage.setItem(
-          `space_profile_${roomName}`,
-          JSON.stringify({ userName: uName, avatarSeed: joinAvatarSeed })
-        )
         setToken(data.data.token)
         setActiveRoomName(roomName)
         setHasJoined(true)
@@ -159,37 +188,38 @@ export function Lobby() {
   }
 
   const handleCreateAndJoin = async () => {
-    const rName = newSpaceName.trim()
+    const rName = newSpaceName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-")
     const uName = createUserName.trim()
     if (!rName || !uName) return
     setIsJoining(true)
-    sound.playClick(520)
+    localStorage.setItem("space_username", uName)
+    localStorage.setItem("better_space_active_avatar", createAvatarSeed)
+    localStorage.setItem(
+      `space_profile_${rName}`,
+      JSON.stringify({ userName: uName, avatarSeed: createAvatarSeed })
+    )
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
-      const query = new URLSearchParams({
-        room: rName,
-        username: uName,
-        isCreate: "true",
-        avatar: createAvatarSeed,
+      const res = await fetch("/api/livekit/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomName: rName,
+          hostName: uName,
+          avatar: createAvatarSeed,
+        }),
       })
-      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
 
-      if (data.data?.token) {
-        sound.playStamp()
-        if (data.data.hostSecret) {
-          localStorage.setItem(`space_host_secret_${rName}`, data.data.hostSecret)
-          setHostSecret(data.data.hostSecret)
+      if (res.ok && data.data?.token) {
+        const secret = data.data.hostSecret
+        if (secret) {
+          localStorage.setItem(`space_host_secret_${data.data.roomName || rName}`, secret)
+          setHostSecret(secret)
         }
-        localStorage.setItem("better_space_active_avatar", createAvatarSeed)
-        localStorage.setItem(
-          `space_profile_${rName}`,
-          JSON.stringify({ userName: uName, avatarSeed: createAvatarSeed })
-        )
         setActiveUserName(uName)
         setToken(data.data.token)
-        setActiveRoomName(rName)
+        setActiveRoomName(data.data.roomName || rName)
         setHasJoined(true)
         setIsCreateOpen(false)
       } else {
@@ -206,23 +236,16 @@ export function Lobby() {
   }
 
   const onRoomClick = (roomName: string, el?: HTMLElement) => {
-    sound.playClick(450)
     const profileStr = localStorage.getItem(`space_profile_${roomName}`)
     if (profileStr) {
       try {
         const profile = JSON.parse(profileStr)
-        if (profile.userName && profile.avatarSeed) {
-          setJoinUserName(profile.userName)
-          setJoinAvatarSeed(profile.avatarSeed)
-          setIsJoinProfileLocked(true)
-        } else {
-          setIsJoinProfileLocked(false)
-        }
-      } catch {
-        setIsJoinProfileLocked(false)
-      }
+        if (profile.userName) setJoinUserName(profile.userName)
+        if (profile.avatarSeed) setJoinAvatarSeed(profile.avatarSeed)
+      } catch {}
     } else {
-      setIsJoinProfileLocked(false)
+      const savedUser = localStorage.getItem("space_username")
+      if (savedUser) setJoinUserName(savedUser)
     }
 
     setSelectedRoom(roomName)
@@ -246,61 +269,74 @@ export function Lobby() {
     )
   }
 
-  const activeCollection = getCharacterCollection(createAvatarSeed)
+  const filteredRooms = rooms.filter((room) =>
+    room.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground selection:bg-foreground selection:text-background">
+    <div className="flex min-h-svh flex-col bg-background text-foreground">
       <Navbar />
 
       <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col p-3.5 sm:p-6 md:p-8">
-        {/* Minimal Header */}
-        <div className="minimal-card mb-6 sm:mb-8 mt-1 sm:mt-2 flex flex-col justify-between gap-4 sm:gap-6 md:flex-row md:items-center rounded-2xl sm:rounded-3xl border border-border bg-card p-4 sm:p-6 md:p-8">
-          <div>
+        {/* Header Hero Card */}
+        <div className="mb-5 sm:mb-8 flex flex-col justify-between gap-4 sm:gap-5 md:flex-row md:items-center rounded-2xl sm:rounded-3xl border border-border bg-card/80 p-4 sm:p-6 md:p-8 shadow-xs">
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase mb-1.5 sm:mb-2">
-              <span className="size-2 rounded-full bg-foreground animate-ping" />
-              <span>LIVE ROOMS</span>
+              <span className="size-1.5 rounded-full bg-foreground" />
+              <span>LIVE AUDIO LOUNGE</span>
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">Active Broadcasts</h1>
-            <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-normal">
-              Drop into any active studio space with your vector persona.
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
+              Active Broadcasts
+            </h1>
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-normal max-w-xl">
+              Drop into ongoing voice spaces or launch a fresh room with instant WebRTC audio.
             </p>
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full md:w-auto justify-between sm:justify-end">
-            {/* Active Avatar Preview */}
-            <div className="flex items-center gap-2.5 bg-muted/40 p-1.5 pl-2.5 rounded-full border border-border">
-              <div className="relative">
-                <Avatar className="size-9 border border-border">
-                  <AvatarImage
-                    src={userpicUrl(createAvatarSeed)}
-                    alt="Active Avatar"
-                    className="object-cover"
-                  />
-                  <AvatarFallback />
-                </Avatar>
-                <CharacterPicker
-                  value={createAvatarSeed}
-                  onSelect={(seed) => {
-                    setCreateAvatarSeed(seed)
-                    localStorage.setItem("better_space_active_avatar", seed)
-                  }}
-                  size="sm"
-                />
-              </div>
-              <span className="font-mono text-xs font-bold text-foreground pr-2 truncate max-w-28">
-                {createAvatarSeed}
-              </span>
-            </div>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full md:w-auto justify-between sm:justify-end shrink-0">
+            {/* Active Persona Selector */}
+            <CharacterPicker
+              value={createAvatarSeed}
+              onSelect={(seed) => {
+                setCreateAvatarSeed(seed)
+                setJoinAvatarSeed(seed)
+                localStorage.setItem("better_space_active_avatar", seed)
+              }}
+              size="sm"
+              trigger={
+                <button
+                  type="button"
+                  className="flex items-center gap-2 bg-muted/60 hover:bg-muted px-3 py-1.5 rounded-full border border-border/80 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-foreground shrink-0"
+                  title="Change avatar persona"
+                >
+                  <div className="relative">
+                    <Avatar className="size-7 sm:size-8 md:size-9 border border-border">
+                      <AvatarImage
+                        src={userpicUrl(createAvatarSeed)}
+                        alt="Active Avatar"
+                        className="object-cover"
+                      />
+                      <AvatarFallback />
+                    </Avatar>
+                    <div className="absolute -right-0.5 -bottom-0.5 flex size-3.5 sm:size-4 items-center justify-center rounded-full bg-foreground text-background shadow-xs">
+                      <RiEditLine size={9} />
+                    </div>
+                  </div>
+                  <span className="font-mono text-xs font-semibold text-muted-foreground group-hover:text-foreground pr-1 transition-colors">
+                    Change Avatar
+                  </span>
+                </button>
+              }
+            />
 
-            {/* Launch Space Button */}
+            {/* Launch Space Popover Button */}
             <Popover open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <PopoverTrigger
                 render={
                   <Button
-                    onClick={() => sound.playClick(500)}
-                    className="h-10 px-5 font-mono text-xs font-bold uppercase tracking-wider gap-1.5 rounded-full bg-foreground text-background"
+                    className="h-9 sm:h-10 px-4 sm:px-5 font-mono text-xs font-bold uppercase tracking-wider gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-transform active:scale-95 shrink-0"
                   >
-                    <RiAddLine size={16} />
+                    <RiAddLine size={15} />
                     <span>Launch Space</span>
                   </Button>
                 }
@@ -312,10 +348,10 @@ export function Lobby() {
               >
                 <PopoverHeader>
                   <PopoverTitle className="font-display text-lg font-bold">
-                    Launch New Studio
+                    Launch New Space
                   </PopoverTitle>
                   <PopoverDescription className="font-mono text-xs text-muted-foreground">
-                    Name your room and pick a vector persona.
+                    Name your room and set your display identity.
                   </PopoverDescription>
                 </PopoverHeader>
 
@@ -326,58 +362,87 @@ export function Lobby() {
                     handleCreateAndJoin()
                   }}
                 >
-                  <Field>
-                    <FieldLabel htmlFor="create-space-name" className="text-xs font-bold font-mono uppercase">
+                  <Field className="space-y-1.5">
+                    <FieldLabel htmlFor="create-space-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
                       Space Name
                     </FieldLabel>
                     <Input
                       id="create-space-name"
                       value={newSpaceName}
                       onChange={(e) =>
-                        setNewSpaceName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))
+                        setNewSpaceName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-"))
                       }
-                      placeholder="e.g. design-studio"
+                      placeholder="e.g. design-crit"
                       maxLength={30}
-                      className="rounded-xl font-mono text-xs border border-border"
+                      className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
+                      autoFocus
                     />
                   </Field>
 
-                  <Field>
-                    <div className="flex flex-col items-center gap-2 mb-3 mt-1">
-                      <div className="relative group/avatar inline-block">
-                        <Avatar className="size-20 border border-border shadow-xs">
-                          <AvatarImage
-                            src={userpicUrl(createAvatarSeed)}
-                            alt="Avatar preview"
-                            className="object-cover"
-                          />
-                          <AvatarFallback />
-                        </Avatar>
+                  <Field className="space-y-1.5">
+                    <div className="flex items-center justify-center gap-3 mb-2 mt-1">
+                      <div className="relative group inline-block">
                         <CharacterPicker
                           value={createAvatarSeed}
                           onSelect={setCreateAvatarSeed}
                           size="md"
+                          trigger={
+                            <button
+                              type="button"
+                              className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground cursor-pointer"
+                              title="Click to choose avatar persona"
+                            >
+                              <Avatar className="size-16 sm:size-20 border border-border shadow-xs transition-transform group-hover:scale-105">
+                                <AvatarImage
+                                  src={userpicUrl(createAvatarSeed)}
+                                  alt="Avatar preview"
+                                  className="object-cover"
+                                />
+                                <AvatarFallback />
+                              </Avatar>
+                              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider bg-card px-2 py-0.5 rounded-full border border-border">
+                                  Change
+                                </span>
+                              </div>
+                              <div className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md border-2 border-background">
+                                <RiEditLine size={13} />
+                              </div>
+                            </button>
+                          }
                         />
                       </div>
-                      <span className="font-mono text-xs text-foreground font-bold">
-                        {createAvatarSeed} ({activeCollection.name})
-                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => setCreateAvatarSeed(randomUserpic())}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground transition-all active:scale-95 shadow-xs cursor-pointer"
+                        title="Randomize avatar"
+                      >
+                        <RiShuffleLine size={13} />
+                        <span>Shuffle</span>
+                      </button>
                     </div>
 
-                    <FieldLabel htmlFor="create-user-name" className="text-xs font-bold font-mono uppercase">
-                      Your Nickname
+                    <FieldLabel htmlFor="create-user-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
+                      Your Display Name
                     </FieldLabel>
                     <Input
                       id="create-user-name"
                       value={createUserName}
                       onChange={(e) => setCreateUserName(e.target.value)}
                       placeholder="What should people call you?"
-                      maxLength={15}
-                      className="rounded-xl font-mono text-xs border border-border"
+                      maxLength={20}
+                      className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                     />
                   </Field>
 
                   <div className="pt-2">
+                    {createUserName.trim() && rooms.some((r) => r.host === createUserName.trim()) && (
+                      <div className="text-destructive font-mono text-xs font-medium mb-3">
+                        You are already hosting an active space.
+                      </div>
+                    )}
                     <Button
                       type="submit"
                       className="w-full h-11 font-mono text-xs font-bold uppercase tracking-wider rounded-xl bg-foreground text-background"
@@ -389,7 +454,7 @@ export function Lobby() {
                       }
                     >
                       {isJoining ? <Spinner className="mr-2" /> : null}
-                      Create &amp; Enter
+                      <span>Create &amp; Enter</span>
                     </Button>
                   </div>
                 </form>
@@ -398,24 +463,81 @@ export function Lobby() {
           </div>
         </div>
 
-        {/* Room List Grid */}
+        {/* Search & Stats Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <RiSearchLine className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 size-4" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search active spaces..."
+              className="pl-9 h-10 rounded-xl font-mono text-xs border border-border bg-card"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground self-end sm:self-auto">
+            <span>{rooms.length} {rooms.length === 1 ? "room live" : "rooms live"}</span>
+          </div>
+        </div>
+
+        {/* Room List Grid / Empty State */}
         {isLoading ? (
           <div className="flex flex-1 items-center justify-center py-24">
             <Spinner className="size-7 text-foreground animate-spin" />
           </div>
-        ) : rooms.length === 0 ? (
-          <div className="minimal-card flex flex-1 flex-col items-center justify-center py-20 text-center rounded-3xl border border-border bg-card p-8">
-            <div className="flex size-14 items-center justify-center rounded-2xl mb-4 bg-muted border border-border">
-              <RiTeamLine className="size-7 text-foreground" />
+        ) : filteredRooms.length === 0 ? (
+          <div className="space-y-6">
+            {/* Empty State Card */}
+            <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center rounded-3xl border border-border bg-card/60 p-6 sm:p-8 shadow-xs">
+              <div className="flex size-14 items-center justify-center rounded-2xl mb-4 bg-muted border border-border">
+                <RiTeamLine className="size-7 text-foreground" />
+              </div>
+              <h3 className="font-display text-xl font-bold">
+                {searchQuery ? "No matching spaces found" : "No active voice spaces right now"}
+              </h3>
+              <p className="text-muted-foreground mt-1 max-w-sm font-mono text-xs">
+                {searchQuery
+                  ? "Try searching for a different room name or start a new space."
+                  : "Be the first to start a room, or launch one of the popular topics below."}
+              </p>
             </div>
-            <h3 className="font-display text-xl font-bold">No active spaces</h3>
-            <p className="text-muted-foreground mt-1 max-w-sm font-mono text-xs">
-              Be the first to launch a room and invite your crew.
-            </p>
+
+            {/* Quick Starter Topics */}
+            <div>
+              <div className="mb-3.5 px-1 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <span>QUICK LAUNCH TEMPLATES</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+                {STARTER_PRESETS.map((preset) => (
+                  <Link
+                    key={preset.name}
+                    href={`/space/${preset.name}`}
+                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-foreground/40 hover:bg-card/90 transition-all active:scale-98 shadow-xs"
+                  >
+                    <div>
+                      <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-2 py-0.5 rounded-full mb-2">
+                        Template
+                      </span>
+                      <h4 className="font-display text-base font-bold text-foreground group-hover:text-foreground">
+                        {preset.title}
+                      </h4>
+                      <p className="font-mono text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                        {preset.desc}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/60 font-mono text-xs font-bold text-foreground">
+                      <span>Launch</span>
+                      <RiArrowRightLine size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {rooms.map((room) => {
+          <div className="grid grid-cols-1 gap-3.5 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredRooms.map((room) => {
               const disconnectTimeStr =
                 typeof window !== "undefined"
                   ? localStorage.getItem(`space_host_disconnected_${room.name}`)
@@ -433,7 +555,7 @@ export function Lobby() {
                 <button
                   key={room.name}
                   onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                  className="minimal-card relative flex flex-col rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-left border border-border bg-card transition-colors overflow-hidden group"
+                  className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-left border border-border bg-card hover:border-foreground/40 hover:bg-card/95 transition-all active:scale-[0.99] shadow-xs overflow-hidden"
                 >
                   {timeLeft > 0 && (
                     <div className="absolute top-0 left-0 right-0 bg-foreground text-background text-[10px] font-mono font-bold text-center py-1">
@@ -441,32 +563,28 @@ export function Lobby() {
                     </div>
                   )}
 
-                  <div
-                    className={`mb-6 flex w-full items-start justify-between ${
-                      timeLeft > 0 ? "mt-3" : ""
-                    }`}
-                  >
-                    <div className="truncate pr-3">
-                      <h3 className="truncate font-display text-lg font-bold text-foreground group-hover:underline">
+                  <div className={`mb-5 sm:mb-6 flex w-full items-start justify-between ${timeLeft > 0 ? "mt-3" : ""}`}>
+                    <div className="truncate pr-2.5 min-w-0">
+                      <h3 className="truncate font-display text-base sm:text-lg font-bold text-foreground group-hover:underline">
                         {room.name}
                       </h3>
-                      <p className="text-muted-foreground mt-0.5 font-mono text-xs">
+                      <p className="text-muted-foreground mt-0.5 font-mono text-[11px] sm:text-xs truncate">
                         Host: <span className="text-foreground">{room.host}</span>
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase shrink-0">
-                      <span className="size-1.5 rounded-full bg-foreground animate-ping" />
+                    <div className="flex items-center gap-1.5 rounded-full bg-foreground text-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase shrink-0">
+                      <span className="size-1.5 rounded-full bg-background" />
                       Live
                     </div>
                   </div>
 
                   {/* Participant Avatars Strip */}
-                  <div className="mt-auto flex w-full items-center justify-between pt-4 border-t border-border/60">
-                    <div className="flex -space-x-2">
-                      {room.participants.slice(0, 5).map((p) => (
+                  <div className="mt-auto flex w-full items-center justify-between gap-2 pt-3 sm:pt-4 border-t border-border/60">
+                    <div className="flex -space-x-1.5 sm:-space-x-2 shrink-0">
+                      {room.participants.slice(0, 4).map((p) => (
                         <div
                           key={p.identity}
-                          className="bg-card border border-border relative size-8 overflow-hidden rounded-full shadow-xs"
+                          className="bg-card border border-border relative size-7 sm:size-8 overflow-hidden rounded-full shadow-xs"
                         >
                           <img
                             src={userpicUrl(p.avatar || p.identity)}
@@ -475,19 +593,19 @@ export function Lobby() {
                           />
                         </div>
                       ))}
-                      {room.participants.length > 5 && (
-                        <div className="bg-muted border border-border text-foreground flex size-8 items-center justify-center rounded-full font-mono text-[10px] font-bold">
-                          +{room.participants.length - 5}
+                      {room.participants.length > 4 && (
+                        <div className="bg-muted border border-border text-foreground flex size-7 sm:size-8 items-center justify-center rounded-full font-mono text-[9px] sm:text-[10px] font-bold">
+                          +{room.participants.length - 4}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 font-mono text-xs font-bold text-foreground">
+                    <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs font-bold text-foreground shrink-0">
                       <span>
                         {room.numParticipants}{" "}
                         {room.numParticipants === 1 ? "Speaker" : "Speakers"}
                       </span>
-                      <RiArrowRightLine size={15} />
+                      <RiArrowRightLine size={14} />
                     </div>
                   </div>
                 </button>
@@ -510,7 +628,7 @@ export function Lobby() {
               Join {selectedRoom}
             </PopoverTitle>
             <PopoverDescription className="font-mono text-xs text-muted-foreground">
-              Confirm your character avatar and nickname.
+              Confirm your persona and display name.
             </PopoverDescription>
           </PopoverHeader>
 
@@ -521,41 +639,61 @@ export function Lobby() {
               handleJoin(selectedRoom)
             }}
           >
-            <Field>
-              <div className="flex flex-col items-center gap-2 mb-3 mt-1">
-                <div className="relative group/avatar inline-block">
-                  <Avatar className="size-20 border border-border shadow-xs">
-                    <AvatarImage
-                      src={userpicUrl(joinAvatarSeed)}
-                      alt="Avatar preview"
-                      className="object-cover"
-                    />
-                    <AvatarFallback />
-                  </Avatar>
-                  {!isJoinProfileLocked && (
-                    <CharacterPicker
-                      value={joinAvatarSeed}
-                      onSelect={setJoinAvatarSeed}
-                      size="md"
-                    />
-                  )}
+            <Field className="space-y-1.5">
+              <div className="flex items-center justify-center gap-3 mb-2 mt-1">
+                <div className="relative group inline-block">
+                  <CharacterPicker
+                    value={joinAvatarSeed}
+                    onSelect={setJoinAvatarSeed}
+                    size="md"
+                    trigger={
+                      <button
+                        type="button"
+                        className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground cursor-pointer"
+                        title="Click to choose avatar persona"
+                      >
+                        <Avatar className="size-16 sm:size-20 border border-border shadow-xs transition-transform group-hover:scale-105">
+                          <AvatarImage
+                            src={userpicUrl(joinAvatarSeed)}
+                            alt="Avatar preview"
+                            className="object-cover"
+                          />
+                          <AvatarFallback />
+                        </Avatar>
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider bg-card px-2 py-0.5 rounded-full border border-border">
+                            Change
+                          </span>
+                        </div>
+                        <div className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md border-2 border-background">
+                          <RiEditLine size={13} />
+                        </div>
+                      </button>
+                    }
+                  />
                 </div>
-                <span className="font-mono text-xs text-foreground font-bold">
-                  {joinAvatarSeed}
-                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setJoinAvatarSeed(randomUserpic())}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground transition-all active:scale-95 shadow-xs cursor-pointer"
+                  title="Randomize avatar"
+                >
+                  <RiShuffleLine size={13} />
+                  <span>Shuffle</span>
+                </button>
               </div>
 
-              <FieldLabel htmlFor="join-user-name" className="text-xs font-bold font-mono uppercase">
-                Your Nickname
+              <FieldLabel htmlFor="join-user-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
+                Your Display Name
               </FieldLabel>
               <Input
                 id="join-user-name"
                 value={joinUserName}
                 onChange={(e) => setJoinUserName(e.target.value)}
-                disabled={isJoinProfileLocked}
                 placeholder="What should people call you?"
-                maxLength={15}
-                className="rounded-xl font-mono text-xs border border-border"
+                maxLength={20}
+                className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                 autoFocus
               />
             </Field>
@@ -567,7 +705,7 @@ export function Lobby() {
                 disabled={!joinUserName.trim() || isJoining}
               >
                 {isJoining ? <Spinner className="mr-2" /> : null}
-                Enter Room
+                <span>Enter Space</span>
               </Button>
             </div>
           </form>

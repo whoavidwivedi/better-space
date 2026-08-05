@@ -1,31 +1,24 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import {
-  RiMicLine,
-  RiMicOffLine,
   RiArrowRightLine,
-  RiSparklingLine,
-  RiVolumeUpLine,
   RiAddLine,
   RiRadio2Line,
-  RiUser3Line,
 } from "@remixicon/react"
 import { userpicUrl } from "@/lib/userpics"
 
 const DEMO_SPEAKERS = [
-  { id: "sora", name: "Sora", role: "Host", avatar: "OSLO-1", isSpeaking: true, note: "Talking about design tokens" },
-  { id: "elena", name: "Elena", role: "Speaker", avatar: "OSLO-3", isSpeaking: false, note: "Listening in" },
-  { id: "marcus", name: "Marcus", role: "Speaker", avatar: "Upstream-2", isSpeaking: true, note: "Sharing feedback" },
-  { id: "kai", name: "Kai", role: "Speaker", avatar: "Afterclap-4", isSpeaking: false, note: "Just joined" },
-  { id: "maya", name: "Maya", role: "Speaker", avatar: "Funny Bunny-1", isSpeaking: false, note: "Has mic queued" },
+  { id: "sora", name: "Sora", role: "Host", avatar: "OSLO-1" },
+  { id: "elena", name: "Elena", role: "Speaker", avatar: "OSLO-3" },
+  { id: "marcus", name: "Marcus", role: "Speaker", avatar: "Upstream-2" },
+  { id: "kai", name: "Kai", role: "Speaker", avatar: "Afterclap-4" },
+  { id: "maya", name: "Maya", role: "Speaker", avatar: "Funny Bunny-1" },
 ]
 
 export function LiveStageHero() {
-  const [isMuted, setIsMuted] = useState(false)
-  const [activeSpeakerIndex, setActiveSpeakerIndex] = useState(0)
   const [myAvatar, setMyAvatar] = useState("OSLO-1")
   const [spaceName, setSpaceName] = useState("")
 
@@ -35,10 +28,6 @@ export function LiveStageHero() {
       if (saved) setMyAvatar(saved)
     }
   }, [])
-
-  const handleSeatClick = (speaker: typeof DEMO_SPEAKERS[0], index: number) => {
-    setActiveSpeakerIndex(index)
-  }
 
   const handleLaunchQuick = (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,24 +52,24 @@ export function LiveStageHero() {
         </div>
 
         {/* Core Headline */}
-        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
-          <h1 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1] sm:leading-[1.08]">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8 md:mb-10">
+          <h1 className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15] sm:leading-[1.1]">
             Voice spaces for <span className="font-serif italic font-normal text-muted-foreground">real-time</span> conversations.
           </h1>
-          <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mx-auto font-normal leading-relaxed px-1">
+          <p className="mt-2.5 sm:mt-3.5 text-xs sm:text-sm md:text-base text-muted-foreground max-w-xl mx-auto font-normal leading-relaxed px-2">
             Drop into live voice rooms directly in your browser. Claim the mic and talk with crisp WebRTC audio. No accounts, no passwords, 100% ephemeral.
           </p>
         </div>
 
-        {/* Live Interactive Stage Simulator */}
+        {/* Live Stage Preview Card */}
         <div className="relative mx-auto max-w-3xl rounded-2xl sm:rounded-3xl border border-border bg-card/90 p-4 sm:p-6 md:p-8 backdrop-blur-md shadow-xl overflow-hidden">
           {/* Stage Room Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-border/70 pb-3 sm:pb-4">
             <div>
-              <h3 className="font-display text-base sm:text-lg font-bold text-foreground">
+              <h3 className="font-display text-sm sm:text-base md:text-lg font-bold text-foreground">
                 Design &amp; Engineering Stage
               </h3>
-              <span className="font-mono text-[11px] sm:text-xs text-muted-foreground">
+              <span className="font-mono text-[10px] sm:text-xs text-muted-foreground">
                 5 on stage • 42 listeners tuning in
               </span>
             </div>
@@ -88,86 +77,46 @@ export function LiveStageHero() {
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <Link
                 href="/lobby"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-mono font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 sm:px-4 sm:py-1.5 text-[10px] sm:text-xs font-mono font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
               >
                 <span>Browse All Rooms</span>
-                <RiArrowRightLine size={14} />
+                <RiArrowRightLine size={13} />
               </Link>
             </div>
           </div>
 
           {/* Speakers Stage Layout */}
-          <div className="relative py-6 sm:py-10 w-full flex items-center justify-center">
-            {/* Speakers Circle Layout */}
-            <div className="relative z-10 grid grid-cols-3 sm:grid-cols-5 gap-3 sm:gap-6 w-full max-w-2xl px-1 sm:px-2 justify-items-center">
-              {DEMO_SPEAKERS.map((speaker, idx) => {
-                const isSelected = activeSpeakerIndex === idx
-                return (
-                  <button
-                    key={speaker.id}
-                    onClick={() => handleSeatClick(speaker, idx)}
-                    className="group relative flex flex-col items-center text-center transition-transform active:scale-95 focus:outline-none"
-                  >
-                    {/* Avatar Container */}
-                    <div className="relative size-14 sm:size-20">
-                      <div
-                        className={`size-full rounded-full border-2 overflow-hidden bg-muted transition-all ${
-                          isSelected
-                            ? "border-foreground ring-2 ring-foreground/20"
-                            : "border-border/80 group-hover:border-foreground/60"
-                        }`}
-                      >
-                        <img
-                          src={userpicUrl(speaker.avatar)}
-                          alt={speaker.name}
-                          className="size-full object-cover"
-                        />
-                      </div>
+          <div className="relative py-5 sm:py-8 md:py-10 w-full flex items-center justify-center">
+            {/* Speakers Circle Layout - Responsive 5 columns */}
+            <div className="relative z-10 grid grid-cols-5 gap-1.5 sm:gap-3 md:gap-6 w-full max-w-2xl px-1 justify-items-center">
+              {DEMO_SPEAKERS.map((speaker) => (
+                <div
+                  key={speaker.id}
+                  className="flex flex-col items-center text-center min-w-0"
+                >
+                  {/* Avatar Container */}
+                  <div className="relative size-12 sm:size-16 md:size-20">
+                    <div className="size-full rounded-full border-2 border-border/80 overflow-hidden bg-muted shadow-xs">
+                      <img
+                        src={userpicUrl(speaker.avatar)}
+                        alt={speaker.name}
+                        className="size-full object-cover"
+                      />
                     </div>
+                  </div>
 
-                    {/* Name & Role */}
-                    <div className="mt-1.5 sm:mt-2">
-                      <span className="font-display text-[11px] sm:text-xs font-bold text-foreground block truncate max-w-[70px] sm:max-w-[80px]">
-                        {speaker.name}
-                      </span>
-                      <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground block">
-                        {speaker.role}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
+                  {/* Name & Role */}
+                  <div className="mt-1 sm:mt-2 w-full">
+                    <span className="font-display text-[10px] sm:text-xs font-bold text-foreground block truncate">
+                      {speaker.name}
+                    </span>
+                    <span className="font-mono text-[8px] sm:text-[10px] text-muted-foreground block truncate">
+                      {speaker.role}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          {/* Interactive Stage Controls Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border/70">
-            {/* Mic Toggle & Status */}
-            <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
-              <button
-                onClick={() => setIsMuted(!isMuted)}
-                className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs font-mono font-bold transition-all active:scale-95 ${
-                  isMuted
-                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    : "bg-foreground text-background hover:bg-foreground/90"
-                }`}
-              >
-                {isMuted ? <RiMicOffLine size={15} /> : <RiMicLine size={15} />}
-                <span>{isMuted ? "Mic Muted" : "Mic Live"}</span>
-              </button>
-
-              <span className="font-mono text-[11px] sm:text-xs text-muted-foreground">
-                Tap speaker to select
-              </span>
-            </div>
-
-            <Link
-              href="/lobby"
-              className="inline-flex items-center justify-center sm:justify-start gap-1.5 font-mono text-xs font-bold text-foreground hover:underline pt-1 sm:pt-0"
-            >
-              <span>Join live discussion</span>
-              <RiArrowRightLine size={14} />
-            </Link>
           </div>
         </div>
 

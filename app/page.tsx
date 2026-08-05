@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import React from "react"
 import { Navbar } from "@/components/common/navbar"
 import { LiveStageHero } from "@/components/landing/live-stage-hero"

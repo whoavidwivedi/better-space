@@ -4,61 +4,50 @@
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import {
-  RiRadio2Line,
-  RiTeamLine,
   RiArrowRightLine,
-  RiVolumeUpLine,
-  RiSparklingLine,
   RiAddLine,
 } from "@remixicon/react"
 import { userpicUrl } from "@/lib/userpics"
 
-type LiveRoom = {
+type SpaceCard = {
   name: string
   title: string
   topic: string
   host: string
   speakers: string[]
-  listenersCount: number
+  listenersCount?: number
+  isLive: boolean
 }
 
-const FEATURED_ROOMS: LiveRoom[] = [
+const STARTER_TEMPLATES: SpaceCard[] = [
+  {
+    name: "techtwitter-india",
+    title: "#TechTwitter India: Devs, Startups & Craft",
+    topic: "#TechTwitter India",
+    host: "OSLO-1",
+    speakers: ["OSLO-1", "Funny Bunny-2", "Upstream-3", "Afterclap-4"],
+    isLive: false,
+  },
   {
     name: "design-systems",
     title: "Design Systems, Motion & Craft",
-    topic: "Design",
+    topic: "Design & UX",
     host: "OSLO-1",
-    speakers: ["OSLO-1", "OSLO-3", "Upstream-2", "Afterclap-4"],
-    listenersCount: 28,
+    speakers: ["OSLO-1", "OSLO-3", "Upstream-2", "Afterclap-8"],
+    isLive: false,
   },
   {
     name: "indie-founders",
     title: "Building & Shipping Micro-SaaS",
-    topic: "Startups",
+    topic: "Startups & Build",
     host: "Upstream-5",
     speakers: ["Upstream-5", "Funny Bunny-2", "Teamwork-1"],
-    listenersCount: 44,
-  },
-  {
-    name: "ambient-lounge",
-    title: "Late Night Ambient & Deep Work",
-    topic: "Music & Hangout",
-    host: "Afterclap-8",
-    speakers: ["Afterclap-8", "OSLO-12", "Guacamole-1"],
-    listenersCount: 19,
-  },
-  {
-    name: "ai-agents",
-    title: "Autonomous Coding & Local LLMs",
-    topic: "Engineering",
-    host: "OSLO-6",
-    speakers: ["OSLO-6", "Upstream-14", "Funny Bunny-7", "Delivery boy-1"],
-    listenersCount: 63,
+    isLive: false,
   },
 ]
 
 export function LiveSpacesRadar() {
-  const [rooms, setRooms] = useState<LiveRoom[]>(FEATURED_ROOMS)
+  const [rooms, setRooms] = useState<SpaceCard[]>(STARTER_TEMPLATES)
 
   useEffect(() => {
     // Attempt to fetch actual live rooms if available
@@ -66,19 +55,27 @@ export function LiveSpacesRadar() {
       .then((res) => res.json())
       .then((data) => {
         if (data.data && data.data.length > 0) {
-          const mapped: LiveRoom[] = data.data.map((r: any) => ({
+          const liveList: SpaceCard[] = data.data.map((r: any) => ({
             name: r.name,
             title: r.name.replace(/[-_]/g, " ").toUpperCase(),
             topic: "Live Broadcast",
             host: r.host || "OSLO-1",
             speakers: r.participants?.map((p: any) => p.avatar || p.identity) || ["OSLO-1"],
             listenersCount: Math.max(r.numParticipants, 1),
+            isLive: true,
           }))
-          setRooms([...mapped, ...FEATURED_ROOMS.slice(mapped.length)])
+
+          // Merge live rooms first, followed by remaining starter templates (up to 3 total)
+          const remainingTemplates = STARTER_TEMPLATES.filter(
+            (tmpl) => !liveList.some((l) => l.name.toLowerCase() === tmpl.name.toLowerCase())
+          )
+          setRooms([...liveList, ...remainingTemplates].slice(0, 3))
         }
       })
       .catch(() => {})
   }, [])
+
+  const hasLiveRooms = rooms.some((r) => r.isLive)
 
   return (
     <section className="relative w-full border-b border-border/80 bg-background py-12 sm:py-20 md:py-24">
@@ -90,7 +87,7 @@ export function LiveSpacesRadar() {
               <span>EXPLORE ACTIVE SPACES</span>
             </div>
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-              Drop into ongoing discussions.
+              {hasLiveRooms ? "Drop into live discussions." : "Drop into live discussions or launch a template."}
             </h2>
           </div>
 
@@ -98,27 +95,39 @@ export function LiveSpacesRadar() {
             href="/lobby"
             className="inline-flex items-center gap-2 font-mono text-xs font-bold text-foreground hover:underline self-start sm:self-auto"
           >
-            <span>View All Spaces ({rooms.length})</span>
+            <span>View All Spaces</span>
             <RiArrowRightLine size={16} />
           </Link>
         </div>
 
-        {/* Room Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {rooms.slice(0, 4).map((room) => (
+        {/* Room Cards Grid (3 Rooms/Templates + 1 Dotted Blank Start Space Card) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-5">
+          {rooms.slice(0, 3).map((room) => (
             <Link
               key={room.name}
               href={`/space/${encodeURIComponent(room.name)}`}
-              className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-border bg-card/70 p-5 sm:p-7 hover:border-foreground/40 hover:bg-card/95 transition-all duration-200 active:scale-[0.99] shadow-sm hover:shadow-md overflow-hidden"
+              className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-border bg-card/70 p-4 sm:p-6 hover:border-foreground/40 hover:bg-card/95 transition-all duration-200 active:scale-[0.99] shadow-sm hover:shadow-md overflow-hidden min-h-[200px] sm:min-h-[220px]"
             >
               {/* Card Top */}
               <div>
                 <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4">
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase">
-                    {room.topic}
-                  </span>
+                  {room.isLive ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wide">
+                      <span className="size-1.5 rounded-full bg-background" />
+                      LIVE NOW
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/80 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
+                      STARTER TEMPLATE
+                    </span>
+                  )}
+
                   <div className="flex items-center gap-1.5 font-mono text-[11px] sm:text-xs font-semibold text-muted-foreground">
-                    <span>{room.listenersCount} tuning in</span>
+                    {room.isLive ? (
+                      <span>{room.listenersCount} tuning in</span>
+                    ) : (
+                      <span className="text-[10px] sm:text-[11px]">Available to launch</span>
+                    )}
                   </div>
                 </div>
 
@@ -127,15 +136,15 @@ export function LiveSpacesRadar() {
                 </h3>
               </div>
 
-              {/* Card Bottom: Speakers & Join Action */}
-              <div className="mt-6 sm:mt-8 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 pt-3.5 sm:pt-4 border-t border-border/60">
+              {/* Card Bottom: Speakers & Action */}
+              <div className="mt-5 sm:mt-8 flex flex-wrap items-center justify-between gap-3 pt-3 sm:pt-4 border-t border-border/60">
                 {/* Speaker Avatars */}
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className="flex -space-x-2 sm:-space-x-2.5">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                  <div className="flex -space-x-2 shrink-0">
                     {room.speakers.slice(0, 4).map((avatar, idx) => (
                       <div
                         key={idx}
-                        className="size-8 sm:size-9 rounded-full border-2 border-card bg-muted overflow-hidden shadow-xs shrink-0"
+                        className="size-7 sm:size-8 rounded-full border-2 border-card bg-muted overflow-hidden shadow-xs shrink-0"
                       >
                         <img
                           src={userpicUrl(avatar)}
@@ -145,19 +154,49 @@ export function LiveSpacesRadar() {
                       </div>
                     ))}
                   </div>
-                  <span className="font-mono text-[11px] sm:text-xs text-muted-foreground">
-                    {room.speakers.length} on mic
+                  <span className="font-mono text-[10px] sm:text-xs text-muted-foreground truncate">
+                    {room.isLive ? `${room.speakers.length} on mic` : "Preset line-up"}
                   </span>
                 </div>
 
-                {/* Enter Button */}
-                <div className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-1.5 sm:px-4 sm:py-2 font-mono text-xs font-bold uppercase tracking-wider group-hover:bg-foreground/90 transition-transform group-active:scale-95">
-                  <span>Enter</span>
-                  <RiArrowRightLine size={14} />
-                </div>
+                {/* Enter / Start Button */}
+                {room.isLive ? (
+                  <div className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3 py-1.5 sm:px-4 sm:py-2 font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider group-hover:bg-foreground/90 transition-transform group-active:scale-95 shrink-0 ml-auto sm:ml-0">
+                    <span>Join Space</span>
+                    <RiArrowRightLine size={13} />
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1 rounded-full border border-border bg-background hover:bg-muted text-foreground px-3 py-1.5 sm:px-4 sm:py-2 font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider group-hover:border-foreground/60 transition-transform group-active:scale-95 shrink-0 ml-auto sm:ml-0">
+                    <RiAddLine size={13} />
+                    <span>Start Space</span>
+                  </div>
+                )}
               </div>
             </Link>
           ))}
+
+          {/* 4th Card: Dotted Blank Start Space Card */}
+          <Link
+            href="/lobby"
+            className="group relative flex flex-col items-center justify-center text-center rounded-2xl sm:rounded-3xl border-2 border-dashed border-border/90 hover:border-foreground/60 bg-card/30 hover:bg-card/70 p-5 sm:p-8 transition-all duration-200 active:scale-[0.99] min-h-[200px] sm:min-h-[220px]"
+          >
+            <div className="size-12 sm:size-14 rounded-full border border-dashed border-border group-hover:border-foreground/60 bg-muted/50 group-hover:bg-muted flex items-center justify-center mb-3 transition-colors">
+              <RiAddLine size={24} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+            </div>
+
+            <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mb-1">
+              Start Space
+            </h3>
+
+            <p className="font-mono text-[11px] sm:text-xs text-muted-foreground max-w-xs mb-4">
+              Host your own room on any topic with instant ephemeral audio.
+            </p>
+
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider group-hover:bg-foreground/90 transition-transform group-active:scale-95">
+              <RiAddLine size={14} />
+              <span>Create New Space</span>
+            </div>
+          </Link>
         </div>
       </div>
     </section>

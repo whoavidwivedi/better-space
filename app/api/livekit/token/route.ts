@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
   const targetRoom = await getRoomMeta();
 
   let isHost = false;
+  let isCohost = false;
   if (targetRoom && targetRoom.metadata) {
     try {
       const meta = JSON.parse(targetRoom.metadata);
@@ -67,6 +68,8 @@ export async function GET(req: NextRequest) {
       if (meta.host === username) {
         if (meta.hostSecret && hostSecret === meta.hostSecret) {
           isHost = true;
+        } else if (!meta.hostSecret) {
+          isHost = true;
         } else {
           // Security Fix: Prevent unauthorized users from claiming the host's identity
           return NextResponse.json(
@@ -75,11 +78,14 @@ export async function GET(req: NextRequest) {
           );
         }
       }
+      if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
+        isCohost = true;
+      }
     } catch {}
   } else if (hostSecret) {
     isHost = true;
     try {
-      const meta = { host: username, hostSecret, banned: [] };
+      const meta = { host: username, hostSecret, banned: [], cohosts: [] };
       await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta));
     } catch {}
   }
@@ -98,7 +104,7 @@ export async function GET(req: NextRequest) {
   at.addGrant({
     room: cleanRoom,
     roomJoin: true,
-    canPublish: isHost,
+    canPublish: isHost || isCohost,
     canSubscribe: true,
     canPublishData: true,
     canUpdateOwnMetadata: true,
