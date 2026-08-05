@@ -148,6 +148,7 @@ export function SpaceJoin() {
                   onChange={(e) => setSpaceName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-"))}
                   placeholder="e.g. techtwitter-india"
                   maxLength={35}
+                  autoComplete="off"
                   className="h-11 sm:h-12 font-mono text-sm rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
                 />
               </div>
@@ -214,6 +215,7 @@ export function SpaceJoin() {
                 onChange={(e) => setUserName(e.target.value)}
                 placeholder="Enter your name..."
                 maxLength={20}
+                autoComplete="off"
                 autoFocus={!userName}
                 className="h-11 sm:h-12 text-sm sm:text-base rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
               />

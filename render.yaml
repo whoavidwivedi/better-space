@@ -3,8 +3,8 @@ services:
     name: space-room
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: bun install && bun run build
+    startCommand: bun run start
     envVars:
       - key: NODE_VERSION
         value: 20

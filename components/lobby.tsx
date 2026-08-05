@@ -344,19 +344,26 @@ export function Lobby() {
               <PopoverContent
                 side="bottom"
                 align="end"
-                className="w-[min(24rem,calc(100vw-2rem))] rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-border bg-card shadow-xl"
+                className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card p-0 shadow-2xl"
               >
-                <PopoverHeader>
-                  <PopoverTitle className="font-display text-lg font-bold">
-                    Launch New Space
-                  </PopoverTitle>
-                  <PopoverDescription className="font-mono text-xs text-muted-foreground">
-                    Name your room and set your display identity.
-                  </PopoverDescription>
+                <PopoverHeader className="px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border/70">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-muted border border-border shrink-0">
+                      <RiTeamLine size={14} className="text-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <PopoverTitle className="font-display text-base font-bold text-foreground leading-tight">
+                        Launch New Space
+                      </PopoverTitle>
+                      <PopoverDescription className="font-mono text-[10px] sm:text-[11px] text-muted-foreground truncate">
+                        Name your room and set your display identity.
+                      </PopoverDescription>
+                    </div>
+                  </div>
                 </PopoverHeader>
 
                 <form
-                  className="space-y-4 pt-3"
+                  className="flex flex-col p-5 sm:p-6"
                   onSubmit={(e) => {
                     e.preventDefault()
                     handleCreateAndJoin()
@@ -374,6 +381,7 @@ export function Lobby() {
                       }
                       placeholder="e.g. design-crit"
                       maxLength={30}
+                      autoComplete="off"
                       className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                       autoFocus
                     />
@@ -433,19 +441,24 @@ export function Lobby() {
                       onChange={(e) => setCreateUserName(e.target.value)}
                       placeholder="What should people call you?"
                       maxLength={20}
+                      autoComplete="off"
                       className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                     />
                   </Field>
 
-                  <div className="pt-2">
-                    {createUserName.trim() && rooms.some((r) => r.host === createUserName.trim()) && (
-                      <div className="text-destructive font-mono text-xs font-medium mb-3">
-                        You are already hosting an active space.
-                      </div>
+                  <div className="mt-5 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 flex flex-col sm:flex-row items-center justify-between gap-2 px-5 sm:px-6 py-3 border-t border-border/70 bg-muted/30">
+                    {createUserName.trim() && rooms.some((r) => r.host === createUserName.trim()) ? (
+                      <span className="font-mono text-[10px] sm:text-xs font-medium text-destructive">
+                        Already hosting an active space.
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+                        Instant WebRTC audio &middot; no accounts
+                      </span>
                     )}
                     <Button
                       type="submit"
-                      className="w-full h-11 font-mono text-xs font-bold uppercase tracking-wider rounded-xl bg-foreground text-background"
+                      className="font-mono text-xs font-bold uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-foreground/90 px-5 h-9 shrink-0"
                       disabled={
                         !newSpaceName.trim() ||
                         !createUserName.trim() ||
@@ -693,6 +706,7 @@ export function Lobby() {
                 onChange={(e) => setJoinUserName(e.target.value)}
                 placeholder="What should people call you?"
                 maxLength={20}
+                autoComplete="off"
                 className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
                 autoFocus
               />

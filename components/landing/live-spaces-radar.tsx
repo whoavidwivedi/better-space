@@ -38,7 +38,7 @@ const STARTER_TEMPLATES: SpaceCard[] = [
   },
   {
     name: "indie-founders",
-    title: "Building & Shipping Micro-SaaS",
+    title: "Building & Shipping using ZeroStarter",
     topic: "Startups & Build",
     host: "Upstream-5",
     speakers: ["Upstream-5", "Funny Bunny-2", "Teamwork-1"],
