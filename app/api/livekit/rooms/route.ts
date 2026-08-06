@@ -1,5 +1,6 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { isSpaceEnded } from "@/lib/ended-spaces";
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -20,7 +21,7 @@ export async function GET() {
     return NextResponse.json({ error: { message: e.message } }, { status: 500 });
   }
 
-  const rooms = await roomService.listRooms();
+  const rooms = (await roomService.listRooms()).filter((r) => !isSpaceEnded(r.name));
   const roomDetails = await Promise.all(
     rooms.map(async (r) => {
       let participants: any[] = [];
@@ -74,6 +75,13 @@ export async function POST(req: NextRequest) {
 
   const cleanRoom = roomName.trim().substring(0, 30);
   const cleanHost = hostName.trim().substring(0, 30);
+
+  if (isSpaceEnded(cleanRoom)) {
+    return NextResponse.json(
+      { error: { message: "This space has ended and cannot be re-created." } },
+      { status: 400 },
+    );
+  }
 
   let roomService: RoomServiceClient;
   try {

@@ -1,5 +1,6 @@
 import {
   Bricolage_Grotesque,
+  Google_Sans_Flex,
   Instrument_Serif,
   Kalam,
   Syne,
@@ -33,6 +34,12 @@ export const instrumentSerif = Instrument_Serif({
   weight: "400",
   style: ["normal", "italic"],
   variable: "--font-instrument-serif",
+  display: "swap",
+})
+
+export const googleSansFlex = Google_Sans_Flex({
+  subsets: ["latin"],
+  variable: "--font-google-sans",
   display: "swap",
 })
 

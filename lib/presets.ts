@@ -9,11 +9,11 @@ export type StarterTemplate = {
 
 export const STARTER_TEMPLATES: StarterTemplate[] = [
   {
-    name: "techtwitter-india-devs-startups-craft",
-    aliases: ["techtwitter-india", "techtwitter"],
-    title: "#TechTwitter India: Devs, Startups & Craft",
+    name: "techbetterspace-india-devs-startups-craft",
+    aliases: ["techbetterspace-india", "techbetterspace", "techtwitter-india", "techtwitter"],
+    title: "#TechBetterSpace India: Devs, Startups & Craft",
     desc: "Devs, founders, startups & craft discussions",
-    topic: "#TechTwitter India",
+    topic: "#TechBetterSpace India",
     speakers: ["OSLO-1", "Funny Bunny-2", "Upstream-3", "Afterclap-4"],
   },
   {
@@ -34,6 +34,14 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
 ]
 
+const ROOM_CODE_PATTERN = /-[a-z0-9]{6}$/
+
+export function stripRoomCode(roomName: string): string {
+  if (!roomName) return roomName
+  const cleaned = decodeURIComponent(roomName).trim()
+  return cleaned.replace(ROOM_CODE_PATTERN, "") || cleaned
+}
+
 export function findTemplate(nameOrSlugOrTitle?: string | null): StarterTemplate | undefined {
   if (!nameOrSlugOrTitle) return undefined
   const decoded = decodeURIComponent(nameOrSlugOrTitle).trim().toLowerCase()
@@ -53,6 +61,6 @@ export function getDisplayRoomTitle(roomName: string): string {
   if (!roomName) return "Voice Space"
   const t = findTemplate(roomName)
   if (t) return t.title
-  const clean = decodeURIComponent(roomName).trim()
+  const clean = stripRoomCode(roomName)
   return clean
 }

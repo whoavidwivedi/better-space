@@ -51,7 +51,6 @@ export function Navbar() {
 
           {isSpace && roomTitle && (
             <div className="flex items-center gap-1.5 pl-2.5 sm:pl-3 border-l border-border min-w-0">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span className="font-display text-xs sm:text-sm font-bold text-foreground truncate max-w-[140px] sm:max-w-xs md:max-w-md">
                 {roomTitle}
               </span>

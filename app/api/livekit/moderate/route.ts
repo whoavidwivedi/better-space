@@ -1,5 +1,9 @@
 import { RoomServiceClient, TokenVerifier } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  markSpaceEnded,
+  type EndedSpaceParticipant,
+} from "@/lib/ended-spaces";
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -112,6 +116,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: { success: true } });
 
     case "end":
+      {
+        let host = "Unknown";
+        let cohosts: string[] = [];
+        let participants: any[] = [];
+        try {
+          participants = await roomService.listParticipants(cleanRoom);
+        } catch {}
+        try {
+          if (meta?.host) host = meta.host;
+          if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts;
+        } catch {}
+
+        const speakers: EndedSpaceParticipant[] = participants
+          .map((p: any) => {
+            let avatar = p.identity;
+            try {
+              if (p.metadata) {
+                const m = JSON.parse(p.metadata);
+                if (m.avatar) avatar = m.avatar;
+              }
+            } catch {}
+            return { identity: p.identity, avatar };
+          })
+          .filter((p: any, i: number, arr: any[]) =>
+            arr.findIndex((x) => x.identity === p.identity) === i
+          );
+
+        markSpaceEnded(cleanRoom, { host, cohosts, speakers });
+      }
       await roomService.deleteRoom(cleanRoom);
       return NextResponse.json({ data: { success: true } });
       

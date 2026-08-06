@@ -1,5 +1,6 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces";
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -32,6 +33,13 @@ export async function GET(req: NextRequest) {
 
   if (!/^[a-zA-Z0-9_-]+$/.test(cleanRoom)) {
     return NextResponse.json({ error: { message: "Invalid room name" } }, { status: 400 });
+  }
+
+  if (isSpaceEnded(cleanRoom)) {
+    const ended = getEndedSpace(cleanRoom);
+    return NextResponse.json({
+      data: { ended: true, endedInfo: ended },
+    });
   }
 
   let roomService: RoomServiceClient;

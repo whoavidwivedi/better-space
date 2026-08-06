@@ -166,12 +166,14 @@
 .font-handwritten {
   font-family: var(--font-kalam), cursive;
 }
+.font-google-sans {
+  font-family: var(--font-google-sans), sans-serif;
+}
 
 /* Grounded Tactile Button & Press State */
 button:active,
 [role="button"]:active {
-  transform: scale(0.98);
-  transition: transform 90ms var(--ease-out);
+  transition: filter 90ms var(--ease-out);
 }
 
 /* Subtle Equalizer Bars */
@@ -245,6 +247,17 @@ button:active,
   }
   100% {
     transform: scaleY(1);
+  }
+}
+
+@keyframes mark-wave {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
   }
 }
 

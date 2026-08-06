@@ -188,17 +188,15 @@ export function CharacterPicker({
                           src={userpicUrl(name)}
                           alt={name}
                           className={cn(
-                            "size-full rounded-full border-2 object-cover bg-muted transition-all",
+                            "size-full rounded-full border-2 object-cover bg-muted",
                             isSelected
-                              ? "border-foreground ring-2 ring-foreground shadow-sm scale-105"
-                              : "border-border/80 group-hover:border-foreground/60 group-hover:scale-105"
+                              ? "border-foreground"
+                              : "border-border/80 group-hover:border-foreground/60"
                           )}
                         />
                         {isSelected && (
-                          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/20">
-                            <div className="size-4.5 sm:size-5 rounded-full bg-foreground text-background flex items-center justify-center shadow-xs">
-                              <RiCheckLine size={11} className="stroke-[3]" />
-                            </div>
+                          <div className="absolute -right-0.5 -top-0.5 flex size-4.5 sm:size-5 items-center justify-center rounded-full bg-foreground text-background shadow-xs border-2 border-card">
+                            <RiCheckLine size={10} className="stroke-[3]" />
                           </div>
                         )}
                       </div>

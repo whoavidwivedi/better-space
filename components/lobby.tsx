@@ -2,7 +2,6 @@
 "use client"
 
 import {
-  RiAddLine,
   RiTeamLine,
   RiArrowRightLine,
   RiSearchLine,
@@ -292,11 +291,11 @@ export function Lobby() {
               trigger={
                 <button
                   type="button"
-                  className="flex items-center gap-2 bg-muted/60 hover:bg-muted px-3 py-1.5 rounded-full border border-border/80 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-foreground shrink-0"
+                  className="group flex h-9 items-center gap-2 bg-card hover:bg-muted pl-1.5 pr-3 rounded-full border border-border/80 shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-foreground shrink-0"
                   title="Change avatar persona"
                 >
                   <div className="relative">
-                    <Avatar className="size-7 sm:size-8 md:size-9 border border-border">
+                    <Avatar className="size-6.5 border border-border shadow-xs">
                       <AvatarImage
                         src={userpicUrl(createAvatarSeed)}
                         alt="Active Avatar"
@@ -304,11 +303,11 @@ export function Lobby() {
                       />
                       <AvatarFallback />
                     </Avatar>
-                    <div className="absolute -right-0.5 -bottom-0.5 flex size-3.5 sm:size-4 items-center justify-center rounded-full bg-foreground text-background shadow-xs">
-                      <RiEditLine size={9} />
+                    <div className="absolute -right-0.5 -bottom-0.5 flex size-3 items-center justify-center rounded-full bg-foreground text-background shadow-xs ring-2 ring-card">
+                      <RiEditLine size={7} />
                     </div>
                   </div>
-                  <span className="font-mono text-xs font-semibold text-muted-foreground group-hover:text-foreground pr-1 transition-colors">
+                  <span className="font-mono text-[11px] font-semibold text-foreground tracking-wide">
                     Change Avatar
                   </span>
                 </button>
@@ -320,10 +319,11 @@ export function Lobby() {
               <PopoverTrigger
                 render={
                   <Button
-                    className="h-9 sm:h-10 px-4 sm:px-5 font-mono text-xs font-bold uppercase tracking-wider gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-transform active:scale-95 shrink-0"
+                    className="h-9 px-4 font-mono text-[11px] font-bold uppercase tracking-widest gap-2.5 rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0 shadow-sm"
                   >
-                    <RiAddLine size={15} />
                     <span>Launch Space</span>
+                    <span className="h-3.5 w-px bg-background/40" aria-hidden="true" />
+                    <RiArrowRightLine size={18} />
                   </Button>
                 }
               />
@@ -349,7 +349,7 @@ export function Lobby() {
                       type="button"
                       onClick={() => setIsCreateOpen(false)}
                       aria-label="Close"
-                      className="grid size-7 sm:size-8 shrink-0 place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground/25 cursor-pointer"
+                      className="grid size-7 sm:size-8 shrink-0 place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground/25 cursor-pointer"
                     >
                       <RiCloseLine size={15} aria-hidden="true" />
                     </button>
@@ -395,7 +395,7 @@ export function Lobby() {
                           key={preset.name}
                           type="button"
                           onClick={() => setNewSpaceName(preset.name)}
-                          className="font-mono text-[10px] px-2 py-0.5 rounded-md border border-border bg-muted/60 hover:bg-muted text-foreground transition-colors cursor-pointer"
+                          className="font-mono text-[10px] px-2 py-0.5 rounded-md border border-border bg-muted/60 hover:bg-muted text-foreground cursor-pointer"
                         >
                           {preset.name}
                         </button>
@@ -497,7 +497,7 @@ export function Lobby() {
                   <Link
                     key={preset.name}
                     href={`/space/${preset.name}`}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-foreground/40 hover:bg-card/90 transition-all active:scale-98 shadow-xs text-left"
+                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-foreground/40 hover:bg-card/90 shadow-xs text-left"
                   >
                     <div>
                       <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-2 py-0.5 rounded-full mb-2">
@@ -513,7 +513,7 @@ export function Lobby() {
 
                     <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/60 font-mono text-xs font-bold text-foreground">
                       <span className="font-mono text-xs font-bold">Launch Template</span>
-                      <RiArrowRightLine size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                      <RiArrowRightLine size={14} />
                     </div>
                   </Link>
                 ))}
@@ -540,7 +540,7 @@ export function Lobby() {
                 <button
                   key={room.name}
                   onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                  className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-left border border-border bg-card hover:border-foreground/40 hover:bg-card/95 transition-all active:scale-[0.99] shadow-xs overflow-hidden"
+                  className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-left border border-border bg-card hover:border-foreground/40 hover:bg-card/95 shadow-xs overflow-hidden"
                 >
                   {timeLeft > 0 && (
                     <div className="absolute top-0 left-0 right-0 bg-foreground text-background text-[10px] font-mono font-bold text-center py-1">
@@ -637,7 +637,7 @@ export function Lobby() {
                         className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground cursor-pointer"
                         title="Click to choose avatar persona"
                       >
-                        <Avatar className="size-16 sm:size-20 border border-border shadow-xs transition-transform group-hover:scale-105">
+                        <Avatar className="size-16 sm:size-20 border border-border shadow-xs">
                           <AvatarImage
                             src={userpicUrl(joinAvatarSeed)}
                             alt="Avatar preview"
@@ -661,7 +661,7 @@ export function Lobby() {
                 <button
                   type="button"
                   onClick={() => setJoinAvatarSeed(randomUserpic())}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground transition-all active:scale-95 shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground shadow-xs cursor-pointer"
                   title="Randomize avatar"
                 >
                   <RiShuffleLine size={13} />

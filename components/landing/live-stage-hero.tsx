@@ -31,7 +31,9 @@ export function LiveStageHero() {
 
   const handleLaunchQuick = (e: React.FormEvent) => {
     e.preventDefault()
-    const rName = (spaceName.trim() || "techtwitter-india").toLowerCase().replace(/[^a-z0-9_-]/g, "-")
+    const trimmed = spaceName.trim()
+    if (!trimmed) return
+    const rName = trimmed.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
     localStorage.setItem("better_space_active_avatar", myAvatar)
     window.location.href = `/space/${encodeURIComponent(rName)}`
   }
@@ -132,7 +134,7 @@ export function LiveStageHero() {
                 type="text"
                 value={spaceName}
                 onChange={(e) => setSpaceName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
-                placeholder="Name your space (e.g. design-crit)"
+                placeholder="Name your space"
                 maxLength={25}
                 className="w-full bg-transparent text-xs sm:text-sm font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none py-1"
               />
@@ -140,7 +142,8 @@ export function LiveStageHero() {
 
             <button
               type="submit"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-full bg-foreground text-background px-5 sm:px-6 py-2.5 sm:py-3 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground/90 transition-transform active:scale-95 shrink-0"
+              disabled={!spaceName.trim()}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-full bg-foreground text-background px-5 sm:px-6 py-2.5 sm:py-3 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground/90 transition-transform active:scale-95 shrink-0 disabled:opacity-50 disabled:pointer-events-none"
             >
               <RiAddLine size={16} />
               <span>Launch Space</span>

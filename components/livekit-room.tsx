@@ -34,6 +34,7 @@ import { RoomEvent, Track } from "livekit-client"
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 
 import { AudioVisualizer } from "@/components/audio-visualizer"
+import { BetterSpaceMark } from "@/components/brand/better-space-mark"
 import { ModeToggle } from "@/components/common/mode-toggle"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -622,7 +623,7 @@ function RoomUI({
       {/* Header Bar */}
       <header className="border-border bg-card/80 sticky top-0 z-40 flex h-12 sm:h-14 items-center justify-between gap-2 sm:gap-3 border-b px-2.5 sm:px-4 backdrop-blur-md md:px-6">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-          <span className="size-1.5 sm:size-2 rounded-full bg-foreground inline-block shrink-0" />
+          <BetterSpaceMark animated className="size-3.5 sm:size-4 shrink-0 text-foreground" strokeWidth={4} />
           <h1 className="truncate font-display text-xs sm:text-sm font-bold text-foreground max-w-[180px] sm:max-w-md md:max-w-xl">
             {getDisplayRoomTitle(roomName)}
           </h1>

@@ -1,12 +1,12 @@
 "use client"
 
-import { RiArrowLeftLine, RiShuffleLine, RiEditLine } from "@remixicon/react"
-import Link from "next/link"
+import { RiShuffleLine, RiMicLine } from "@remixicon/react"
 import { useParams, useRouter } from "next/navigation"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { CharacterPicker } from "@/components/common/character-picker"
+import { SpaceEnded } from "@/components/ended-space"
 import { Navbar } from "@/components/common/navbar"
 import { SpaceRoomLiveKit } from "@/components/livekit-room"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,22 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 
 import { randomUserpic, userpicUrl } from "@/lib/userpics"
-import { STARTER_TEMPLATES, findTemplate, getDisplayRoomTitle } from "@/lib/presets"
+import { findTemplate, stripRoomCode } from "@/lib/presets"
+import type { EndedSpace } from "@/lib/ended-spaces"
+
+const CODE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
+const ROOM_CODE_PATTERN = /-([a-z0-9]{6})$/
+
+const toSlug = (name: string) =>
+  name.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/^[\s-]+|[\s-]+$/g, "")
+
+const genRoomCode = () => {
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => CODE_CHARS[b % CODE_CHARS.length])
+    .join("")
+}
 
 export function SpaceJoin() {
   const params = useParams<{ name?: string | string[] }>()
@@ -39,13 +54,19 @@ export function SpaceJoin() {
 
   const initialRoom = getRouteRoom()
   const initialPreset = findTemplate(initialRoom)
-  const [spaceName, setSpaceName] = useState(() => initialPreset ? initialPreset.title : getRouteRoom())
+  const initialCode = ROOM_CODE_PATTERN.exec(initialRoom)?.[1] ?? ""
+  const [spaceName, setSpaceName] = useState(() =>
+    initialPreset ? initialPreset.title : stripRoomCode(getRouteRoom())
+  )
+  const [roomCode, setRoomCode] = useState(initialCode)
+  const codeAssignedRef = useRef(Boolean(initialCode))
   const [userName, setUserName] = useState("")
   const [isJoining, setIsJoining] = useState(false)
   const [hasJoined, setHasJoined] = useState(false)
   const [token, setToken] = useState("")
   const [activeRoomName, setActiveRoomName] = useState("")
   const [hostSecret, setHostSecret] = useState("")
+  const [endedSpace, setEndedSpace] = useState<EndedSpace | null>(null)
   const [avatarSeed, setAvatarSeed] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("better_space_active_avatar")
@@ -58,7 +79,7 @@ export function SpaceJoin() {
     const current = getRouteRoom()
     if (current) {
       const preset = findTemplate(current)
-      setSpaceName(preset ? preset.title : current)
+      setSpaceName(preset ? preset.title : stripRoomCode(current))
     }
     const savedName = localStorage.getItem("space_username")
     if (savedName) {
@@ -66,14 +87,36 @@ export function SpaceJoin() {
     }
   }, [params?.name])
 
+  /* Assign a stable room code once, when a name first exists */
+  useEffect(() => {
+    const trimmed = spaceName.trim()
+    if (!trimmed) return
+    if (codeAssignedRef.current) return
+    codeAssignedRef.current = true
+    setRoomCode(genRoomCode())
+  }, [spaceName])
+
+  const effectiveRoom = useMemo(() => {
+    const trimmed = spaceName.trim()
+    const preset = findTemplate(trimmed || getRouteRoom())
+    const slug = preset ? preset.name : toSlug(trimmed)
+    if (!slug) return ""
+    return roomCode ? `${slug}-${roomCode}` : slug
+  }, [spaceName, roomCode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!effectiveRoom) return
+    const target = `/space/${encodeURIComponent(effectiveRoom)}`
+    if (getRouteRoom() !== effectiveRoom) {
+      window.history.replaceState(null, "", target)
+    }
+  }, [effectiveRoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const matchingPreset = findTemplate(spaceName || initialRoom)
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const routeRoom = getRouteRoom()
-    const chosenName = spaceName.trim() || routeRoom
-    const preset = findTemplate(chosenName)
-    const cleanRoom = preset ? preset.name : chosenName.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
+    const cleanRoom = effectiveRoom
     const cleanUser = userName.trim()
 
     if (!cleanRoom) {
@@ -100,6 +143,11 @@ export function SpaceJoin() {
       const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
 
+      if (data.data?.ended) {
+        setEndedSpace(data.data.endedInfo as EndedSpace)
+        return
+      }
+
       if (data.data?.token) {
         const receivedSecret = data.data.hostSecret || savedSecret
         if (receivedSecret) {
@@ -125,6 +173,10 @@ export function SpaceJoin() {
     }
   }
 
+  if (endedSpace) {
+    return <SpaceEnded space={endedSpace} />
+  }
+
   if (hasJoined && token && activeRoomName) {
     return (
       <SpaceRoomLiveKit
@@ -141,146 +193,127 @@ export function SpaceJoin() {
     )
   }
 
+  const hasName = Boolean(spaceName.trim())
+
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <Navbar />
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4 sm:p-6 text-center">
-        <div className="flex flex-col items-center w-full">
-          <Link
-            href="/lobby"
-            className="text-muted-foreground hover:text-foreground mb-6 sm:mb-8 inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-colors self-start sm:self-center"
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center p-4 sm:p-6">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <span
+            className={`font-display text-xl sm:text-2xl font-bold tracking-tight ${
+              hasName ? "text-foreground" : "text-muted-foreground"
+            }`}
           >
-            <RiArrowLeftLine className="size-4" aria-hidden="true" />
-            <span>Lobby</span>
-          </Link>
+            {spaceName.trim() || "Name your space"}
+          </span>
+          {effectiveRoom ? (
+            <span className="mt-2 font-mono text-[11px] text-muted-foreground">
+              /space/{effectiveRoom}
+            </span>
+          ) : null}
+          {matchingPreset && (
+            <span className="mt-2 rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Template
+            </span>
+          )}
+        </div>
 
-          {/* Heading */}
-          <div className="mb-6 sm:mb-8">
-            {matchingPreset ? (
-              <>
-                <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-2.5 py-0.5 rounded-full mb-2">
-                  Template
-                </span>
-                <h1 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">
-                  {matchingPreset.title}
-                </h1>
-                <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm font-mono">
-                  /space/{matchingPreset.name} &middot; {matchingPreset.desc}
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">
-                  Enter Voice Space
-                </h1>
-                <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm">
-                  {spaceName ? `/space/${spaceName}` : "Customize your space name, pick an avatar, and enter your display name."}
-                </p>
-              </>
-            )}
-          </div>
+        <form className="w-full space-y-4 text-left" onSubmit={handleJoin}>
+          {/* Space Name Input */}
+          <Field className="space-y-1.5">
+            <FieldLabel htmlFor="space-name-input" className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Space Name
+            </FieldLabel>
+            <Input
+              id="space-name-input"
+              value={spaceName}
+              onChange={(e) => setSpaceName(e.target.value)}
+              placeholder="Name your space"
+              maxLength={65}
+              autoComplete="off"
+              className="h-11 font-display text-sm rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
+            />
+          </Field>
 
-          <form
-            className="w-full space-y-4 sm:space-y-5 text-left"
-            onSubmit={handleJoin}
-          >
-            {/* Space Name Input (Editable Template/Room Name) */}
-            <Field className="space-y-1.5">
-              <FieldLabel htmlFor="space-name-input" className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Space Name
-              </FieldLabel>
-              <div className="relative">
-                <Input
-                  id="space-name-input"
-                  value={spaceName}
-                  onChange={(e) => setSpaceName(e.target.value)}
-                  placeholder="e.g. #TechTwitter India: Devs, Startups & Craft"
-                  maxLength={65}
-                  autoComplete="off"
-                  className="h-11 sm:h-12 font-display text-sm rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
+          {/* Avatar Picker */}
+          <div className="space-y-2.5">
+            <FieldLabel htmlFor="persona-trigger" className="block font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Persona
+            </FieldLabel>
+            <div className="flex items-center gap-3">
+              <div className="relative group inline-block shrink-0">
+                <CharacterPicker
+                  value={avatarSeed}
+                  onSelect={setAvatarSeed}
+                  size="md"
+                  trigger={
+                    <button
+                      id="persona-trigger"
+                      type="button"
+                      className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 cursor-pointer"
+                      title="Choose your persona"
+                    >
+                      <Avatar className="border-border bg-muted size-14 border-2 shadow-sm transition-transform group-hover:scale-105">
+                        <AvatarImage
+                          src={userpicUrl(avatarSeed)}
+                          alt="Your persona"
+                          className="object-cover"
+                        />
+                        <AvatarFallback />
+                      </Avatar>
+                    </button>
+                  }
                 />
               </div>
-            </Field>
-
-            {/* Avatar Picker (Always Editable) */}
-            <div className="flex flex-col items-center gap-2.5 py-2">
-              <span className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Your Character Avatar
-              </span>
-              <div className="flex items-center gap-3">
-                <div className="relative group inline-block">
-                  <CharacterPicker
-                    value={avatarSeed}
-                    onSelect={setAvatarSeed}
-                    size="md"
-                    trigger={
-                      <button
-                        type="button"
-                        className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 cursor-pointer"
-                        title="Click to choose avatar persona"
-                      >
-                        <Avatar className="border-border bg-muted size-20 sm:size-24 border-2 shadow-sm transition-transform group-hover:scale-105">
-                          <AvatarImage
-                            src={userpicUrl(avatarSeed)}
-                            alt="Avatar preview"
-                            className="object-cover"
-                          />
-                          <AvatarFallback />
-                        </Avatar>
-                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider bg-card px-2 py-0.5 rounded-full border border-border">
-                            Change
-                          </span>
-                        </div>
-                        <div className="absolute -right-1 -bottom-1 flex size-8 items-center justify-center rounded-full bg-foreground text-background shadow-md border-2 border-background">
-                          <RiEditLine size={14} />
-                        </div>
-                      </button>
-                    }
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setAvatarSeed(randomUserpic())}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground transition-all active:scale-95 shadow-xs cursor-pointer"
-                  title="Randomize avatar"
-                >
-                  <RiShuffleLine size={13} />
-                  <span>Shuffle</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setAvatarSeed(randomUserpic())}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 font-mono text-xs font-semibold text-foreground hover:bg-muted transition-all active:scale-95 cursor-pointer"
+                title="Randomize persona"
+              >
+                <RiShuffleLine size={13} />
+                Shuffle
+              </button>
             </div>
+          </div>
 
-            {/* Username Input (Always Editable) */}
-            <Field className="space-y-1.5">
-              <FieldLabel htmlFor="join-user-name" className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Your Display Name
-              </FieldLabel>
-              <Input
-                id="join-user-name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="Enter your name..."
-                maxLength={20}
-                autoComplete="off"
-                autoFocus={!userName}
-                className="h-11 sm:h-12 text-sm sm:text-base rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
-              />
-            </Field>
+          {/* Username Input */}
+          <Field className="space-y-1.5">
+            <FieldLabel htmlFor="join-user-name" className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Your Name
+            </FieldLabel>
+            <Input
+              id="join-user-name"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Enter your name..."
+              maxLength={20}
+              autoComplete="off"
+              autoFocus={!userName}
+              className="h-11 text-sm rounded-xl border-border hover:border-foreground/40 focus:border-foreground transition-colors"
+            />
+          </Field>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="h-11 sm:h-12 w-full text-sm sm:text-base rounded-xl font-bold uppercase tracking-wider font-mono bg-foreground text-background hover:bg-foreground/90 transition-all"
-              disabled={!userName.trim() || !spaceName.trim() || isJoining}
-            >
-              {isJoining ? <Spinner className="mr-2" /> : null}
-              <span>{isJoining ? "Connecting..." : "Join / Launch Space"}</span>
-            </Button>
-          </form>
-        </div>
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            className="h-12 w-full gap-2 rounded-xl font-bold uppercase tracking-wider font-mono bg-foreground text-background hover:bg-foreground/90 transition-all"
+            disabled={!userName.trim() || !spaceName.trim() || isJoining}
+          >
+            {isJoining ? (
+              <Spinner className="mr-2" />
+            ) : (
+              <RiMicLine size={16} aria-hidden="true" />
+            )}
+            <span>{isJoining ? "Connecting..." : "Go live"}</span>
+          </Button>
+
+          <p className="font-google-sans text-center text-[12px] text-muted-foreground">
+            No account. No mic until you want it.
+          </p>
+        </form>
       </main>
     </div>
   )
