@@ -31,7 +31,7 @@ function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
       data-slot="toast-viewport"
       className={cn(
         "pointer-events-none fixed inset-x-0 bottom-6 z-50",
-        className,
+        className
       )}
       {...props}
     />
@@ -43,15 +43,15 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
     <ToastPrimitive.Root
       data-slot="toast"
       className={cn(
-        "group/toast pointer-events-auto absolute left-1/2 bottom-0 w-max -translate-x-1/2 origin-bottom",
+        "group/toast pointer-events-auto absolute bottom-0 left-1/2 w-max origin-bottom -translate-x-1/2",
         "inline-flex items-center justify-center overflow-hidden rounded-full border border-border/10",
-        "bg-background/90 backdrop-blur-xl text-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] px-6 py-3 text-sm font-medium tracking-tight",
+        "bg-background/90 px-6 py-3 text-sm font-medium tracking-tight text-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl",
         "[--offset-y:calc(var(--toast-index)*-3.5rem)]",
         "data-expanded:[transform:translateY(var(--offset-y))]",
-        "data-starting-style:scale-95 data-starting-style:opacity-0 data-starting-style:translate-y-4",
-        "data-ending-style:scale-95 data-ending-style:opacity-0 data-ending-style:translate-y-4",
+        "data-starting-style:translate-y-4 data-starting-style:scale-95 data-starting-style:opacity-0",
+        "data-ending-style:translate-y-4 data-ending-style:scale-95 data-ending-style:opacity-0",
         "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
-        className,
+        className
       )}
       {...props}
     />
@@ -78,7 +78,10 @@ function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
   )
 }
 
-function ToastDescription({ className, ...props }: ToastPrimitive.Description.Props) {
+function ToastDescription({
+  className,
+  ...props
+}: ToastPrimitive.Description.Props) {
   return (
     <ToastPrimitive.Description
       data-slot="toast-description"
@@ -116,7 +119,7 @@ function ToastClose({
       render={render}
       className={cn(
         "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
-        className,
+        className
       )}
       {...props}
     >
@@ -203,18 +206,18 @@ function ToastList() {
   return toasts.map((toastItem) => {
     const isMicRequest = toastItem.type === "mic-request"
     return (
-      <Toast 
-        key={toastItem.id} 
+      <Toast
+        key={toastItem.id}
         toast={toastItem}
         className={
-          isMicRequest 
-            ? "!data-ending-style:scale-[0.1] !data-ending-style:translate-y-[5rem] !data-ending-style:-translate-x-[60%] !data-ending-style:blur-[4px] !data-ending-style:opacity-0" 
+          isMicRequest
+            ? "!data-ending-style:scale-[0.1] !data-ending-style:translate-y-[5rem] !data-ending-style:-translate-x-[60%] !data-ending-style:blur-[4px] !data-ending-style:opacity-0"
             : undefined
         }
       >
         <ToastContent className="gap-3">
           <ToastIcon type={toastItem.type} />
-          <span className="truncate flex-1">{toastItem.title}</span>
+          <span className="flex-1 truncate">{toastItem.title}</span>
           <ToastCountdownRing />
         </ToastContent>
       </Toast>
@@ -222,7 +225,12 @@ function ToastList() {
   })
 }
 
-function Toaster({ children, toastManager = toast, timeout = 2000, ...props }: ToastPrimitive.Provider.Props) {
+function Toaster({
+  children,
+  toastManager = toast,
+  timeout = 2000,
+  ...props
+}: ToastPrimitive.Provider.Props) {
   return (
     <ToastProvider toastManager={toastManager} timeout={timeout} {...props}>
       {children}

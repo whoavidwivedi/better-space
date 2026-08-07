@@ -2,7 +2,10 @@ import { RiLoaderLine, type RemixiconComponentType } from "@remixicon/react"
 
 import { cn } from "@/lib/utils"
 
-function Spinner({ className, ...props }: React.ComponentProps<RemixiconComponentType>) {
+function Spinner({
+  className,
+  ...props
+}: React.ComponentProps<RemixiconComponentType>) {
   return (
     <RiLoaderLine
       data-slot="spinner"
