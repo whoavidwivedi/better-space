@@ -234,7 +234,7 @@ export function PersonaArchiveManifesto() {
               </button>
 
               <Link
-                href={`/space/${generateRoomSlug(`${activeSeed}-studio`)}`}
+                href={`/space/${activeSeed}-studio`}
                 className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-border font-mono text-xs font-bold text-foreground transition-colors hover:bg-muted"
               >
                 <span>Launch Space as @{activeSeed.toLowerCase()}</span>

@@ -35,6 +35,14 @@ export async function POST(req: NextRequest) {
     const claims = await verifier.verify(token)
     identity = claims.sub || ""
     if (!identity) throw new Error("Invalid token identity")
+
+    const tokenRoom = claims.video?.room
+    if (tokenRoom && tokenRoom !== cleanRoom) {
+      return NextResponse.json(
+        { error: { message: "Token does not match this space" } },
+        { status: 403 }
+      )
+    }
   } catch (e: any) {
     return NextResponse.json(
       { error: { message: "Invalid or expired token" } },

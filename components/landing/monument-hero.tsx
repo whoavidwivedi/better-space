@@ -27,7 +27,6 @@ import {
   getCharacterCollection,
 } from "@/lib/userpics"
 import { sound } from "@/lib/sound"
-import { generateRoomSlug } from "@/lib/presets"
 
 const HERO_PERSONAS = [
   {
@@ -312,7 +311,7 @@ export function MonumentHero() {
               <Link
                 href={
                   quickRoomName.trim()
-                    ? `/space/${generateRoomSlug(quickRoomName.trim())}`
+                    ? `/space/${quickRoomName.trim()}`
                     : "/lobby"
                 }
                 className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-foreground px-5 font-mono text-xs font-bold tracking-wider text-background uppercase transition-opacity hover:opacity-90"

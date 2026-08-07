@@ -16,8 +16,8 @@ function getRoomService() {
 export async function GET(req: NextRequest) {
   const room = req.nextUrl.searchParams.get("room")
   const usernameQuery = req.nextUrl.searchParams.get("username")
-  const hostSecretQuery = req.nextUrl.searchParams.get("hostSecret")
   const avatarQuery = req.nextUrl.searchParams.get("avatar")
+  const hostSecret = req.headers.get("x-host-secret")?.trim() ?? ""
 
   if (!room) {
     return NextResponse.json(
@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
   }
 
   const cleanRoom = room.trim().substring(0, 30)
-  const hostSecret = hostSecretQuery?.trim() ?? ""
   const avatar = avatarQuery?.trim() ?? ""
 
   if (!/^[a-zA-Z0-9_-]+$/.test(cleanRoom)) {

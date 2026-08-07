@@ -9,7 +9,6 @@ import {
   STARTER_TEMPLATES,
   findTemplate,
   getDisplayRoomTitle,
-  generateRoomSlug,
   StarterTemplate,
 } from "@/lib/presets"
 
@@ -105,11 +104,7 @@ export function LiveSpacesRadar() {
           {rooms.slice(0, 3).map((room) => (
             <Link
               key={room.name}
-              href={
-                room.isLive
-                  ? `/space/${encodeURIComponent(room.name)}`
-                  : `/space/${generateRoomSlug(room.name)}`
-              }
+              href={`/space/${encodeURIComponent(room.name)}`}
               className="group relative flex min-h-[200px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card/70 p-4 shadow-sm transition-all duration-200 hover:border-foreground/40 hover:bg-card/95 hover:shadow-md active:scale-[0.99] sm:min-h-[220px] sm:rounded-3xl sm:p-6"
             >
               {/* Card Top */}

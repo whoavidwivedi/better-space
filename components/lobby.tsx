@@ -155,8 +155,9 @@ export function Lobby() {
         username: uName,
         avatar: joinAvatarSeed,
       })
-      if (savedSecret) query.set("hostSecret", savedSecret)
-      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
+      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`, {
+        headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
+      })
       const data = await res.json()
       if (data.data?.token) {
         setActiveUserName(uName)
@@ -527,7 +528,7 @@ export function Lobby() {
                 {STARTER_PRESETS.map((preset) => (
                   <Link
                     key={preset.name}
-                    href={`/space/${generateRoomSlug(preset.name)}`}
+                    href={`/space/${preset.name}`}
                     className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 text-left shadow-xs hover:border-foreground/40 hover:bg-card/90 sm:p-5"
                   >
                     <div>

@@ -2,7 +2,7 @@
 
 import { RiShuffleLine, RiMicLine } from "@remixicon/react"
 import { useParams, useRouter } from "next/navigation"
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { CharacterPicker } from "@/components/common/character-picker"
@@ -29,7 +29,7 @@ export function SpaceJoin() {
   const params = useParams<{ name?: string | string[] }>()
   const router = useRouter()
 
-  const getRouteRoom = () => {
+  const getRouteRoom = useCallback(() => {
     if (params?.name) {
       const raw = Array.isArray(params.name) ? params.name[0] : params.name
       if (raw) return decodeURIComponent(raw).trim()
@@ -42,7 +42,7 @@ export function SpaceJoin() {
       }
     }
     return ""
-  }
+  }, [params])
 
   const initialRoom = getRouteRoom()
   const initialPreset = findTemplate(initialRoom)
@@ -77,7 +77,7 @@ export function SpaceJoin() {
     if (savedName) {
       setUserName(savedName)
     }
-  }, [params?.name])
+  }, [getRouteRoom])
 
   /* Assign a stable room code once, when a name first exists */
   useEffect(() => {
@@ -176,9 +176,9 @@ export function SpaceJoin() {
       })
       const savedSecret =
         localStorage.getItem(`space_host_secret_${cleanRoom}`) || ""
-      if (savedSecret) query.set("hostSecret", savedSecret)
-
-      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
+      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`, {
+        headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
+      })
       const data = await res.json()
 
       if (res.status === 410 || data.ended || data.data?.ended) {
