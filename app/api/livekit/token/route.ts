@@ -128,25 +128,10 @@ export async function GET(req: NextRequest) {
               JSON.stringify(meta)
             )
           } else {
-            // Check if active host is already connected in room
-            let isHostConnected = false
-            try {
-              const participants = await roomService.listParticipants(cleanRoom)
-              isHostConnected = participants.some(
-                (p) => p.identity === username
-              )
-            } catch {}
-
-            if (isHostConnected) {
-              return NextResponse.json(
-                { error: { message: "Username already active in this space" } },
-                { status: 403 }
-              )
-            } else {
-              // Host was disconnected or rejoining from another tab; reclaim host status
-              isHost = true
-              activeHostSecret = meta.hostSecret
-            }
+            return NextResponse.json(
+              { error: { message: "Invalid host secret for this identity" } },
+              { status: 403 }
+            )
           }
         } else if (!meta.host || meta.host === "Unknown") {
           // Room exists but has no designated host - assign this user as host

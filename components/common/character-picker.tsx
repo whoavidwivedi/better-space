@@ -2,11 +2,11 @@
 "use client"
 
 import {
-  RiShuffleLine,
-  RiCheckLine,
-  RiUser3Line,
-  RiEditLine,
-} from "@remixicon/react"
+  Shuffle as RiShuffleLine,
+  Check as RiCheckLine,
+  User as RiUser3Line,
+  SquarePen as RiEditLine
+} from "lucide-react"
 import { useState, useRef, useMemo } from "react"
 
 import {

@@ -11,23 +11,24 @@ import {
   useParticipantPermissions,
   useRoomInfo,
 } from "@livekit/components-react"
+import { HugeiconsIcon } from "@/components/ui/hugeicons-icon"
 import {
-  RiMicLine,
-  RiMicOffLine,
-  RiGroupLine,
-  RiFileCopyLine,
-  RiCheckLine,
-  RiKeyboardBoxLine,
-  RiSettings3Line,
-  RiEmotionLine,
-  RiHeadphoneLine,
-  RiMoreFill,
-  RiVolumeMuteLine,
-  RiVolumeUpLine,
-  RiShieldCheckLine,
-  RiUserVoiceLine,
-  RiErrorWarningLine,
-} from "@remixicon/react"
+  Mic as Mic01Icon,
+  MicOff as MicOff01Icon,
+  Users as GroupIcon,
+  Copy as Copy01Icon,
+  Check as CheckIcon,
+  Keyboard as KeyboardIcon,
+  Settings as Settings01Icon,
+  Smile as Happy01Icon,
+  Headphones as HeadphonesIcon,
+  MoreHorizontal as More01Icon,
+  VolumeX as VolumeMute01Icon,
+  Volume2 as VolumeUpIcon,
+  Shield as Shield01Icon,
+  AudioLines as VoiceIcon,
+  AlertTriangle as Alert01Icon,
+} from "lucide-react"
 import { EmojiClickData, Theme } from "emoji-picker-react"
 import EmojiPicker from "emoji-picker-react"
 import { RoomEvent, Track } from "livekit-client"
@@ -70,6 +71,7 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { userpicUrl } from "@/lib/userpics"
 import { getDisplayRoomTitle } from "@/lib/presets"
 
@@ -702,14 +704,14 @@ function RoomUI({
                   size="icon"
                   className="hidden h-8 w-8 cursor-help rounded-xl text-muted-foreground sm:inline-flex"
                 >
-                  <RiKeyboardBoxLine size={15} />
+                  <HugeiconsIcon icon={KeyboardIcon} size={15} />
                 </Button>
               }
             />
             <HoverCardContent className="z-50 w-64 rounded-2xl border border-border bg-card p-4 shadow-xl">
               <div className="space-y-3 font-mono text-xs">
                 <h4 className="flex items-center gap-2 font-bold text-foreground">
-                  <RiKeyboardBoxLine size={15} /> Keyboard Shortcuts
+                  <HugeiconsIcon icon={KeyboardIcon} size={15} /> Keyboard Shortcuts
                 </h4>
                 <div className="flex flex-col gap-2 text-muted-foreground">
                   <div className="flex items-center justify-between">
@@ -731,16 +733,27 @@ function RoomUI({
             </HoverCardContent>
           </HoverCard>
 
-          <Button
-            size="icon"
-            onClick={copyInviteLink}
-            disabled={copied}
-            variant="outline"
-            aria-label="Copy invite link"
-            className="h-8 w-8 rounded-xl text-muted-foreground"
-          >
-            {copied ? <RiCheckLine size={15} /> : <RiFileCopyLine size={15} />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon"
+                  onClick={copyInviteLink}
+                  disabled={copied}
+                  variant="outline"
+                  aria-label="Copy invite link"
+                  className="h-8 w-8 rounded-xl text-muted-foreground"
+                >
+                  {copied ? (
+                    <HugeiconsIcon icon={CheckIcon} size={15} />
+                  ) : (
+                    <HugeiconsIcon icon={Copy01Icon} size={15} />
+                  )}
+                </Button>
+              }
+            />
+            <TooltipContent side="bottom">Copy link</TooltipContent>
+          </Tooltip>
 
           {isHostOrCohost ? (
             <>
@@ -751,7 +764,7 @@ function RoomUI({
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="h-8 rounded-xl bg-red-600 font-mono text-xs font-bold text-white hover:bg-red-700"
+                        className="h-8 font-mono text-xs font-bold"
                       >
                         End Space
                       </Button>
@@ -775,7 +788,7 @@ function RoomUI({
                       <Button
                         variant="destructive"
                         onClick={handleEndSpace}
-                        className="rounded-xl bg-red-600 font-bold text-white hover:bg-red-700"
+                        className="font-bold"
                       >
                         End for everyone
                       </Button>
@@ -815,10 +828,7 @@ function RoomUI({
                 id="participants-heading"
                 className="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase sm:gap-2 sm:text-xs"
               >
-                <RiGroupLine
-                  className="size-3.5 sm:size-4"
-                  aria-hidden="true"
-                />
+                <HugeiconsIcon icon={GroupIcon} className="size-3.5 sm:size-4" aria-hidden="true" />
                 Stage ({participants.length})
               </h2>
             </div>
@@ -851,7 +861,8 @@ function RoomUI({
         {hostDisconnectTime !== null && (
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
             <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive px-5 py-2.5 font-mono text-xs font-bold text-destructive-foreground shadow-xl">
-              <RiErrorWarningLine
+              <HugeiconsIcon
+                icon={Alert01Icon}
                 className="mr-2 size-4 shrink-0"
                 aria-hidden="true"
               />
@@ -883,18 +894,25 @@ function RoomUI({
                 }
               }}
             >
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
-                    aria-label="Audio settings"
-                  >
-                    <RiSettings3Line size={17} />
-                  </Button>
-                }
-              />
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                          aria-label="Audio settings"
+                        >
+                          <HugeiconsIcon icon={Settings01Icon} size={17} />
+                        </Button>
+                      }
+                    />
+                  }
+                />
+                <TooltipContent>Audio settings</TooltipContent>
+              </Tooltip>
               <PopoverContent
                 className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-5"
                 align="center"
@@ -903,7 +921,7 @@ function RoomUI({
               >
                 <PopoverHeader className="space-y-1">
                   <PopoverTitle className="flex items-center gap-2 font-mono text-xs font-bold tracking-wider uppercase">
-                    <RiSettings3Line className="size-3.5" aria-hidden="true" />
+                    <HugeiconsIcon icon={Settings01Icon} className="size-3.5" aria-hidden="true" />
                     Audio Hardware Routing
                   </PopoverTitle>
                   <PopoverDescription className="text-xs text-muted-foreground">
@@ -919,7 +937,8 @@ function RoomUI({
                         htmlFor="mic-select"
                         className="flex items-center gap-1.5 text-xs font-bold"
                       >
-                        <RiMicLine
+                        <HugeiconsIcon
+                          icon={Mic01Icon}
                           className="size-3.5 text-muted-foreground"
                           aria-hidden="true"
                         />
@@ -991,9 +1010,10 @@ function RoomUI({
                           htmlFor="speaker-select"
                           className="flex items-center gap-1.5 text-xs font-bold"
                         >
-                          <RiHeadphoneLine
+                          <HugeiconsIcon
                             className="size-3.5 text-muted-foreground"
                             aria-hidden="true"
+                            icon={HeadphonesIcon}
                           />
                           Speaker / Headphones
                         </FieldLabel>
@@ -1005,9 +1025,10 @@ function RoomUI({
                           disabled={isPlayingTestSound}
                           className="h-6 gap-1 px-2 font-mono text-[10px] text-foreground"
                         >
-                          <RiVolumeUpLine
+                          <HugeiconsIcon
                             className="size-3"
                             aria-hidden="true"
+                            icon={VolumeUpIcon}
                           />
                           {isPlayingTestSound ? "Testing..." : "Test"}
                         </Button>
@@ -1047,9 +1068,10 @@ function RoomUI({
 
                   {/* Audio enhancement status */}
                   <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/40 px-2.5 py-2 text-[10px] text-muted-foreground">
-                    <RiShieldCheckLine
+                    <HugeiconsIcon
                       className="size-3.5 shrink-0 text-foreground"
                       aria-hidden="true"
+                      icon={Shield01Icon}
                     />
                     <span>Noise suppression active</span>
                   </div>
@@ -1059,29 +1081,39 @@ function RoomUI({
 
             {/* Emoji Reaction Popover */}
             <Popover>
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
-                  >
-                    <RiEmotionLine size={17} />
-                  </Button>
-                }
-              />
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                        >
+                          <HugeiconsIcon icon={Happy01Icon} size={17} />
+                        </Button>
+                      }
+                    />
+                  }
+                />
+                <TooltipContent>Emoji</TooltipContent>
+              </Tooltip>
               <PopoverContent className="z-50 w-auto max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl">
                 <div className="flex items-center justify-between gap-1 overflow-x-auto border-b border-border bg-muted/40 p-2">
                   {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map(
                     (emoji) => (
-                      <button
+                      <Button
                         key={emoji}
                         type="button"
+                        aria-label={`React with ${emoji}`}
                         onClick={() => handleSendReaction(emoji)}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-lg transition-transform hover:bg-muted active:scale-95"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0 rounded-lg text-lg active:scale-95"
                       >
                         {emoji}
-                      </button>
+                      </Button>
                     )
                   )}
                 </div>
@@ -1098,22 +1130,29 @@ function RoomUI({
             {/* Host/Co-host Moderation Popover */}
             {isHostOrCohost && (
               <Popover>
-                <PopoverTrigger
+                <Tooltip>
+                <TooltipTrigger
                   render={
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
-                    >
-                      <RiUserVoiceLine size={17} />
-                      {micRequests.length > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
-                          {micRequests.length}
-                        </span>
-                      )}
-                    </Button>
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                        >
+                          <HugeiconsIcon icon={VoiceIcon} size={17} />
+                          {micRequests.length > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
+                              {micRequests.length}
+                            </span>
+                          )}
+                        </Button>
+                      }
+                    />
                   }
                 />
+                <TooltipContent>Mic requests</TooltipContent>
+              </Tooltip>
                 <PopoverContent
                   className="w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl"
                   align="center"
@@ -1136,9 +1175,10 @@ function RoomUI({
                   <div className="max-h-72 overflow-y-auto p-2">
                     {micRequests.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <RiUserVoiceLine
+                        <HugeiconsIcon
                           className="mb-2 size-6 text-muted-foreground/40"
                           aria-hidden="true"
+                          icon={VoiceIcon}
                         />
                         <p className="font-mono text-xs text-muted-foreground">
                           No pending mic requests
@@ -1202,9 +1242,9 @@ function RoomUI({
                   className="h-9 shrink-0 gap-1.5 rounded-xl px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4"
                 >
                   {isDeafened ? (
-                    <RiVolumeMuteLine size={16} />
+                    <HugeiconsIcon icon={VolumeMute01Icon} size={16} />
                   ) : (
-                    <RiHeadphoneLine size={16} />
+                    <HugeiconsIcon icon={HeadphonesIcon} size={16} />
                   )}
                   <span className="hidden sm:inline">Deafen</span>
                 </Button>
@@ -1218,12 +1258,13 @@ function RoomUI({
                 >
                   {isMuted ? (
                     <>
-                      <RiMicOffLine size={16} />
+                      <HugeiconsIcon icon={MicOff01Icon} size={16} />
                       <span>MIC MUTED</span>
                     </>
                   ) : (
                     <>
-                      <RiMicLine
+                      <HugeiconsIcon
+                        icon={Mic01Icon}
                         size={16}
                         className="text-primary-foreground"
                       />
@@ -1239,7 +1280,7 @@ function RoomUI({
                 size="lg"
                 className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
               >
-                <RiMicLine size={16} />
+                <HugeiconsIcon icon={Mic01Icon} size={16} />
                 <span>
                   {hasRequestedMicLocal ? "Requested" : "Request Mic"}
                 </span>
@@ -1389,21 +1430,37 @@ function ParticipantTile({
         <div className="absolute -right-1 -bottom-1 z-10 flex size-6 items-center justify-center rounded-full border border-border bg-card shadow-xs">
           {canPublish ? (
             isDeafenedRemote ? (
-              <RiVolumeMuteLine size={13} className="text-destructive" />
+              <HugeiconsIcon
+                icon={VolumeMute01Icon}
+                size={13}
+                className="text-destructive"
+              />
             ) : isAudioMuted ? (
-              <RiMicOffLine size={13} className="text-destructive" />
+              <HugeiconsIcon
+                icon={MicOff01Icon}
+                size={13}
+                className="text-destructive"
+              />
             ) : (
-              <RiMicLine size={13} className="text-foreground" />
+              <HugeiconsIcon
+                icon={Mic01Icon}
+                size={13}
+                className="text-foreground"
+              />
             )
           ) : (
-            <RiVolumeMuteLine size={13} className="text-muted-foreground" />
+            <HugeiconsIcon
+              icon={VolumeMute01Icon}
+              size={13}
+              className="text-muted-foreground"
+            />
           )}
         </div>
       </div>
 
       {canModerateThisParticipant && !reaction && (
         <div className="pointer-events-none absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-xs transition-transform group-hover/avatar:scale-110">
-          <RiMoreFill size={14} />
+          <HugeiconsIcon icon={More01Icon} size={14} />
         </div>
       )}
     </div>

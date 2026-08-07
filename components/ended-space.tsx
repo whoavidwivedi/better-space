@@ -3,13 +3,13 @@
 import Link from "next/link"
 import React from "react"
 import {
-  RiArrowRightLine,
-  RiMicOffLine,
-  RiUserStarLine,
-  RiTeamLine,
-  RiUserVoiceLine,
-  RiHistoryLine,
-} from "@remixicon/react"
+  ArrowRight as RiArrowRightLine,
+  MicOff as RiMicOffLine,
+  UserCheck as RiUserStarLine,
+  Users as RiTeamLine,
+  AudioLines as RiUserVoiceLine,
+  History as RiHistoryLine
+} from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import type { EndedSpace } from "@/lib/ended-spaces"
@@ -143,6 +143,7 @@ export function SpaceEnded({ space }: { space: EndedSpace }) {
           <Button
             className="h-11 flex-1 gap-1.5 rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90"
             render={<Link href="/lobby" />}
+            nativeButton={false}
           >
             Browse live spaces
             <RiArrowRightLine size={14} />
@@ -151,6 +152,7 @@ export function SpaceEnded({ space }: { space: EndedSpace }) {
             variant="outline"
             className="h-11 flex-1 rounded-xl border-border font-mono text-xs font-bold tracking-wider uppercase hover:bg-muted"
             render={<Link href="/" />}
+            nativeButton={false}
           >
             Start a new space
           </Button>

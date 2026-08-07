@@ -2,14 +2,14 @@
 "use client"
 
 import {
-  RiSearchLine,
-  RiCheckLine,
-  RiShuffleLine,
-  RiArrowRightLine,
-  RiVolumeUpLine,
-  RiCloseLine,
-  RiSparklingLine,
-} from "@remixicon/react"
+  Search as RiSearchLine,
+  Check as RiCheckLine,
+  Shuffle as RiShuffleLine,
+  ArrowRight as RiArrowRightLine,
+  Volume2 as RiVolumeUpLine,
+  X as RiCloseLine,
+  Sparkles as RiSparklingLine
+} from "lucide-react"
 import Link from "next/link"
 import React, { useState, useMemo } from "react"
 

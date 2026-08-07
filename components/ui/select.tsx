@@ -1,7 +1,11 @@
 "use client"
 
 import { Select as SelectPrimitive } from "@base-ui/react/select"
-import { RiArrowDownSLine, RiCheckLine, RiArrowUpSLine } from "@remixicon/react"
+import {
+  ChevronDown as RiArrowDownSLine,
+  Check as RiCheckLine,
+  ChevronUp as RiArrowUpSLine
+} from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

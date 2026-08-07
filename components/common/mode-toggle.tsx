@@ -1,10 +1,26 @@
 "use client"
 
-import { RiMoonLine, RiSunLine } from "@remixicon/react"
+import { useEffect, useState } from "react"
+import { HugeiconsIcon } from "@/components/ui/hugeicons-icon"
+import { Monitor as ComputerIcon, Moon as MoonIcon, Sun as SunIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+
+const THEMES = [
+  { value: "light", label: "Light", icon: SunIcon },
+  { value: "dark", label: "Dark", icon: MoonIcon },
+  { value: "system", label: "System", icon: ComputerIcon },
+] as const
 
 export function ModeToggle({
   className,
@@ -14,34 +30,62 @@ export function ModeToggle({
   variant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
-  const smartToggle = () => {
-    /* The smart toggle by @nrjdalal */
-    const prefersDarkScheme = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches
-    if (theme === "system") {
-      setTheme(prefersDarkScheme ? "light" : "dark")
-    } else if (
-      (theme === "light" && !prefersDarkScheme) ||
-      (theme === "dark" && prefersDarkScheme)
-    ) {
-      setTheme(theme === "light" ? "dark" : "light")
-    } else {
-      setTheme("system")
-    }
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button
+        size="sm"
+        variant={variant}
+        className={cn("size-8 [&_svg]:size-4!", className)}
+        aria-label="Choose theme"
+        disabled
+      >
+        <HugeiconsIcon icon={ComputerIcon} />
+      </Button>
+    )
   }
 
+  const current = THEMES.find((t) => t.value === theme) ?? THEMES[2]
+
   return (
-    <Button
-      className={cn("size-8 [&_svg]:size-4!", className)}
-      onClick={smartToggle}
-      aria-label="Switch between system/light/dark version"
-      size="sm"
-      variant={variant}
-    >
-      <RiSunLine className="dark:hidden" aria-hidden="true" />
-      <RiMoonLine className="hidden dark:block" aria-hidden="true" />
-    </Button>
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  size="sm"
+                  variant={variant}
+                  className={cn("size-8 [&_svg]:size-4!", className)}
+                  aria-label="Choose theme: light, dark, or system"
+                >
+                  <HugeiconsIcon icon={current.icon} />
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent side="bottom">Theme</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end" sideOffset={6} className="w-40">
+        <DropdownMenuRadioGroup
+          value={current.value}
+          onValueChange={setTheme}
+        >
+          {THEMES.map((t) => (
+            <DropdownMenuRadioItem key={t.value} value={t.value}>
+              <HugeiconsIcon icon={t.icon} strokeWidth={2} />
+              {t.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

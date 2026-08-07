@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next"
 
+import { site } from "@/lib/site"
+import { cn } from "@/lib/utils"
 import { Providers } from "@/app/providers"
 import {
+  inter,
   dmSans,
   jetbrainsMono,
   bricolageGrotesque,
@@ -11,8 +14,6 @@ import {
   syne,
   playfairDisplay,
 } from "@/lib/fonts"
-import { site } from "@/lib/site"
-import { cn } from "@/lib/utils"
 
 import "@/app/globals.css"
 
@@ -85,7 +86,8 @@ export default function RootLayout({
         kalam.variable,
         syne.variable,
         playfairDisplay.variable,
-        "antialiased"
+        inter.variable,
+        "font-sans antialiased"
       )}
       lang="en"
       suppressHydrationWarning
