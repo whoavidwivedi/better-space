@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://api.dicebear.com/7.x/notionists/svg?seed=BetterSpace&size=120&backgroundColor=transparent" alt="Better Space Logo" width="120" height="120" />
+  <img src="public/Userpics/SVG/Circle/01.svg" alt="Better Space Logo" width="120" height="120" />
   
   # Better Space
 
@@ -23,16 +23,16 @@
 - **Framework:** [Next.js 16](https://nextjs.org/) (App Router, Turbopack) & React 19
 - **Realtime Audio:** [LiveKit](https://livekit.io/) & `@livekit/krisp-noise-filter`
 - **UI & Primitives:** [Base UI](https://base-ui.com/) & [Tailwind CSS 4](https://tailwindcss.com/)
-- **Icons:** [Remix Icon](https://remixicon.com/)
-- **Avatars:** [DiceBear](https://www.dicebear.com/)
+- **Icons:** [Lucide React](https://lucide.dev/)
+- **Avatars:** 96 local handcrafted SVG personas
 - **Package Manager:** [Bun](https://bun.sh/)
 
 ## Getting Started
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/whoavidwivedi/spacex.git
-cd spacex
+git clone https://github.com/whoavidwivedi/better-space.git
+cd better-space
 ```
 
 ### 2. Install dependencies
@@ -62,3 +62,5 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `bun run build`   Create an optimized production build
 - `bun run lint`   Run ESLint checks
 - `bun run typecheck`   Run TypeScript type checks
+- `bun run format`   Format code files with Prettier
+- `bun test`   Run the test suite
