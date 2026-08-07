@@ -1,6 +1,6 @@
 "use client"
 
-import { RiShuffleLine, RiMicLine } from "@remixicon/react"
+import { Shuffle as RiShuffleLine, Mic as RiMicLine } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -59,6 +59,7 @@ export function SpaceJoin() {
   const [activeRoomName, setActiveRoomName] = useState("")
   const [hostSecret, setHostSecret] = useState("")
   const [endedSpace, setEndedSpace] = useState<EndedSpace | null>(null)
+  const [roomHost, setRoomHost] = useState("")
   const [avatarSeed, setAvatarSeed] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("better_space_active_avatar")
@@ -133,6 +134,22 @@ export function SpaceJoin() {
       } catch {
         // Passive check; error handling on submit
       }
+
+      try {
+        const res = await fetch("/api/livekit/rooms")
+        if (res.ok && active) {
+          const data = await res.json()
+          const roomsList = data.data || []
+          const currentRoom = roomsList.find(
+            (r: any) => r.name === effectiveRoom
+          )
+          if (currentRoom) {
+            setRoomHost(currentRoom.host)
+          } else {
+            setRoomHost("")
+          }
+        }
+      } catch {}
     }
 
     checkStatus()
@@ -176,9 +193,12 @@ export function SpaceJoin() {
       })
       const savedSecret =
         localStorage.getItem(`space_host_secret_${cleanRoom}`) || ""
-      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`, {
-        headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
-      })
+      const res = await fetch(
+        `${apiUrl}/api/livekit/token?${query.toString()}`,
+        {
+          headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
+        }
+      )
       const data = await res.json()
 
       if (res.status === 410 || data.ended || data.data?.ended) {
@@ -325,15 +345,16 @@ export function SpaceJoin() {
                   }
                 />
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setAvatarSeed(randomUserpic())}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 font-mono text-xs font-semibold text-foreground transition-all hover:bg-muted active:scale-95"
+                className="h-10 rounded-xl font-mono text-xs font-bold tracking-wider text-foreground uppercase"
                 title="Randomize persona"
               >
                 <RiShuffleLine size={13} />
-                Shuffle
-              </button>
+                <span>Shuffle</span>
+              </Button>
             </div>
           </div>
 
@@ -360,7 +381,7 @@ export function SpaceJoin() {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="h-12 w-full gap-2 rounded-xl bg-foreground font-mono font-bold tracking-wider text-background uppercase transition-all hover:bg-foreground/90"
+            className="h-11 w-full gap-2 rounded-xl bg-foreground font-mono font-bold tracking-wider text-background uppercase transition-all hover:bg-foreground/90"
             disabled={!userName.trim() || !spaceName.trim() || isJoining}
           >
             {isJoining ? (
@@ -368,7 +389,13 @@ export function SpaceJoin() {
             ) : (
               <RiMicLine size={16} aria-hidden="true" />
             )}
-            <span>{isJoining ? "Connecting..." : "Go live"}</span>
+            <span>
+              {isJoining
+                ? "Connecting..."
+                : !roomHost || roomHost === userName.trim()
+                  ? "Go live"
+                  : "Join space"}
+            </span>
           </Button>
 
           <p className="font-google-sans text-center text-[12px] text-muted-foreground">

@@ -2,14 +2,14 @@
 
 import { Toast as ToastPrimitive } from "@base-ui/react/toast"
 import {
-  RiCloseLine,
-  RiCheckboxCircleLine,
-  RiInformationLine,
-  RiErrorWarningLine,
-  RiCloseCircleLine,
-  RiLoaderLine,
-  RiUserVoiceLine,
-} from "@remixicon/react"
+  X as RiCloseLine,
+  CheckCircle2 as RiCheckboxCircleLine,
+  Info as RiInformationLine,
+  AlertTriangle as RiErrorWarningLine,
+  XCircle as RiCloseCircleLine,
+  Loader2 as RiLoaderLine,
+  AudioLines as RiUserVoiceLine,
+} from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"

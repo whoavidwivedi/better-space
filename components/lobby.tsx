@@ -2,13 +2,13 @@
 "use client"
 
 import {
-  RiTeamLine,
-  RiArrowRightLine,
-  RiSearchLine,
-  RiShuffleLine,
-  RiEditLine,
-  RiCloseLine,
-} from "@remixicon/react"
+  Users as RiTeamLine,
+  ArrowRight as RiArrowRightLine,
+  Search as RiSearchLine,
+  Shuffle as RiShuffleLine,
+  SquarePen as RiEditLine,
+  X as RiCloseLine,
+} from "lucide-react"
 import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 
@@ -155,9 +155,12 @@ export function Lobby() {
         username: uName,
         avatar: joinAvatarSeed,
       })
-      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`, {
-        headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
-      })
+      const res = await fetch(
+        `${apiUrl}/api/livekit/token?${query.toString()}`,
+        {
+          headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
+        }
+      )
       const data = await res.json()
       if (data.data?.token) {
         setActiveUserName(uName)
@@ -300,13 +303,13 @@ export function Lobby() {
               }}
               size="sm"
               trigger={
-                <button
-                  type="button"
-                  className="group flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card pr-3 pl-1.5 shadow-xs hover:bg-muted focus:ring-2 focus:ring-foreground focus:outline-none"
+                <Button
+                  variant="outline"
+                  className="h-10 rounded-xl pr-3.5 pl-2 font-mono text-xs font-bold tracking-wider text-foreground uppercase shadow-xs"
                   title="Change avatar persona"
                 >
                   <div className="relative">
-                    <Avatar className="size-6.5 border border-border shadow-xs">
+                    <Avatar className="size-6 border border-border shadow-xs">
                       <AvatarImage
                         src={userpicUrl(createAvatarSeed)}
                         alt="Active Avatar"
@@ -314,14 +317,12 @@ export function Lobby() {
                       />
                       <AvatarFallback />
                     </Avatar>
-                    <div className="absolute -right-0.5 -bottom-0.5 flex size-3 items-center justify-center rounded-full bg-foreground text-background shadow-xs ring-2 ring-card">
-                      <RiEditLine size={7} />
+                    <div className="absolute -right-0.5 -bottom-0.5 flex size-2.5 items-center justify-center rounded-full bg-foreground text-background shadow-xs ring-1 ring-card">
+                      <RiEditLine size={6} />
                     </div>
                   </div>
-                  <span className="font-mono text-[11px] font-semibold tracking-wide text-foreground">
-                    Change Avatar
-                  </span>
-                </button>
+                  <span>Change Avatar</span>
+                </Button>
               }
             />
 
@@ -329,47 +330,45 @@ export function Lobby() {
             <Popover open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <PopoverTrigger
                 render={
-                  <Button className="h-9 shrink-0 gap-2.5 rounded-full bg-foreground px-4 font-mono text-[11px] font-bold tracking-widest text-background uppercase shadow-sm hover:bg-foreground/90">
+                  <Button className="h-10 gap-2 rounded-xl bg-foreground px-4 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90">
                     <span>Launch Space</span>
-                    <span
-                      className="h-3.5 w-px bg-background/40"
-                      aria-hidden="true"
-                    />
-                    <RiArrowRightLine size={18} />
+                    <RiArrowRightLine size={15} />
                   </Button>
                 }
               />
               <PopoverContent
                 side="bottom"
                 align="end"
-                className="w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl sm:rounded-3xl"
+                className="w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6"
               >
-                <PopoverHeader className="border-b border-border/70 px-5 pt-4 pb-3 sm:px-6 sm:pt-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-muted sm:size-8">
-                      <RiTeamLine size={14} className="text-foreground" />
-                    </div>
+                <PopoverHeader className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <RiTeamLine
+                      size={16}
+                      className="shrink-0 text-foreground"
+                    />
                     <div className="min-w-0 flex-1">
-                      <PopoverTitle className="font-display text-base leading-tight font-bold text-foreground">
+                      <PopoverTitle className="font-display text-base font-extrabold text-foreground">
                         Launch New Space
                       </PopoverTitle>
-                      <PopoverDescription className="truncate font-mono text-[10px] text-muted-foreground sm:text-[11px]">
-                        Name your room and set your display identity.
-                      </PopoverDescription>
                     </div>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => setIsCreateOpen(false)}
                       aria-label="Close"
-                      className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/25 focus-visible:outline-none sm:size-8"
+                      className="rounded-lg"
                     >
-                      <RiCloseLine size={15} aria-hidden="true" />
-                    </button>
+                      <RiCloseLine size={16} aria-hidden="true" />
+                    </Button>
                   </div>
+                  <PopoverDescription className="mt-1 font-mono text-[10px] leading-normal text-muted-foreground">
+                    Name your room and set your display identity.
+                  </PopoverDescription>
                 </PopoverHeader>
 
                 <form
-                  className="flex flex-col gap-5 p-5 sm:p-6"
+                  className="flex flex-col gap-4.5"
                   onSubmit={(e) => {
                     e.preventDefault()
                     handleCreateAndJoin()
@@ -379,12 +378,12 @@ export function Lobby() {
                     <div className="flex items-baseline justify-between">
                       <FieldLabel
                         htmlFor="create-space-name"
-                        className="font-mono text-xs font-bold text-muted-foreground uppercase"
+                        className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase"
                       >
                         Space Name
                       </FieldLabel>
                       <span
-                        className="font-mono text-[10px] text-muted-foreground/70 tabular-nums"
+                        className="font-mono text-[9px] text-muted-foreground/60 tabular-nums"
                         aria-hidden="true"
                       >
                         {newSpaceName.length}/30
@@ -406,23 +405,25 @@ export function Lobby() {
                       autoCorrect="off"
                       autoCapitalize="off"
                       spellCheck={false}
-                      className="h-11 rounded-xl border border-border bg-background font-mono text-xs"
+                      className="h-10 rounded-xl border border-border bg-background font-mono text-xs focus:border-foreground"
                       autoFocus
                     />
                     {/* Quick template suggestions */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="mr-1 font-mono text-[10px] text-muted-foreground/80">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      <span className="mr-0.5 font-mono text-[9px] text-muted-foreground/70">
                         Templates:
                       </span>
                       {STARTER_PRESETS.map((preset) => (
-                        <button
+                        <Button
                           key={preset.name}
                           type="button"
+                          variant="outline"
+                          size="xs"
                           onClick={() => setNewSpaceName(preset.name)}
-                          className="cursor-pointer rounded-md border border-border bg-muted/60 px-2 py-0.5 font-mono text-[10px] text-foreground hover:bg-muted"
+                          className="h-6 rounded-lg font-mono text-[9px] font-bold tracking-wider text-foreground uppercase hover:bg-muted"
                         >
                           {preset.name}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </Field>
@@ -430,7 +431,7 @@ export function Lobby() {
                   <Field className="space-y-1.5">
                     <FieldLabel
                       htmlFor="create-user-name"
-                      className="font-mono text-xs font-bold text-muted-foreground uppercase"
+                      className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase"
                     >
                       Your Display Name
                     </FieldLabel>
@@ -441,24 +442,24 @@ export function Lobby() {
                       placeholder="What should people call you?"
                       maxLength={20}
                       autoComplete="nickname"
-                      className="h-11 rounded-xl border border-border bg-background font-mono text-xs"
+                      className="h-10 rounded-xl border border-border bg-background font-mono text-xs focus:border-foreground"
                     />
                   </Field>
 
-                  <div className="-mx-5 mt-1 -mb-5 flex flex-col items-center justify-between gap-2 border-t border-border/70 bg-muted/30 px-5 py-3.5 sm:-mx-6 sm:-mb-6 sm:flex-row sm:px-6">
+                  <div className="mt-1.5 flex items-center justify-between gap-4 border-t border-border/40 pt-4">
                     {createUserName.trim() &&
                     rooms.some((r) => r.host === createUserName.trim()) ? (
-                      <span className="font-mono text-[10px] font-medium text-destructive sm:text-xs">
-                        Already hosting an active space.
+                      <span className="font-mono text-[9px] font-semibold text-destructive">
+                        Already hosting a space.
                       </span>
                     ) : (
-                      <span className="hidden font-mono text-[10px] text-muted-foreground sm:block sm:text-xs">
-                        Instant WebRTC audio &middot; no accounts
+                      <span className="font-mono text-[9px] text-muted-foreground">
+                        Instant WebRTC &middot; no account
                       </span>
                     )}
                     <Button
                       type="submit"
-                      className="h-10 shrink-0 rounded-full bg-foreground px-5 font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90 focus-visible:ring-4 focus-visible:ring-foreground/25"
+                      className="h-10 shrink-0 rounded-xl bg-foreground px-5 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90 focus-visible:ring-2 focus-visible:ring-foreground/25"
                       disabled={
                         !newSpaceName.trim() ||
                         !createUserName.trim() ||
@@ -467,7 +468,7 @@ export function Lobby() {
                       }
                     >
                       {isJoining ? <Spinner className="mr-2" /> : null}
-                      <span>Create &amp; Enter</span>
+                      <span>Go Live</span>
                     </Button>
                   </div>
                 </form>
@@ -574,39 +575,86 @@ export function Lobby() {
                 <button
                   key={room.name}
                   onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-4 text-left shadow-xs hover:border-foreground/40 hover:bg-card/95 sm:rounded-3xl sm:p-6"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-5 text-left shadow-xs transition-all duration-200 hover:border-foreground/40 hover:bg-muted/10 sm:rounded-3xl sm:p-6"
                 >
                   {timeLeft > 0 && (
                     <div className="absolute top-0 right-0 left-0 bg-foreground py-1 text-center font-mono text-[10px] font-bold text-background">
-                      Host disconnected. Rejoin within {timeLeft}s!
+                      Host disconnected. Rejoin in {timeLeft}s!
                     </div>
                   )}
 
-                  <div
-                    className={`mb-5 flex w-full items-start justify-between sm:mb-6 ${timeLeft > 0 ? "mt-3" : ""}`}
-                  >
-                    <div className="min-w-0 truncate pr-2.5">
-                      <h3 className="truncate font-display text-base font-bold text-foreground group-hover:underline sm:text-lg">
+                  <div className={`w-full ${timeLeft > 0 ? "mt-4" : ""}`}>
+                    {/* Top Row: Live badge & Equalizer */}
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 rounded-md border border-foreground/15 bg-muted/65 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-foreground uppercase">
+                        <span className="relative flex size-1.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground/25 opacity-75"></span>
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-foreground"></span>
+                        </span>
+                        Live
+                      </div>
+
+                      {/* Audio Equalizer animation */}
+                      <div className="flex h-3.5 w-4 shrink-0 items-end gap-[2px]">
+                        <span
+                          className="animate-eq-1 w-[2px] rounded-full bg-foreground/80"
+                          style={{ height: "30%" }}
+                        />
+                        <span
+                          className="animate-eq-2 w-[2px] rounded-full bg-foreground/80"
+                          style={{ height: "70%" }}
+                        />
+                        <span
+                          className="animate-eq-3 w-[2px] rounded-full bg-foreground/80"
+                          style={{ height: "50%" }}
+                        />
+                        <span
+                          className="animate-eq-4 w-[2px] rounded-full bg-foreground/80"
+                          style={{ height: "90%" }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Room title & Host badge */}
+                    <div className="space-y-3">
+                      <h3 className="line-clamp-1 font-display text-lg font-extrabold tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-xl">
                         {getDisplayRoomTitle(room.name)}
                       </h3>
-                      <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground sm:text-xs">
-                        Host:{" "}
-                        <span className="text-foreground">{room.host}</span>
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold text-background uppercase">
-                      <span className="size-1.5 rounded-full bg-background" />
-                      Live
+
+                      {/* Host identity tag */}
+                      <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 py-0.5 pr-2.5 pl-1.5 text-xs">
+                        <div className="relative size-4.5 overflow-hidden rounded-full border border-border bg-card">
+                          <img
+                            src={userpicUrl(room.host)}
+                            alt={room.host}
+                            className="size-full object-cover"
+                          />
+                        </div>
+                        <span className="font-mono text-[9px] font-semibold text-muted-foreground">
+                          host:{" "}
+                          <span className="font-bold text-foreground">
+                            {room.host}
+                          </span>
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Participant Avatars Strip */}
-                  <div className="mt-auto flex w-full items-center justify-between gap-2 border-t border-border/60 pt-3 sm:pt-4">
-                    <div className="flex shrink-0 -space-x-1.5 sm:-space-x-2">
-                      {room.participants.slice(0, 4).map((p) => (
+                  {/* Divider */}
+                  <div className="my-4.5 w-full border-t border-border/40" />
+
+                  {/* Bottom Row: Participants overlap avatars list & join button */}
+                  <div className="mt-auto flex w-full items-center justify-between gap-4">
+                    {/* Avatars */}
+                    <div className="flex shrink-0 -space-x-1.5">
+                      {room.participants.slice(0, 4).map((p, idx) => (
                         <div
                           key={p.identity}
-                          className="relative size-7 overflow-hidden rounded-full border border-border bg-card shadow-xs sm:size-8"
+                          className="relative size-7.5 overflow-hidden rounded-full border-2 border-card bg-card shadow-xs transition-transform group-hover:scale-105"
+                          style={{
+                            zIndex: 4 - idx,
+                            transitionDelay: `${idx * 50}ms`,
+                          }}
                         >
                           <img
                             src={userpicUrl(p.avatar || p.identity)}
@@ -616,18 +664,26 @@ export function Lobby() {
                         </div>
                       ))}
                       {room.participants.length > 4 && (
-                        <div className="flex size-7 items-center justify-center rounded-full border border-border bg-muted font-mono text-[9px] font-bold text-foreground sm:size-8 sm:text-[10px]">
+                        <div
+                          className="flex size-7.5 items-center justify-center rounded-full border-2 border-card bg-muted font-mono text-[9px] font-bold text-foreground shadow-xs"
+                          style={{ zIndex: 0 }}
+                        >
                           +{room.participants.length - 4}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1 font-mono text-[11px] font-bold text-foreground sm:text-xs">
+                    {/* CTA Join Button */}
+                    <div className="flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-background uppercase shadow-sm transition-all group-hover:bg-foreground/90">
                       <span>
                         {room.numParticipants}{" "}
-                        {room.numParticipants === 1 ? "Speaker" : "Speakers"}
+                        {room.numParticipants === 1 ? "speaker" : "speakers"}
                       </span>
-                      <RiArrowRightLine size={14} />
+                      <span className="h-3 w-px bg-background/25" />
+                      <RiArrowRightLine
+                        size={12}
+                        className="transition-transform group-hover:translate-x-0.5"
+                      />
                     </div>
                   </div>
                 </button>
@@ -695,15 +751,16 @@ export function Lobby() {
                   />
                 </div>
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setJoinAvatarSeed(randomUserpic())}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 font-mono text-xs font-semibold text-foreground shadow-xs hover:bg-muted"
+                  className="h-9 rounded-xl font-mono text-xs font-bold tracking-wider text-foreground uppercase"
                   title="Randomize avatar"
                 >
                   <RiShuffleLine size={13} />
                   <span>Shuffle</span>
-                </button>
+                </Button>
               </div>
 
               <FieldLabel
@@ -731,7 +788,12 @@ export function Lobby() {
                 disabled={!joinUserName.trim() || isJoining}
               >
                 {isJoining ? <Spinner className="mr-2" /> : null}
-                <span>Enter Space</span>
+                <span>
+                  {rooms.find((r) => r.name === selectedRoom)?.host ===
+                  joinUserName.trim()
+                    ? "Go Live"
+                    : "Join Space"}
+                </span>
               </Button>
             </div>
           </form>

@@ -2,11 +2,18 @@ import {
   Bricolage_Grotesque,
   Google_Sans_Flex,
   Instrument_Serif,
+  Inter,
   Kalam,
   Syne,
   Playfair_Display,
 } from "next/font/google"
 import localFont from "next/font/local"
+
+export const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+})
 
 export const dmSans = localFont({
   src: [

@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: "increase"
+    groups:
+      react:
+        patterns: ["react", "react-dom"]
+      livekit:
+        patterns: ["livekit-*", "@livekit/*"]
+    open-pull-requests-limit: 5
+    labels:
+      - "chore"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]
+    labels:
+      - "chore"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"

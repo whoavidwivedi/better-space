@@ -54,11 +54,13 @@ describe("ROOM_CODE_PATTERN", () => {
 
 describe("findTemplate", () => {
   test("matches by slug, alias and title", () => {
-    expect(findTemplate("design-systems")?.name).toBe("design-systems-motion-craft")
+    expect(findTemplate("design-systems")?.name).toBe(
+      "design-systems-motion-craft"
+    )
     expect(findTemplate("design")?.name).toBe("design-systems-motion-craft")
-    expect(
-      findTemplate("Design Systems, Motion & Craft")?.name
-    ).toBe("design-systems-motion-craft")
+    expect(findTemplate("Design Systems, Motion & Craft")?.name).toBe(
+      "design-systems-motion-craft"
+    )
   })
   test("returns undefined for unknown input", () => {
     expect(findTemplate("does-not-exist")).toBeUndefined()

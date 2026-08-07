@@ -1,7 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
-import { RiMicLine, RiMicOffLine, RiArrowRightLine } from "@remixicon/react"
+import {
+  Mic as RiMicLine,
+  MicOff as RiMicOffLine,
+  ArrowRight as RiArrowRightLine,
+} from "lucide-react"
 import Link from "next/link"
 import React, { useState, useEffect } from "react"
 

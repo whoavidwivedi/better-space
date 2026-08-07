@@ -2,13 +2,13 @@
 
 import React from "react"
 import {
-  RiShieldCheckLine,
-  RiSpeedLine,
-  RiUserVoiceLine,
-  RiLock2Line,
-  RiTerminalBoxLine,
-  RiVolumeUpLine,
-} from "@remixicon/react"
+  ShieldCheck as RiShieldCheckLine,
+  Gauge as RiSpeedLine,
+  AudioLines as RiUserVoiceLine,
+  Lock as RiLock2Line,
+  Terminal as RiTerminalBoxLine,
+  Volume2 as RiVolumeUpLine,
+} from "lucide-react"
 
 const PILLARS = [
   {
