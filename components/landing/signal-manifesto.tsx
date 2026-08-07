@@ -57,18 +57,21 @@ export function SignalManifesto() {
   ]
 
   return (
-    <section id="architecture" className="relative w-full py-20 border-b border-border/80">
+    <section
+      id="architecture"
+      className="relative w-full border-b border-border/80 py-20"
+    >
       {/* 1. Header Typography */}
-      <div className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-border">
+      <div className="mb-14 flex flex-col justify-between gap-6 border-b border-border pb-8 md:flex-row md:items-end">
         <div>
-          <div className="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="mb-2 flex items-center gap-2 font-mono text-xs font-bold tracking-widest text-muted-foreground uppercase">
             <span>INDEX NO. 03</span>
             <span>•</span>
-            <span className="font-serif-display italic text-base text-foreground">
+            <span className="font-serif-display text-base text-foreground italic">
               Acoustic Architecture
             </span>
           </div>
-          <h2 className="font-syne text-5xl sm:text-7xl font-black uppercase tracking-tight text-foreground">
+          <h2 className="font-syne text-5xl font-black tracking-tight text-foreground uppercase sm:text-7xl">
             Signal Path
           </h2>
         </div>
@@ -80,33 +83,33 @@ export function SignalManifesto() {
       </div>
 
       {/* 2. 3 Minimal Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {pillars.map((p) => {
           const Icon = p.icon
           return (
             <div
               key={p.num}
-              className="rounded-3xl border border-border bg-card p-8 flex flex-col justify-between shadow-xs"
+              className="flex flex-col justify-between rounded-3xl border border-border bg-card p-8 shadow-xs"
             >
               <div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6 flex items-center justify-between">
                   <span className="font-syne text-5xl font-black text-foreground/30">
                     {p.num}
                   </span>
-                  <div className="size-10 rounded-full bg-muted flex items-center justify-center text-foreground">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground">
                     <Icon size={18} />
                   </div>
                 </div>
 
-                <h3 className="font-syne text-xl font-bold uppercase text-foreground">
+                <h3 className="font-syne text-xl font-bold text-foreground uppercase">
                   {p.title}
                 </h3>
-                <p className="mt-2.5 text-sm text-muted-foreground leading-relaxed">
+                <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                   {p.desc}
                 </p>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-border font-mono text-xs text-muted-foreground">
+              <div className="mt-8 border-t border-border pt-4 font-mono text-xs text-muted-foreground">
                 {p.spec}
               </div>
             </div>
@@ -115,15 +118,15 @@ export function SignalManifesto() {
       </div>
 
       {/* 3. Interactive Web Audio Synthesizer */}
-      <div className="mt-10 rounded-3xl border border-border bg-card p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
+      <div className="mt-10 flex flex-col items-center justify-between gap-6 rounded-3xl border border-border bg-card p-8 shadow-xs sm:flex-row">
         <div>
-          <span className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <span className="font-mono text-xs font-bold tracking-widest text-muted-foreground uppercase">
             INTERACTIVE ACOUSTIC TESTBED
           </span>
-          <h4 className="font-syne text-2xl font-bold uppercase text-foreground mt-1">
+          <h4 className="mt-1 font-syne text-2xl font-bold text-foreground uppercase">
             Test Audio Frequency Response
           </h4>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             Click keys to trigger real-time synthesized harmonic frequencies.
           </p>
         </div>
@@ -133,7 +136,7 @@ export function SignalManifesto() {
             <button
               key={k.note}
               onClick={() => playFreq(k.note, k.freq, k.type)}
-              className={`h-12 px-4 rounded-xl border font-mono text-xs font-bold transition-colors ${
+              className={`h-12 rounded-xl border px-4 font-mono text-xs font-bold transition-colors ${
                 activeNote === k.note
                   ? "border-foreground bg-foreground text-background shadow-xs"
                   : "border-border bg-background hover:border-foreground"

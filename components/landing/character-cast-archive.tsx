@@ -80,27 +80,28 @@ export function CharacterCastArchive() {
   return (
     <section id="archive" className="relative mx-auto w-full max-w-5xl py-16">
       {/* Minimal Header */}
-      <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-border/80 pb-6">
+      <div className="mb-10 flex flex-col justify-between gap-6 border-b border-border/80 pb-6 sm:flex-row sm:items-end">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
               ARCHIVE
             </span>
-            <span className="font-serif-display italic text-base text-foreground">
+            <span className="font-serif-display text-base text-foreground italic">
               96 Handcrafted Vectors
             </span>
           </div>
-          <h2 className="font-display text-4xl sm:text-6xl font-black tracking-tight text-foreground">
+          <h2 className="font-display text-4xl font-black tracking-tight text-foreground sm:text-6xl">
             The Avatar Cast
           </h2>
-          <p className="mt-2 text-base text-muted-foreground font-normal max-w-lg">
-            Vector SVGs that scale infinitely on every screen. Select a persona and enter any room.
+          <p className="mt-2 max-w-lg text-base font-normal text-muted-foreground">
+            Vector SVGs that scale infinitely on every screen. Select a persona
+            and enter any room.
           </p>
         </div>
 
         <button
           onClick={handleRandomSelect}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 font-mono text-xs font-bold text-foreground hover:border-foreground transition-colors self-start sm:self-auto"
+          className="inline-flex h-10 items-center gap-2 self-start rounded-full border border-border px-4 font-mono text-xs font-bold text-foreground transition-colors hover:border-foreground sm:self-auto"
         >
           <RiShuffleLine size={15} />
           <span>Random Roll</span>
@@ -108,29 +109,29 @@ export function CharacterCastArchive() {
       </div>
 
       {/* Main Grid: Clean Preview (Left) + Character Collection (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
         {/* Left Column: Minimal Selected Character Specimen */}
-        <div className="lg:col-span-5 lg:sticky lg:top-24">
-          <div className="minimal-card rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center bg-card border border-border">
+        <div className="lg:sticky lg:top-24 lg:col-span-5">
+          <div className="minimal-card flex flex-col items-center rounded-3xl border border-border bg-card p-6 text-center sm:p-8">
             {/* Header Stamp */}
-            <div className="w-full flex items-center justify-between font-mono text-xs text-muted-foreground border-b border-border/60 pb-3 mb-6">
+            <div className="mb-6 flex w-full items-center justify-between border-b border-border/60 pb-3 font-mono text-xs text-muted-foreground">
               <span>{selectedCollectionData.name.toUpperCase()}</span>
               <span>INDEX #{selectedSeed.replace(/\D/g, "") || "01"}</span>
             </div>
 
             {/* Avatar Preview */}
             <div className="relative my-2">
-              <div className="size-48 sm:size-56 rounded-full border border-border bg-background p-2 shadow-xs">
+              <div className="size-48 rounded-full border border-border bg-background p-2 shadow-xs sm:size-56">
                 <img
                   src={userpicUrl(selectedSeed)}
                   alt={selectedSeed}
-                  className="size-full object-cover rounded-full"
+                  className="size-full rounded-full object-cover"
                 />
               </div>
 
               {claimed && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/85 backdrop-blur-xs rounded-full">
-                  <span className="font-mono text-xs font-bold text-foreground uppercase tracking-widest px-3 py-1 border border-border rounded-full">
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/85 backdrop-blur-xs">
+                  <span className="rounded-full border border-border px-3 py-1 font-mono text-xs font-bold tracking-widest text-foreground uppercase">
                     ✓ Claimed
                   </span>
                 </div>
@@ -142,16 +143,16 @@ export function CharacterCastArchive() {
               <h3 className="font-display text-2xl font-black text-foreground">
                 {selectedSeed}
               </h3>
-              <p className="font-serif-display italic text-base text-muted-foreground">
+              <p className="font-serif-display text-base text-muted-foreground italic">
                 {selectedCollectionData.tagline}
               </p>
             </div>
 
             {/* Actions */}
-            <div className="mt-6 w-full flex flex-col gap-2.5">
+            <div className="mt-6 flex w-full flex-col gap-2.5">
               <button
                 onClick={handlePlayVoicePreview}
-                className="w-full h-10 rounded-xl border border-border font-mono text-xs font-bold text-muted-foreground hover:text-foreground hover:border-foreground transition-colors flex items-center justify-center gap-2"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border font-mono text-xs font-bold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
               >
                 <RiVolumeUpLine size={15} />
                 <span>Test Tone</span>
@@ -159,15 +160,19 @@ export function CharacterCastArchive() {
 
               <button
                 onClick={handleClaim}
-                className="w-full h-11 rounded-xl bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase transition-opacity hover:opacity-90"
               >
-                {claimed ? <RiCheckLine size={15} /> : <RiSparklingLine size={15} />}
+                {claimed ? (
+                  <RiCheckLine size={15} />
+                ) : (
+                  <RiSparklingLine size={15} />
+                )}
                 <span>{claimed ? "Claimed as Active" : "Claim Character"}</span>
               </button>
 
               <Link
                 href="/lobby"
-                className="w-full h-10 rounded-xl border border-border font-mono text-xs font-bold text-foreground flex items-center justify-center gap-1.5 hover:bg-muted transition-colors"
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-border font-mono text-xs font-bold text-foreground transition-colors hover:bg-muted"
               >
                 <span>Enter Room</span>
                 <RiArrowRightLine size={14} />
@@ -177,21 +182,21 @@ export function CharacterCastArchive() {
         </div>
 
         {/* Right Column: Search + Minimal Pills + Grid */}
-        <div className="lg:col-span-7 flex flex-col gap-5">
+        <div className="flex flex-col gap-5 lg:col-span-7">
           {/* Search Bar */}
           <div className="relative">
-            <RiSearchLine className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <RiSearchLine className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search characters by series or name..."
-              className="w-full h-11 pl-10 pr-9 rounded-2xl border border-border bg-card font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground"
+              className="h-11 w-full rounded-2xl border border-border bg-card pr-9 pl-10 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-foreground focus:outline-none"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 size-5 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
+                className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground"
               >
                 <RiCloseLine size={12} />
               </button>
@@ -205,9 +210,9 @@ export function CharacterCastArchive() {
                 sound.playClick(400)
                 setSelectedCollection("all")
               }}
-              className={`h-8 px-3 rounded-full font-mono text-xs transition-colors ${
+              className={`h-8 rounded-full px-3 font-mono text-xs transition-colors ${
                 selectedCollection === "all"
-                  ? "bg-foreground text-background font-bold"
+                  ? "bg-foreground font-bold text-background"
                   : "border border-border text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -220,9 +225,9 @@ export function CharacterCastArchive() {
                   sound.playClick(450)
                   setSelectedCollection(c.id)
                 }}
-                className={`h-8 px-3 rounded-full font-mono text-xs transition-colors ${
+                className={`h-8 rounded-full px-3 font-mono text-xs transition-colors ${
                   selectedCollection === c.id
-                    ? "bg-foreground text-background font-bold"
+                    ? "bg-foreground font-bold text-background"
                     : "border border-border text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -232,20 +237,20 @@ export function CharacterCastArchive() {
           </div>
 
           {/* Clean 4-Col Avatar Grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[580px] overflow-y-auto pr-1">
+          <div className="grid max-h-[580px] grid-cols-3 gap-3 overflow-y-auto pr-1 sm:grid-cols-4">
             {filteredCharacters.map((seed: string) => {
               const isSelected = selectedSeed === seed
               return (
                 <button
                   key={seed}
                   onClick={() => handleSelectCharacter(seed)}
-                  className={`flex flex-col items-center p-2.5 rounded-2xl border transition-colors ${
+                  className={`flex flex-col items-center rounded-2xl border p-2.5 transition-colors ${
                     isSelected
                       ? "border-foreground bg-card shadow-xs"
                       : "border-transparent bg-background/50 hover:border-border"
                   }`}
                 >
-                  <div className="size-14 sm:size-16 rounded-full border border-border bg-background overflow-hidden mb-1.5">
+                  <div className="mb-1.5 size-14 overflow-hidden rounded-full border border-border bg-background sm:size-16">
                     <img
                       src={userpicUrl(seed)}
                       alt={seed}
@@ -253,7 +258,7 @@ export function CharacterCastArchive() {
                       loading="lazy"
                     />
                   </div>
-                  <span className="font-display font-bold text-xs text-foreground truncate w-full text-center">
+                  <span className="w-full truncate text-center font-display text-xs font-bold text-foreground">
                     {seed}
                   </span>
                 </button>

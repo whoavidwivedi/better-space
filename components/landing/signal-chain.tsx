@@ -31,19 +31,22 @@ export function SignalChain() {
   ]
 
   return (
-    <section id="architecture" className="relative mx-auto w-full max-w-5xl py-16">
+    <section
+      id="architecture"
+      className="relative mx-auto w-full max-w-5xl py-16"
+    >
       {/* Minimal Header */}
-      <div className="mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/80 pb-6">
+      <div className="mb-12 flex flex-col justify-between gap-4 border-b border-border/80 pb-6 sm:flex-row sm:items-end">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
               ARCHITECTURE
             </span>
-            <span className="font-serif-display italic text-base text-foreground">
+            <span className="font-serif-display text-base text-foreground italic">
               Under the Hood
             </span>
           </div>
-          <h2 className="font-display text-4xl sm:text-6xl font-black tracking-tight text-foreground">
+          <h2 className="font-display text-4xl font-black tracking-tight text-foreground sm:text-6xl">
             Pure Voice Signal
           </h2>
         </div>
@@ -54,25 +57,25 @@ export function SignalChain() {
       </div>
 
       {/* 3 Minimal Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {features.map((f) => (
           <div
             key={f.num}
-            className="minimal-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between bg-card border border-border"
+            className="minimal-card flex flex-col justify-between rounded-3xl border border-border bg-card p-6 sm:p-7"
           >
             <div>
-              <span className="font-display text-4xl sm:text-5xl font-black text-foreground/40 block mb-4">
+              <span className="mb-4 block font-display text-4xl font-black text-foreground/40 sm:text-5xl">
                 {f.num}
               </span>
               <h3 className="font-display text-lg font-bold text-foreground">
                 {f.title}
               </h3>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {f.desc}
               </p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-border/60 font-mono text-[11px] text-muted-foreground">
+            <div className="mt-6 border-t border-border/60 pt-4 font-mono text-[11px] text-muted-foreground">
               {f.spec}
             </div>
           </div>

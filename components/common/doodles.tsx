@@ -18,23 +18,13 @@ export function DoodleArrow({
       style={{ strokeLinecap: "round", strokeLinejoin: "round" }}
       aria-hidden="true"
     >
-      <path
-        d="M8 58C32 62 70 54 94 32C104 22 108 12 106 6"
-        strokeWidth="2.5"
-      />
-      <path
-        d="M86 4C96 3 108 5 112 8C110 14 104 26 98 32"
-        strokeWidth="2.5"
-      />
+      <path d="M8 58C32 62 70 54 94 32C104 22 108 12 106 6" strokeWidth="2.5" />
+      <path d="M86 4C96 3 108 5 112 8C110 14 104 26 98 32" strokeWidth="2.5" />
     </svg>
   )
 }
 
-export function DoodleCurlyArrow({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleCurlyArrow({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 80 80"
@@ -53,11 +43,7 @@ export function DoodleCurlyArrow({
   )
 }
 
-export function DoodleUnderline({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleUnderline({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 240 24"
@@ -67,10 +53,7 @@ export function DoodleUnderline({
       style={{ strokeLinecap: "round", strokeLinejoin: "round" }}
       aria-hidden="true"
     >
-      <path
-        d="M4 14C45 6 92 18 135 12C168 7 202 16 236 10"
-        strokeWidth="3"
-      />
+      <path d="M4 14C45 6 92 18 135 12C168 7 202 16 236 10" strokeWidth="3" />
       <path
         d="M18 19C65 14 112 21 158 17C188 14 214 18 228 16"
         strokeWidth="1.8"
@@ -80,11 +63,7 @@ export function DoodleUnderline({
   )
 }
 
-export function DoodleCircle({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleCircle({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 160 80"
@@ -102,17 +81,13 @@ export function DoodleCircle({
   )
 }
 
-export function DoodleStar({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleStar({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`stroke-current fill-current ${className}`}
+      className={`fill-current stroke-current ${className}`}
       style={{ strokeLinecap: "round", strokeLinejoin: "round" }}
       aria-hidden="true"
     >
@@ -124,11 +99,7 @@ export function DoodleStar({
   )
 }
 
-export function DoodleSparkle({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleSparkle({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 32 32"
@@ -144,11 +115,7 @@ export function DoodleSparkle({
   )
 }
 
-export function DoodleAsterisk({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleAsterisk({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -171,12 +138,14 @@ export function DoodleBurstBadge({
   className?: string
 }) {
   return (
-    <div className={`relative inline-flex items-center justify-center ${className}`}>
+    <div
+      className={`relative inline-flex items-center justify-center ${className}`}
+    >
       <svg
         viewBox="0 0 120 120"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="size-24 stroke-foreground fill-background text-foreground"
+        className="size-24 fill-background stroke-foreground text-foreground"
         aria-hidden="true"
       >
         <path
@@ -186,7 +155,7 @@ export function DoodleBurstBadge({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
-        <span className="font-display text-[11px] font-black uppercase leading-tight tracking-tight text-foreground">
+        <span className="font-display text-[11px] leading-tight font-black tracking-tight text-foreground uppercase">
           {text}
         </span>
       </div>
@@ -194,14 +163,10 @@ export function DoodleBurstBadge({
   )
 }
 
-export function DoodleTape({
-  className = "",
-}: {
-  className?: string
-}) {
+export function DoodleTape({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`h-5 w-16 bg-muted/80 border-y border-foreground/20 rotate-[-3deg] select-none pointer-events-none ${className}`}
+      className={`pointer-events-none h-5 w-16 rotate-[-3deg] border-y border-foreground/20 bg-muted/80 select-none ${className}`}
       style={{
         clipPath:
           "polygon(0% 0%, 94% 0%, 100% 12%, 96% 28%, 100% 50%, 94% 75%, 100% 100%, 6% 100%, 0% 88%, 4% 65%, 0% 45%, 5% 20%)",

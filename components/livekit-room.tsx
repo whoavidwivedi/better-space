@@ -47,7 +47,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import {
   Popover,
@@ -86,7 +90,7 @@ export function SpaceRoomLiveKit({
 
   if (!wsUrl || !token) {
     return (
-      <div className="bg-background flex min-h-svh items-center justify-center">
+      <div className="flex min-h-svh items-center justify-center bg-background">
         <Spinner className="text-muted-foreground" />
       </div>
     )
@@ -142,15 +146,23 @@ function RoomUI({
   const [copied, setCopied] = useState(false)
 
   const intentionalLeaveRef = useRef(false)
-  const [hostDisconnectTime, setHostDisconnectTime] = useState<number | null>(null)
+  const [hostDisconnectTime, setHostDisconnectTime] = useState<number | null>(
+    null
+  )
   const [disconnectCountdown, setDisconnectCountdown] = useState(60)
 
-  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([])
-  const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([])
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
+    []
+  )
+  const [audioOutputDevices, setAudioOutputDevices] = useState<
+    MediaDeviceInfo[]
+  >([])
   const [selectedMicId, setSelectedMicId] = useState<string>("default")
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string>("default")
   const [isPlayingTestSound, setIsPlayingTestSound] = useState(false)
-  const localMicPub = localParticipant.getTrackPublication(Track.Source.Microphone)
+  const localMicPub = localParticipant.getTrackPublication(
+    Track.Source.Microphone
+  )
   const localMicVolume = useTrackVolume(localMicPub?.audioTrack)
 
   const micItems = useMemo(() => {
@@ -194,7 +206,9 @@ function RoomUI({
   const isCohost = roomCohosts.includes(localParticipant.identity)
   const isHostOrCohost = isHost || isCohost
 
-  const canPublish = Boolean(localParticipant.permissions?.canPublish || isHostOrCohost)
+  const canPublish = Boolean(
+    localParticipant.permissions?.canPublish || isHostOrCohost
+  )
   const prevCanPublish = useRef(canPublish)
 
   useEffect(() => {
@@ -206,10 +220,16 @@ function RoomUI({
     if (canPublish && !prevCanPublish.current) {
       toast.add({ title: "Host granted you the microphone!", type: "success" })
       localParticipant.setMicrophoneEnabled(true).catch(() => {
-        toast.add({ title: "Could not automatically enable microphone.", type: "error" })
+        toast.add({
+          title: "Could not automatically enable microphone.",
+          type: "error",
+        })
       })
     } else if (!canPublish && prevCanPublish.current) {
-      toast.add({ title: "Host revoked your microphone access.", type: "error" })
+      toast.add({
+        title: "Host revoked your microphone access.",
+        type: "error",
+      })
     }
     prevCanPublish.current = canPublish
 
@@ -271,7 +291,10 @@ function RoomUI({
         const decoder = new TextDecoder()
         const data = JSON.parse(decoder.decode(payload))
         if (data.type === "REACTION" && data.emoji) {
-          displayReaction(participant?.identity || data.senderIdentity, data.emoji)
+          displayReaction(
+            participant?.identity || data.senderIdentity,
+            data.emoji
+          )
         } else if (data.type === "MIC_REQUEST") {
           if (isHostOrCohost && data.identity) {
             setMicRequests((prev) =>
@@ -285,7 +308,10 @@ function RoomUI({
         } else if (data.type === "MIC_REJECTED") {
           if (data.identity === userName) {
             setHasRequestedMicLocal(false)
-            toast.add({ title: "Your microphone request was declined.", type: "info" })
+            toast.add({
+              title: "Your microphone request was declined.",
+              type: "info",
+            })
           } else if (isHostOrCohost) {
             setMicRequests((prev) => prev.filter((id) => id !== data.identity))
           }
@@ -325,7 +351,9 @@ function RoomUI({
       return
     }
     const hostInRoom = participants.some((p) => p.identity === roomHost)
-    const anyCohostInRoom = participants.some((p) => roomCohosts.includes(p.identity))
+    const anyCohostInRoom = participants.some((p) =>
+      roomCohosts.includes(p.identity)
+    )
 
     if (!hostInRoom && !anyCohostInRoom) {
       setHostDisconnectTime((prev) => prev || Date.now())
@@ -376,7 +404,9 @@ function RoomUI({
 
   const shouldHostTimerRunRef = useRef(false)
   useEffect(() => {
-    const anyCohostInRoom = participants.some((p) => roomCohosts.includes(p.identity))
+    const anyCohostInRoom = participants.some((p) =>
+      roomCohosts.includes(p.identity)
+    )
     shouldHostTimerRunRef.current = !anyCohostInRoom
   }, [participants, roomCohosts])
 
@@ -384,7 +414,10 @@ function RoomUI({
     const handleBeforeUnload = () => {
       if (isHost && !intentionalLeaveRef.current) {
         if (shouldHostTimerRunRef.current) {
-          localStorage.setItem(`space_host_disconnected_${roomName}`, Date.now().toString())
+          localStorage.setItem(
+            `space_host_disconnected_${roomName}`,
+            Date.now().toString()
+          )
         } else {
           localStorage.removeItem(`space_host_disconnected_${roomName}`)
         }
@@ -395,7 +428,10 @@ function RoomUI({
       window.removeEventListener("beforeunload", handleBeforeUnload)
       if (isHost && !intentionalLeaveRef.current) {
         if (shouldHostTimerRunRef.current) {
-          localStorage.setItem(`space_host_disconnected_${roomName}`, Date.now().toString())
+          localStorage.setItem(
+            `space_host_disconnected_${roomName}`,
+            Date.now().toString()
+          )
         } else {
           localStorage.removeItem(`space_host_disconnected_${roomName}`)
         }
@@ -404,7 +440,8 @@ function RoomUI({
   }, [isHost, roomName])
 
   const handleSendReaction = (emojiOrData: EmojiClickData | string) => {
-    const emoji = typeof emojiOrData === "string" ? emojiOrData : emojiOrData.emoji
+    const emoji =
+      typeof emojiOrData === "string" ? emojiOrData : emojiOrData.emoji
     if (!emoji) return
     displayReaction(userName, emoji)
     const encoder = new TextEncoder()
@@ -418,7 +455,9 @@ function RoomUI({
     if (hasRequestedMicLocal) return
     setHasRequestedMicLocal(true)
     const encoder = new TextEncoder()
-    const data = encoder.encode(JSON.stringify({ type: "MIC_REQUEST", identity: userName }))
+    const data = encoder.encode(
+      JSON.stringify({ type: "MIC_REQUEST", identity: userName })
+    )
     localParticipant.publishData(data, { reliable: true })
     toast.add({ title: "Microphone request sent.", type: "success" })
   }
@@ -437,7 +476,10 @@ function RoomUI({
       })
       if (!res.ok) throw new Error("API error")
       setMicRequests((prev) => prev.filter((id) => id !== targetIdentity))
-      toast.add({ title: `Granted microphone to ${targetIdentity}`, type: "success" })
+      toast.add({
+        title: `Granted microphone to ${targetIdentity}`,
+        type: "success",
+      })
     } catch {
       toast.add({ title: `Failed to grant microphone`, type: "error" })
     }
@@ -471,11 +513,15 @@ function RoomUI({
     } catch (e: any) {
       if (e.message?.includes("getUserMedia")) {
         toast.add({
-          title: "Cannot access microphone. You must use an HTTPS connection to test audio.",
+          title:
+            "Cannot access microphone. You must use an HTTPS connection to test audio.",
           type: "error",
         })
       } else {
-        toast.add({ title: "Failed to toggle microphone: " + e.message, type: "error" })
+        toast.add({
+          title: "Failed to toggle microphone: " + e.message,
+          type: "error",
+        })
       }
     }
   }
@@ -502,7 +548,11 @@ function RoomUI({
   }
 
   const fetchDevices = useCallback(async () => {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) return
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.enumerateDevices
+    )
+      return
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
       const inputs = devices.filter((d) => d.kind === "audioinput")
@@ -520,7 +570,11 @@ function RoomUI({
   useEffect(() => {
     fetchDevices()
     navigator.mediaDevices?.addEventListener?.("devicechange", fetchDevices)
-    return () => navigator.mediaDevices?.removeEventListener?.("devicechange", fetchDevices)
+    return () =>
+      navigator.mediaDevices?.removeEventListener?.(
+        "devicechange",
+        fetchDevices
+      )
   }, [fetchDevices])
 
   const processedTracks = useRef(new WeakSet<any>())
@@ -565,7 +619,8 @@ function RoomUI({
     try {
       const AudioCtx =
         window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext
       if (!AudioCtx) return
       const ctx = new AudioCtx()
       setIsPlayingTestSound(true)
@@ -576,7 +631,10 @@ function RoomUI({
         osc.type = "sine"
         osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
         gain.gain.setValueAtTime(0.12, ctx.currentTime + start)
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
+        gain.gain.exponentialRampToValueAtTime(
+          0.001,
+          ctx.currentTime + start + duration
+        )
         osc.connect(gain)
         gain.connect(ctx.destination)
         osc.start(ctx.currentTime + start)
@@ -617,14 +675,18 @@ function RoomUI({
   }, [isMuted, isDeafened])
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground relative">
-      <div className="absolute inset-0 bg-studio-grid pointer-events-none opacity-40" />
+    <div className="relative flex min-h-svh flex-col bg-background text-foreground">
+      <div className="bg-studio-grid pointer-events-none absolute inset-0 opacity-40" />
 
       {/* Header Bar */}
-      <header className="border-border bg-card/80 sticky top-0 z-40 flex h-12 sm:h-14 items-center justify-between gap-2 sm:gap-3 border-b px-2.5 sm:px-4 backdrop-blur-md md:px-6">
+      <header className="sticky top-0 z-40 flex h-12 items-center justify-between gap-2 border-b border-border bg-card/80 px-2.5 backdrop-blur-md sm:h-14 sm:gap-3 sm:px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-          <BetterSpaceMark animated className="size-3.5 sm:size-4 shrink-0 text-foreground" strokeWidth={4} />
-          <h1 className="truncate font-display text-xs sm:text-sm font-bold text-foreground max-w-[180px] sm:max-w-md md:max-w-xl">
+          <BetterSpaceMark
+            animated
+            className="size-3.5 shrink-0 text-foreground sm:size-4"
+            strokeWidth={4}
+          />
+          <h1 className="max-w-[180px] truncate font-display text-xs font-bold text-foreground sm:max-w-md sm:text-sm md:max-w-xl">
             {getDisplayRoomTitle(roomName)}
           </h1>
         </div>
@@ -638,13 +700,13 @@ function RoomUI({
                 <Button
                   variant="outline"
                   size="icon"
-                  className="text-muted-foreground hidden h-8 w-8 cursor-help sm:inline-flex rounded-xl"
+                  className="hidden h-8 w-8 cursor-help rounded-xl text-muted-foreground sm:inline-flex"
                 >
                   <RiKeyboardBoxLine size={15} />
                 </Button>
               }
             />
-            <HoverCardContent className="z-50 w-64 p-4 rounded-2xl border border-border bg-card shadow-xl">
+            <HoverCardContent className="z-50 w-64 rounded-2xl border border-border bg-card p-4 shadow-xl">
               <div className="space-y-3 font-mono text-xs">
                 <h4 className="flex items-center gap-2 font-bold text-foreground">
                   <RiKeyboardBoxLine size={15} /> Keyboard Shortcuts
@@ -675,7 +737,7 @@ function RoomUI({
             disabled={copied}
             variant="outline"
             aria-label="Copy invite link"
-            className="text-muted-foreground h-8 w-8 rounded-xl"
+            className="h-8 w-8 rounded-xl text-muted-foreground"
           >
             {copied ? <RiCheckLine size={15} /> : <RiFileCopyLine size={15} />}
           </Button>
@@ -686,7 +748,11 @@ function RoomUI({
                 <Popover open={isEndSpaceOpen} onOpenChange={setIsEndSpaceOpen}>
                   <PopoverTrigger
                     render={
-                      <Button variant="destructive" size="sm" className="h-8 font-mono text-xs rounded-xl font-bold bg-red-600 text-white hover:bg-red-700">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-8 rounded-xl bg-red-600 font-mono text-xs font-bold text-white hover:bg-red-700"
+                      >
                         End Space
                       </Button>
                     }
@@ -694,19 +760,30 @@ function RoomUI({
                   <PopoverContent
                     side="bottom"
                     align="end"
-                    className="w-[min(18rem,calc(100vw-2rem))] rounded-2xl p-4 border border-border bg-card shadow-xl"
+                    className="w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-xl"
                   >
                     <PopoverHeader>
-                      <PopoverTitle className="text-sm font-bold">End Studio Space</PopoverTitle>
+                      <PopoverTitle className="text-sm font-bold">
+                        End Studio Space
+                      </PopoverTitle>
                       <PopoverDescription className="text-xs">
-                        Are you sure you want to end this space? Everyone will be disconnected.
+                        Are you sure you want to end this space? Everyone will
+                        be disconnected.
                       </PopoverDescription>
                     </PopoverHeader>
                     <div className="flex flex-col gap-2 pt-3 font-mono text-xs">
-                      <Button variant="destructive" onClick={handleEndSpace} className="rounded-xl font-bold bg-red-600 text-white hover:bg-red-700">
+                      <Button
+                        variant="destructive"
+                        onClick={handleEndSpace}
+                        className="rounded-xl bg-red-600 font-bold text-white hover:bg-red-700"
+                      >
                         End for everyone
                       </Button>
-                      <Button variant="outline" onClick={() => setIsEndSpaceOpen(false)} className="rounded-xl">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEndSpaceOpen(false)}
+                        className="rounded-xl"
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -715,9 +792,10 @@ function RoomUI({
               )}
             </>
           ) : (
-            <Button variant="ghost"
+            <Button
+              variant="ghost"
               onClick={onLeave}
-              className="text-red-500 hover:bg-red-500/10 hover:text-red-500 h-8 font-mono text-xs font-bold rounded-xl"
+              className="h-8 rounded-xl font-mono text-xs font-bold text-red-500 hover:bg-red-500/10 hover:text-red-500"
             >
               Leave
             </Button>
@@ -727,19 +805,25 @@ function RoomUI({
 
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-2.5 sm:p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-          <section aria-labelledby="participants-heading" className="space-y-3 sm:space-y-6">
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+          <section
+            aria-labelledby="participants-heading"
+            className="space-y-3 sm:space-y-6"
+          >
             <div className="flex items-center justify-between">
               <h2
                 id="participants-heading"
-                className="flex items-center gap-1.5 sm:gap-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                className="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase sm:gap-2 sm:text-xs"
               >
-                <RiGroupLine className="size-3.5 sm:size-4" aria-hidden="true" />
+                <RiGroupLine
+                  className="size-3.5 sm:size-4"
+                  aria-hidden="true"
+                />
                 Stage ({participants.length})
               </h2>
             </div>
 
-            <div className="grid grid-cols-3 gap-y-6 gap-x-3 sm:gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedParticipants.map((participant) => (
                 <ParticipantTile
                   key={participant.sid || participant.identity}
@@ -766,21 +850,27 @@ function RoomUI({
 
         {hostDisconnectTime !== null && (
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
-            <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive text-destructive-foreground shadow-xl px-5 py-2.5 font-mono text-xs font-bold">
-              <RiErrorWarningLine className="size-4 mr-2 shrink-0" aria-hidden="true" />
+            <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive px-5 py-2.5 font-mono text-xs font-bold text-destructive-foreground shadow-xl">
+              <RiErrorWarningLine
+                className="mr-2 size-4 shrink-0"
+                aria-hidden="true"
+              />
               Host disconnected. Space ends in {disconnectCountdown}s
             </div>
           </div>
         )}
 
         {/* Tactile Hardware Bottom Audio Controls Bar */}
-        <div className="border-border bg-card/95 fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 rounded-xl sm:rounded-2xl border p-1 sm:p-1.5 md:p-2 shadow-2xl backdrop-blur-md">
+        <div className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2">
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
             {/* Audio Settings Popover */}
             <Popover
               onOpenChange={(open) => {
                 if (!open) return
-                if (audioInputDevices.length === 0 || audioInputDevices.some((d) => !d.label)) {
+                if (
+                  audioInputDevices.length === 0 ||
+                  audioInputDevices.some((d) => !d.label)
+                ) {
                   navigator.mediaDevices
                     ?.getUserMedia({ audio: true })
                     .then((stream) => {
@@ -798,7 +888,7 @@ function RoomUI({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="text-muted-foreground size-9 sm:size-10 shrink-0 rounded-xl"
+                    className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
                     aria-label="Audio settings"
                   >
                     <RiSettings3Line size={17} />
@@ -806,13 +896,13 @@ function RoomUI({
                 }
               />
               <PopoverContent
-                className="w-[min(20rem,calc(100vw-2rem))] p-4 sm:p-5 shadow-2xl rounded-2xl border border-border bg-card"
+                className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-5"
                 align="center"
                 side="top"
                 sideOffset={12}
               >
                 <PopoverHeader className="space-y-1">
-                  <PopoverTitle className="text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2">
+                  <PopoverTitle className="flex items-center gap-2 font-mono text-xs font-bold tracking-wider uppercase">
                     <RiSettings3Line className="size-3.5" aria-hidden="true" />
                     Audio Hardware Routing
                   </PopoverTitle>
@@ -825,12 +915,20 @@ function RoomUI({
                   {/* Microphone selection */}
                   <Field className="gap-1.5">
                     <div className="flex items-center justify-between">
-                      <FieldLabel htmlFor="mic-select" className="text-xs font-bold flex items-center gap-1.5">
-                        <RiMicLine className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                      <FieldLabel
+                        htmlFor="mic-select"
+                        className="flex items-center gap-1.5 text-xs font-bold"
+                      >
+                        <RiMicLine
+                          className="size-3.5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
                         Microphone
                       </FieldLabel>
                       {isMuted && (
-                        <span className="text-[10px] text-muted-foreground">Muted</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Muted
+                        </span>
                       )}
                     </div>
                     <Select
@@ -838,7 +936,10 @@ function RoomUI({
                       onValueChange={handleMicChange}
                       items={micItems}
                     >
-                      <SelectTrigger id="mic-select" className="w-full h-8 text-xs rounded-lg">
+                      <SelectTrigger
+                        id="mic-select"
+                        className="h-8 w-full rounded-lg text-xs"
+                      >
                         <SelectValue placeholder="Select a microphone">
                           {(val: string | null) => {
                             const found = micItems.find((m) => m.value === val)
@@ -848,7 +949,11 @@ function RoomUI({
                       </SelectTrigger>
                       <SelectContent>
                         {micItems.map((item) => (
-                          <SelectItem key={item.value} value={item.value} className="text-xs">
+                          <SelectItem
+                            key={item.value}
+                            value={item.value}
+                            className="text-xs"
+                          >
                             {item.label}
                           </SelectItem>
                         ))}
@@ -867,7 +972,7 @@ function RoomUI({
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-foreground transition-all duration-75 ease-out rounded-full"
+                          className="h-full rounded-full bg-foreground transition-all duration-75 ease-out"
                           style={{
                             width: isMuted
                               ? "0%"
@@ -880,10 +985,16 @@ function RoomUI({
 
                   {/* Speaker / Output device selection */}
                   {audioOutputDevices.length > 0 && (
-                    <Field className="gap-1.5 pt-1 border-t border-border/50">
+                    <Field className="gap-1.5 border-t border-border/50 pt-1">
                       <div className="flex items-center justify-between pt-1">
-                        <FieldLabel htmlFor="speaker-select" className="text-xs font-bold flex items-center gap-1.5">
-                          <RiHeadphoneLine className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                        <FieldLabel
+                          htmlFor="speaker-select"
+                          className="flex items-center gap-1.5 text-xs font-bold"
+                        >
+                          <RiHeadphoneLine
+                            className="size-3.5 text-muted-foreground"
+                            aria-hidden="true"
+                          />
                           Speaker / Headphones
                         </FieldLabel>
                         <Button
@@ -892,9 +1003,12 @@ function RoomUI({
                           size="sm"
                           onClick={playTestSound}
                           disabled={isPlayingTestSound}
-                          className="h-6 px-2 text-[10px] font-mono text-foreground gap-1"
+                          className="h-6 gap-1 px-2 font-mono text-[10px] text-foreground"
                         >
-                          <RiVolumeUpLine className="size-3" aria-hidden="true" />
+                          <RiVolumeUpLine
+                            className="size-3"
+                            aria-hidden="true"
+                          />
                           {isPlayingTestSound ? "Testing..." : "Test"}
                         </Button>
                       </div>
@@ -903,17 +1017,26 @@ function RoomUI({
                         onValueChange={handleSpeakerChange}
                         items={speakerItems}
                       >
-                        <SelectTrigger id="speaker-select" className="w-full h-8 text-xs rounded-lg">
+                        <SelectTrigger
+                          id="speaker-select"
+                          className="h-8 w-full rounded-lg text-xs"
+                        >
                           <SelectValue placeholder="Default speaker">
                             {(val: string | null) => {
-                              const found = speakerItems.find((s) => s.value === val)
+                              const found = speakerItems.find(
+                                (s) => s.value === val
+                              )
                               return found?.label || "Default Speaker"
                             }}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {speakerItems.map((item) => (
-                            <SelectItem key={item.value} value={item.value} className="text-xs">
+                            <SelectItem
+                              key={item.value}
+                              value={item.value}
+                              className="text-xs"
+                            >
                               {item.label}
                             </SelectItem>
                           ))}
@@ -923,8 +1046,11 @@ function RoomUI({
                   )}
 
                   {/* Audio enhancement status */}
-                  <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-[10px] text-muted-foreground border border-border/40">
-                    <RiShieldCheckLine className="size-3.5 text-foreground shrink-0" aria-hidden="true" />
+                  <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/40 px-2.5 py-2 text-[10px] text-muted-foreground">
+                    <RiShieldCheckLine
+                      className="size-3.5 shrink-0 text-foreground"
+                      aria-hidden="true"
+                    />
                     <span>Noise suppression active</span>
                   </div>
                 </div>
@@ -938,24 +1064,26 @@ function RoomUI({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="text-muted-foreground size-9 sm:size-10 shrink-0 rounded-xl"
+                    className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
                   >
                     <RiEmotionLine size={17} />
                   </Button>
                 }
               />
-              <PopoverContent className="z-50 w-auto rounded-2xl border border-border p-0 shadow-2xl max-w-[calc(100vw-2rem)] overflow-hidden bg-card">
-                <div className="flex items-center justify-between gap-1 p-2 border-b border-border bg-muted/40 overflow-x-auto">
-                  {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => handleSendReaction(emoji)}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-lg hover:bg-muted active:scale-95 transition-transform"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+              <PopoverContent className="z-50 w-auto max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl">
+                <div className="flex items-center justify-between gap-1 overflow-x-auto border-b border-border bg-muted/40 p-2">
+                  {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map(
+                    (emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => handleSendReaction(emoji)}
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-lg transition-transform hover:bg-muted active:scale-95"
+                      >
+                        {emoji}
+                      </button>
+                    )
+                  )}
                 </div>
                 <EmojiPicker
                   onEmojiClick={handleSendReaction}
@@ -975,11 +1103,11 @@ function RoomUI({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="text-muted-foreground relative size-9 sm:size-10 shrink-0 rounded-xl"
+                      className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
                     >
                       <RiUserVoiceLine size={17} />
                       {micRequests.length > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 flex h-4 sm:h-5 min-w-4 sm:min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground px-1 font-mono text-[9px] sm:text-[10px] font-bold tabular-nums shadow-xs">
+                        <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
                           {micRequests.length}
                         </span>
                       )}
@@ -987,17 +1115,20 @@ function RoomUI({
                   }
                 />
                 <PopoverContent
-                  className="w-[min(20rem,calc(100vw-2rem))] p-0 shadow-2xl overflow-hidden rounded-2xl border border-border bg-card"
+                  className="w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl"
                   align="center"
                   side="top"
                   sideOffset={12}
                 >
                   <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
-                    <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-foreground">
+                    <h3 className="font-mono text-xs font-bold tracking-wider text-foreground uppercase">
                       Mic Requests
                     </h3>
                     {micRequests.length > 0 && (
-                      <Badge variant="secondary" className="font-mono text-[10px] font-bold">
+                      <Badge
+                        variant="secondary"
+                        className="font-mono text-[10px] font-bold"
+                      >
                         {micRequests.length} Pending
                       </Badge>
                     )}
@@ -1005,17 +1136,22 @@ function RoomUI({
                   <div className="max-h-72 overflow-y-auto p-2">
                     {micRequests.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <RiUserVoiceLine className="size-6 text-muted-foreground/40 mb-2" aria-hidden="true" />
-                        <p className="font-mono text-xs text-muted-foreground">No pending mic requests</p>
+                        <RiUserVoiceLine
+                          className="mb-2 size-6 text-muted-foreground/40"
+                          aria-hidden="true"
+                        />
+                        <p className="font-mono text-xs text-muted-foreground">
+                          No pending mic requests
+                        </p>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1.5">
                         {micRequests.map((identity) => (
                           <div
                             key={identity}
-                            className="flex items-center justify-between rounded-xl p-2 bg-muted/30 border border-border"
+                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-2"
                           >
-                            <div className="flex items-center min-w-0 gap-2.5 mr-2">
+                            <div className="mr-2 flex min-w-0 items-center gap-2.5">
                               <Avatar className="size-7 border border-border">
                                 <AvatarImage
                                   src={userpicUrl(identity)}
@@ -1063,9 +1199,13 @@ function RoomUI({
                   onClick={toggleDeafen}
                   variant={isDeafened ? "destructive" : "secondary"}
                   size="lg"
-                  className="h-9 sm:h-10 px-3 sm:px-4 gap-1.5 sm:gap-2 rounded-xl font-mono text-xs font-bold shrink-0"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4"
                 >
-                  {isDeafened ? <RiVolumeMuteLine size={16} /> : <RiHeadphoneLine size={16} />}
+                  {isDeafened ? (
+                    <RiVolumeMuteLine size={16} />
+                  ) : (
+                    <RiHeadphoneLine size={16} />
+                  )}
                   <span className="hidden sm:inline">Deafen</span>
                 </Button>
 
@@ -1074,7 +1214,7 @@ function RoomUI({
                   disabled={isDeafened}
                   variant={isMuted ? "destructive" : "default"}
                   size="lg"
-                  className="h-9 sm:h-10 px-3.5 sm:px-5 gap-1.5 sm:gap-2 rounded-xl font-mono text-xs font-bold shadow-xs shrink-0"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
                 >
                   {isMuted ? (
                     <>
@@ -1083,7 +1223,10 @@ function RoomUI({
                     </>
                   ) : (
                     <>
-                      <RiMicLine size={16} className="text-primary-foreground" />
+                      <RiMicLine
+                        size={16}
+                        className="text-primary-foreground"
+                      />
                       <span>MIC LIVE</span>
                     </>
                   )}
@@ -1094,10 +1237,12 @@ function RoomUI({
                 onClick={requestMic}
                 disabled={hasRequestedMicLocal}
                 size="lg"
-                className="h-9 sm:h-10 px-3.5 sm:px-5 gap-1.5 sm:gap-2 rounded-xl font-mono text-xs font-bold shrink-0"
+                className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
               >
                 <RiMicLine size={16} />
-                <span>{hasRequestedMicLocal ? "Requested" : "Request Mic"}</span>
+                <span>
+                  {hasRequestedMicLocal ? "Requested" : "Request Mic"}
+                </span>
               </Button>
             )}
           </div>
@@ -1138,7 +1283,9 @@ function ParticipantTile({
   const isThisParticipantHost = name === roomHost
   const isThisParticipantCohost = roomCohosts.includes(name)
   const permissions = useParticipantPermissions({ participant })
-  const canPublish = Boolean(permissions?.canPublish || isThisParticipantHost || isThisParticipantCohost)
+  const canPublish = Boolean(
+    permissions?.canPublish || isThisParticipantHost || isThisParticipantCohost
+  )
 
   const avatarSeed = useMemo(() => {
     try {
@@ -1204,44 +1351,42 @@ function ParticipantTile({
   const isDeafenedRemote = participant.attributes?.isDeafened === "true"
 
   const avatarElement = (
-    <div className="relative group/avatar inline-block cursor-pointer">
+    <div className="group/avatar relative inline-block cursor-pointer">
       {/* Top Left Role Badge */}
       {isThisParticipantHost && (
-        <span className="absolute -top-1.5 -left-1.5 z-20 bg-foreground text-background font-mono text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-background leading-none">
+        <span className="absolute -top-1.5 -left-1.5 z-20 rounded-full border border-background bg-foreground px-1.5 py-0.5 font-mono text-[9px] leading-none font-black text-background shadow-xs">
           HOST
         </span>
       )}
       {isThisParticipantCohost && !isThisParticipantHost && (
-        <span className="absolute -top-1.5 -left-1.5 z-20 bg-blue-600 text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs border border-background leading-none">
+        <span className="absolute -top-1.5 -left-1.5 z-20 rounded-full border border-background bg-blue-600 px-1.5 py-0.5 font-mono text-[9px] leading-none font-bold text-white shadow-xs">
           CO-HOST
         </span>
       )}
 
       {/* Top Right Reaction Badge */}
       {reaction && (
-        <div className="animate-in fade-in zoom-in-75 duration-150 absolute -top-2 -right-2 z-30 flex size-7 sm:size-8 items-center justify-center rounded-full bg-card border border-border text-base sm:text-lg shadow-md pointer-events-none select-none">
+        <div className="pointer-events-none absolute -top-2 -right-2 z-30 flex size-7 animate-in items-center justify-center rounded-full border border-border bg-card text-base shadow-md duration-150 select-none zoom-in-75 fade-in sm:size-8 sm:text-lg">
           <span className="leading-none">{reaction}</span>
         </div>
       )}
 
       <div
-        className={`relative rounded-full ${
-          canPublish ? "" : "opacity-75"
-        }`}
+        className={`relative rounded-full ${canPublish ? "" : "opacity-75"}`}
       >
-        <Avatar className="size-14 sm:size-16 md:size-20 border border-border bg-card shadow-xs">
+        <Avatar className="size-14 border border-border bg-card shadow-xs sm:size-16 md:size-20">
           <AvatarImage
             src={userpicUrl(avatarSeed)}
             alt={name}
             className="object-cover"
           />
-          <AvatarFallback className="bg-muted text-foreground font-bold text-sm">
+          <AvatarFallback className="bg-muted text-sm font-bold text-foreground">
             {name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         {/* Mic status badge */}
-        <div className="absolute -bottom-1 -right-1 z-10 flex size-6 items-center justify-center rounded-full bg-card border border-border shadow-xs">
+        <div className="absolute -right-1 -bottom-1 z-10 flex size-6 items-center justify-center rounded-full border border-border bg-card shadow-xs">
           {canPublish ? (
             isDeafenedRemote ? (
               <RiVolumeMuteLine size={13} className="text-destructive" />
@@ -1257,7 +1402,7 @@ function ParticipantTile({
       </div>
 
       {canModerateThisParticipant && !reaction && (
-        <div className="absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-xs transition-transform group-hover/avatar:scale-110 pointer-events-none">
+        <div className="pointer-events-none absolute -top-1 -right-1 z-20 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-xs transition-transform group-hover/avatar:scale-110">
           <RiMoreFill size={14} />
         </div>
       )}
@@ -1266,18 +1411,21 @@ function ParticipantTile({
 
   return (
     <div className="relative flex w-full flex-col items-center text-center">
-
       <div className="relative">
         {canModerateThisParticipant ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none cursor-pointer rounded-full hover:opacity-80 transition-opacity">
+            <DropdownMenuTrigger className="cursor-pointer rounded-full transition-opacity hover:opacity-80 focus:outline-none">
               {avatarElement}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" side="top" className="rounded-2xl font-mono text-xs">
+            <DropdownMenuContent
+              align="center"
+              side="top"
+              className="rounded-2xl font-mono text-xs"
+            >
               {!canPublish && !isThisParticipantHost && (
                 <DropdownMenuItem
                   onClick={() => handleModerate("grant_mic")}
-                  className="text-foreground focus:text-foreground font-semibold"
+                  className="font-semibold text-foreground focus:text-foreground"
                 >
                   Grant Mic
                 </DropdownMenuItem>
@@ -1309,7 +1457,9 @@ function ParticipantTile({
               {isHost && !isThisParticipantHost && !isThisParticipantCohost && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleModerate("grant_cohost")}>
+                  <DropdownMenuItem
+                    onClick={() => handleModerate("grant_cohost")}
+                  >
                     Make Co-host
                   </DropdownMenuItem>
                 </>
@@ -1332,20 +1482,20 @@ function ParticipantTile({
         )}
 
         {hasRequestedMic && isHostOrCohost && (
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap rounded-full bg-amber-500 text-black px-2.5 py-0.5 font-mono text-[9px] font-bold shadow-xs">
+          <div className="absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-amber-500 px-2.5 py-0.5 font-mono text-[9px] font-bold whitespace-nowrap text-black shadow-xs">
             Requested Mic
           </div>
         )}
       </div>
 
       {/* Participant Name */}
-      <div className="mt-2 flex items-center justify-center gap-1 max-w-full truncate px-1">
+      <div className="mt-2 flex max-w-full items-center justify-center gap-1 truncate px-1">
         <span className="truncate text-xs font-bold text-foreground">
           {name} {name === localUserName ? "(You)" : ""}
         </span>
       </div>
 
-      <span className="font-mono text-[10px] text-muted-foreground mt-0.5">
+      <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
         {canPublish ? (isAudioMuted ? "Muted" : "Speaker") : "Listener"}
       </span>
 
@@ -1354,7 +1504,10 @@ function ParticipantTile({
           {isAudioMuted ? (
             <div className="h-3.5 w-full" />
           ) : (
-            <AudioVisualizer volume={isSpeaking ? volume : 0} speaking={isSpeaking} />
+            <AudioVisualizer
+              volume={isSpeaking ? volume : 0}
+              speaking={isSpeaking}
+            />
           )}
         </div>
       )}

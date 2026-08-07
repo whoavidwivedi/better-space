@@ -1,11 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
-import {
-  RiMicLine,
-  RiMicOffLine,
-  RiArrowRightLine,
-} from "@remixicon/react"
+import { RiMicLine, RiMicOffLine, RiArrowRightLine } from "@remixicon/react"
 import Link from "next/link"
 import React, { useState, useEffect } from "react"
 
@@ -53,7 +49,9 @@ export function InteractiveHeroStage() {
   const [activeSpeakerIdx, setActiveSpeakerIdx] = useState(0)
   const [isMicMuted, setIsMicMuted] = useState(false)
   const [activeCharacterSeed, setActiveCharacterSeed] = useState("OSLO-1")
-  const [reactions, setReactions] = useState<{ id: number; emoji: string; x: number }[]>([])
+  const [reactions, setReactions] = useState<
+    { id: number; emoji: string; x: number }[]
+  >([])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -88,54 +86,54 @@ export function InteractiveHeroStage() {
   return (
     <div className="relative mx-auto w-full max-w-5xl py-8">
       {/* Minimal Stage Frame */}
-      <div className="minimal-card relative rounded-3xl p-6 sm:p-12 overflow-hidden bg-card/80 border border-border">
+      <div className="minimal-card relative overflow-hidden rounded-3xl border border-border bg-card/80 p-6 sm:p-12">
         {/* Subtle Doodle Callout Top Right */}
-        <div className="hidden md:flex items-center gap-2 absolute top-6 right-8 pointer-events-none">
+        <div className="pointer-events-none absolute top-6 right-8 hidden items-center gap-2 md:flex">
           <span className="font-handwritten text-base text-muted-foreground">
             Live WebRTC Stage
           </span>
           <DoodleAsterisk className="size-4 text-foreground/50" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
           {/* Main Giant Character Stage (Left 7 Cols) */}
-          <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left relative">
+          <div className="relative flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
             {/* Minimal Speech Bubble */}
             <div className="relative mb-6 max-w-md">
-              <div className="rounded-2xl border border-border bg-background p-4 sm:p-5 shadow-xs">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="rounded-2xl border border-border bg-background p-4 shadow-xs sm:p-5">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                     {currentSpeaker.name} • {currentSpeaker.role}
                   </span>
                 </div>
-                <p className="font-serif-display text-2xl sm:text-3xl italic text-foreground leading-snug">
+                <p className="font-serif-display text-2xl leading-snug text-foreground italic sm:text-3xl">
                   &ldquo;{currentSpeaker.statusText}&rdquo;
                 </p>
               </div>
               {/* Pointer */}
-              <div className="absolute -bottom-2 left-8 sm:left-12 size-3 bg-background border-r border-b border-border rotate-45" />
+              <div className="absolute -bottom-2 left-8 size-3 rotate-45 border-r border-b border-border bg-background sm:left-12" />
             </div>
 
             {/* Giant Clean Vector Avatar */}
-            <div className="relative flex items-center justify-center my-3">
+            <div className="relative my-3 flex items-center justify-center">
               {/* Hand-drawn doodle circle */}
-              <DoodleCircle className="absolute -inset-5 size-64 sm:size-72 text-foreground/15 pointer-events-none rotate-[-4deg]" />
+              <DoodleCircle className="pointer-events-none absolute -inset-5 size-64 rotate-[-4deg] text-foreground/15 sm:size-72" />
 
-              <div className="relative size-48 sm:size-60 rounded-full border border-border bg-background p-2 shadow-xs">
+              <div className="relative size-48 rounded-full border border-border bg-background p-2 shadow-xs sm:size-60">
                 <img
                   src={userpicUrl(activeCharacterSeed)}
                   alt="Active Character"
-                  className="size-full object-cover rounded-full"
+                  className="size-full rounded-full object-cover"
                 />
 
                 {/* Minimal Equalizer Waveform Pill */}
                 {!isMicMuted && (
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-foreground text-background px-3 py-1 rounded-full shadow-xs">
-                    <div className="flex items-end gap-0.5 h-3">
-                      <span className="w-0.5 bg-background rounded-full animate-eq-1" />
-                      <span className="w-0.5 bg-background rounded-full animate-eq-2" />
-                      <span className="w-0.5 bg-background rounded-full animate-eq-3" />
-                      <span className="w-0.5 bg-background rounded-full animate-eq-4" />
+                  <div className="absolute right-2 bottom-2 flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-background shadow-xs">
+                    <div className="flex h-3 items-end gap-0.5">
+                      <span className="animate-eq-1 w-0.5 rounded-full bg-background" />
+                      <span className="animate-eq-2 w-0.5 rounded-full bg-background" />
+                      <span className="animate-eq-3 w-0.5 rounded-full bg-background" />
+                      <span className="animate-eq-4 w-0.5 rounded-full bg-background" />
                     </div>
                     <span className="font-mono text-[9px] font-bold tracking-widest uppercase">
                       SPEAKING
@@ -145,11 +143,11 @@ export function InteractiveHeroStage() {
               </div>
 
               {/* Floating Reaction Stream */}
-              <div className="absolute inset-0 pointer-events-none overflow-visible">
+              <div className="pointer-events-none absolute inset-0 overflow-visible">
                 {reactions.map((r) => (
                   <div
                     key={r.id}
-                    className="absolute text-3xl animate-reaction-drift select-none"
+                    className="animate-reaction-drift absolute text-3xl select-none"
                     style={{ left: `${r.x}%`, top: "20%" }}
                   >
                     {r.emoji}
@@ -160,19 +158,22 @@ export function InteractiveHeroStage() {
 
             {/* Minimal Handwritten Annotation */}
             <div className="mt-3 flex items-center gap-2">
-              <DoodleArrow className="size-6 text-foreground/60 -rotate-12 hidden sm:block" />
+              <DoodleArrow className="hidden size-6 -rotate-12 text-foreground/60 sm:block" />
               <span className="font-handwritten text-lg text-foreground">
-                Current persona: <strong className="font-sans font-bold">{activeCharacterSeed}</strong>
+                Current persona:{" "}
+                <strong className="font-sans font-bold">
+                  {activeCharacterSeed}
+                </strong>
               </span>
             </div>
           </div>
 
           {/* Right Column: Clean Cast Selection & Reactions (5 Cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="flex flex-col gap-6 lg:col-span-5">
             {/* Stage Speakers Swapper */}
-            <div className="rounded-2xl border border-border p-4 bg-muted/30">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="rounded-2xl border border-border bg-muted/30 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                   Switch Persona
                 </span>
                 <span className="font-mono text-[11px] text-muted-foreground">
@@ -191,20 +192,20 @@ export function InteractiveHeroStage() {
                         setActiveCharacterSeed(char.avatar)
                         setActiveSpeakerIdx(idx)
                       }}
-                      className={`flex flex-col items-center p-2.5 rounded-xl border transition-colors ${
+                      className={`flex flex-col items-center rounded-xl border p-2.5 transition-colors ${
                         isSelected
                           ? "border-foreground bg-card shadow-xs"
                           : "border-transparent bg-background/50 hover:border-border"
                       }`}
                     >
-                      <div className="size-12 rounded-full border border-border overflow-hidden mb-1.5">
+                      <div className="mb-1.5 size-12 overflow-hidden rounded-full border border-border">
                         <img
                           src={userpicUrl(char.avatar)}
                           alt={char.name}
                           className="size-full object-cover"
                         />
                       </div>
-                      <span className="font-display font-bold text-xs text-foreground truncate w-full text-center">
+                      <span className="w-full truncate text-center font-display text-xs font-bold text-foreground">
                         {char.name}
                       </span>
                     </button>
@@ -214,20 +215,24 @@ export function InteractiveHeroStage() {
             </div>
 
             {/* Mic Toggle & Emoji Reactions */}
-            <div className="rounded-2xl border border-border p-4 bg-muted/30 flex flex-col gap-4">
+            <div className="flex flex-col gap-4 rounded-2xl border border-border bg-muted/30 p-4">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                   Audio &amp; Reactions
                 </span>
                 <button
                   onClick={toggleMic}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-[11px] font-bold border transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-bold transition-colors ${
                     isMicMuted
-                      ? "border-border text-muted-foreground line-through bg-background"
+                      ? "border-border bg-background text-muted-foreground line-through"
                       : "border-foreground bg-foreground text-background"
                   }`}
                 >
-                  {isMicMuted ? <RiMicOffLine size={13} /> : <RiMicLine size={13} />}
+                  {isMicMuted ? (
+                    <RiMicOffLine size={13} />
+                  ) : (
+                    <RiMicLine size={13} />
+                  )}
                   <span>{isMicMuted ? "Muted" : "Mic Live"}</span>
                 </button>
               </div>
@@ -237,7 +242,7 @@ export function InteractiveHeroStage() {
                   <button
                     key={emoji}
                     onClick={() => triggerReaction(emoji)}
-                    className="size-10 rounded-xl border border-border bg-background flex items-center justify-center text-lg hover:border-foreground/40 transition-colors shadow-xs"
+                    className="flex size-10 items-center justify-center rounded-xl border border-border bg-background text-lg shadow-xs transition-colors hover:border-foreground/40"
                   >
                     {emoji}
                   </button>
@@ -248,7 +253,7 @@ export function InteractiveHeroStage() {
             {/* Quick Enter CTA */}
             <Link
               href="/lobby"
-              className="w-full h-12 rounded-2xl bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase transition-opacity hover:opacity-90"
             >
               <span>Enter Live Stage</span>
               <RiArrowRightLine size={16} />

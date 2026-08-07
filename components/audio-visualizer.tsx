@@ -18,12 +18,14 @@ export function AudioVisualizer({
   speaking?: boolean
 }) {
   const [levels, setLevels] = useState<number[]>(() =>
-    Array.from({ length: BAR_COUNT }, () => IDLE_HEIGHT),
+    Array.from({ length: BAR_COUNT }, () => IDLE_HEIGHT)
   )
   const volumeRef = useRef(volume)
   const speakingRef = useRef(speaking)
   const envelopeRef = useRef(0)
-  const driftRef = useRef(Array.from({ length: BAR_COUNT }, () => Math.random() * 2 - 1))
+  const driftRef = useRef(
+    Array.from({ length: BAR_COUNT }, () => Math.random() * 2 - 1)
+  )
 
   useEffect(() => {
     volumeRef.current = volume
@@ -52,7 +54,11 @@ export function AudioVisualizer({
         (speakingNow && volumeNow > envelopeRef.current ? 0.5 : 0.18)
 
       const next = Array.from({ length: BAR_COUNT }, (_, i) => {
-        driftRef.current[i] = clamp(driftRef.current[i] + (Math.random() - 0.5) * 0.7, -1, 1)
+        driftRef.current[i] = clamp(
+          driftRef.current[i] + (Math.random() - 0.5) * 0.7,
+          -1,
+          1
+        )
         const drift = driftRef.current[i]
 
         if (speakingNow && envelopeRef.current > 0.02) {
@@ -76,7 +82,7 @@ export function AudioVisualizer({
       {levels.map((vol, i) => (
         <div
           key={i}
-          className="bg-primary w-1 rounded-full transition-[height] duration-100 ease-out"
+          className="w-1 rounded-full bg-primary transition-[height] duration-100 ease-out"
           style={{ height: `${vol}%` }}
         />
       ))}

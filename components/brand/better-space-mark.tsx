@@ -20,8 +20,22 @@ export function BetterSpaceMark({
       {/* central voice dot */}
       <circle cx="20" cy="20" r="3" fill="currentColor" stroke="none" />
       {/* spatial audio rings */}
-      <circle cx="20" cy="20" r="9" className={animated ? "animate-[mark-wave_3s_ease-out_infinite]" : undefined} />
-      <circle cx="20" cy="20" r="15" className={animated ? "animate-[mark-wave_3s_ease-out_0.8s_infinite]" : undefined} />
+      <circle
+        cx="20"
+        cy="20"
+        r="9"
+        className={
+          animated ? "animate-[mark-wave_3s_ease-out_infinite]" : undefined
+        }
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="15"
+        className={
+          animated ? "animate-[mark-wave_3s_ease-out_0.8s_infinite]" : undefined
+        }
+      />
     </svg>
   )
 }

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 export function SiteLogo({ className }: { className?: string }) {
   return (
     <Avatar
-      className={cn("border-border bg-muted size-8 border", className)}
+      className={cn("size-8 border border-border bg-muted", className)}
       aria-hidden="true"
     >
       <img
