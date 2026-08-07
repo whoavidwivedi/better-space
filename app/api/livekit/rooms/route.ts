@@ -21,7 +21,16 @@ export async function GET() {
     return NextResponse.json({ error: { message: e.message } }, { status: 500 });
   }
 
-  const rooms = (await roomService.listRooms()).filter((r) => !isSpaceEnded(r.name));
+  const rooms = (await roomService.listRooms()).filter((r) => {
+    if (isSpaceEnded(r.name)) return false;
+    if (r.metadata) {
+      try {
+        const meta = JSON.parse(r.metadata);
+        if (meta.ended) return false;
+      } catch {}
+    }
+    return true;
+  });
   const roomDetails = await Promise.all(
     rooms.map(async (r) => {
       let participants: any[] = [];

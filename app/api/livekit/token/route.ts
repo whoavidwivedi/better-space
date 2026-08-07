@@ -70,6 +70,22 @@ export async function GET(req: NextRequest) {
     if (targetRoom.metadata) {
       try {
         const meta = JSON.parse(targetRoom.metadata);
+        if (meta.ended) {
+          return NextResponse.json({
+            data: {
+              ended: true,
+              endedInfo: {
+                name: cleanRoom,
+                endedAt: meta.endedAt ?? Date.now(),
+                host: meta.host || "Unknown",
+                cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
+                speakers: Array.isArray(meta.speakers)
+                  ? meta.speakers.map((id: string) => ({ identity: id }))
+                  : [],
+              },
+            },
+          });
+        }
         if (meta.banned && meta.banned.includes(username)) {
           return NextResponse.json(
             { error: { message: "You have been kicked from this space" } },

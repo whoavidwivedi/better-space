@@ -144,8 +144,28 @@ export async function POST(req: NextRequest) {
           );
 
         markSpaceEnded(cleanRoom, { host, cohosts, speakers });
+
+        // Disconnect everyone by deleting the room...
+        await roomService.deleteRoom(cleanRoom);
+
+        // ...then re-create it as a durable "ended" tombstone so the name stays
+        // reserved and the join route can never fall through to "create + host".
+        // Roster lives in metadata (shared LiveKit state), not the server disk.
+        try {
+          await roomService.createRoom({
+            name: cleanRoom,
+            emptyTimeout: 86400,
+            maxParticipants: 0,
+            metadata: JSON.stringify({
+              ended: true,
+              endedAt: Date.now(),
+              host,
+              cohosts,
+              speakers: participants.map((p) => p.identity),
+            }),
+          });
+        } catch {}
       }
-      await roomService.deleteRoom(cleanRoom);
       return NextResponse.json({ data: { success: true } });
       
     case "kick":
