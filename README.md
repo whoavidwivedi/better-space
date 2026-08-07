@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/Userpics/SVG/Circle/01.svg" alt="Better Space Logo" width="120" height="120" />
+  <img src="public/Userpics/SVG/Circle/dynamic-logo.svg" alt="Better Space Logo" width="120" height="120" />
   
   # Better Space
 
