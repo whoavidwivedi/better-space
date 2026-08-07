@@ -1,13 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React from "react"
 import Link from "next/link"
-import {
-  RiArrowRightLine,
-  RiAddLine,
-  RiRadio2Line,
-} from "@remixicon/react"
+import { RiArrowRightLine } from "@remixicon/react"
 import { userpicUrl } from "@/lib/userpics"
 
 const DEMO_SPEAKERS = [
@@ -19,59 +15,46 @@ const DEMO_SPEAKERS = [
 ]
 
 export function LiveStageHero() {
-  const [myAvatar, setMyAvatar] = useState("OSLO-1")
-  const [spaceName, setSpaceName] = useState("")
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("better_space_active_avatar")
-      if (saved) setMyAvatar(saved)
-    }
-  }, [])
-
-  const handleLaunchQuick = (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmed = spaceName.trim()
-    if (!trimmed) return
-    const rName = trimmed.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
-    localStorage.setItem("better_space_active_avatar", myAvatar)
-    window.location.href = `/space/${encodeURIComponent(rName)}`
-  }
-
   return (
     <section className="relative w-full border-b border-border/80 bg-background pt-6 pb-12 sm:pt-10 sm:pb-16 md:pt-14 md:pb-24">
       {/* Background Atmosphere Subtle Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35 pointer-events-none" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] bg-[size:4rem_4rem] opacity-35" />
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Top Product Badge */}
-        <div className="flex justify-center mb-5 sm:mb-6">
-          <div className="inline-flex items-center rounded-full border border-border bg-card/80 px-3 py-1 sm:px-4 sm:py-1.5 backdrop-blur-md shadow-xs text-center max-w-full">
-            <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-wide text-foreground truncate">
+        <div className="mb-5 flex justify-center sm:mb-6">
+          <div className="inline-flex max-w-full items-center rounded-full border border-border bg-card/80 px-3 py-1 text-center shadow-xs backdrop-blur-md sm:px-4 sm:py-1.5">
+            <span className="truncate font-mono text-[10px] font-semibold tracking-wide text-foreground sm:text-xs">
               LIVE SPATIAL AUDIO • ZERO LOGINS • 100% EPHEMERAL
             </span>
           </div>
         </div>
 
         {/* Core Headline */}
-        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-8 md:mb-10">
-          <h1 className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15] sm:leading-[1.1]">
-            Voice spaces for <span className="font-serif italic font-normal text-muted-foreground">real-time</span> conversations.
+        <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-8 md:mb-10">
+          <h1 className="font-display text-2xl leading-[1.15] font-extrabold tracking-tight text-foreground sm:text-4xl sm:leading-[1.1] md:text-5xl lg:text-6xl">
+            Voice spaces for{" "}
+            <span className="font-serif font-normal text-muted-foreground italic">
+              real-time
+            </span>{" "}
+            conversations.
           </h1>
-          <p className="mt-2.5 sm:mt-3.5 text-xs sm:text-sm md:text-base text-muted-foreground max-w-xl mx-auto font-normal leading-relaxed px-2">
-            Drop into live voice rooms directly in your browser. Claim the mic and talk with crisp WebRTC audio. No accounts, no passwords, 100% ephemeral.
+          <p className="mx-auto mt-2.5 max-w-xl px-2 text-xs leading-relaxed font-normal text-muted-foreground sm:mt-3.5 sm:text-sm md:text-base">
+            Drop into live voice rooms directly in your browser. Claim the mic
+            and talk with crisp WebRTC audio. No accounts, no passwords, 100%
+            ephemeral.
           </p>
         </div>
 
         {/* Live Stage Preview Card */}
-        <div className="relative mx-auto max-w-3xl rounded-2xl sm:rounded-3xl border border-border bg-card/90 p-4 sm:p-6 md:p-8 backdrop-blur-md shadow-xl overflow-hidden">
+        <div className="relative mx-auto max-w-3xl overflow-hidden rounded-2xl border border-border bg-card/90 p-4 shadow-xl backdrop-blur-md sm:rounded-3xl sm:p-6 md:p-8">
           {/* Stage Room Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-border/70 pb-3 sm:pb-4">
+          <div className="flex flex-col justify-between gap-2.5 border-b border-border/70 pb-3 sm:flex-row sm:items-center sm:gap-3 sm:pb-4">
             <div>
-              <h3 className="font-display text-sm sm:text-base md:text-lg font-bold text-foreground">
+              <h3 className="font-display text-sm font-bold text-foreground sm:text-base md:text-lg">
                 Design &amp; Engineering Stage
               </h3>
-              <span className="font-mono text-[10px] sm:text-xs text-muted-foreground">
+              <span className="font-mono text-[10px] text-muted-foreground sm:text-xs">
                 5 on stage • 42 listeners tuning in
               </span>
             </div>
@@ -79,7 +62,7 @@ export function LiveStageHero() {
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <Link
                 href="/lobby"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 sm:px-4 sm:py-1.5 text-[10px] sm:text-xs font-mono font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 font-mono text-[10px] font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:px-4 sm:py-1.5 sm:text-xs"
               >
                 <span>Browse All Rooms</span>
                 <RiArrowRightLine size={13} />
@@ -88,17 +71,17 @@ export function LiveStageHero() {
           </div>
 
           {/* Speakers Stage Layout */}
-          <div className="relative py-5 sm:py-8 md:py-10 w-full flex items-center justify-center">
+          <div className="relative flex w-full items-center justify-center py-5 sm:py-8 md:py-10">
             {/* Speakers Circle Layout - Responsive 5 columns */}
-            <div className="relative z-10 grid grid-cols-5 gap-1.5 sm:gap-3 md:gap-6 w-full max-w-2xl px-1 justify-items-center">
+            <div className="relative z-10 grid w-full max-w-2xl grid-cols-5 justify-items-center gap-1.5 px-1 sm:gap-3 md:gap-6">
               {DEMO_SPEAKERS.map((speaker) => (
                 <div
                   key={speaker.id}
-                  className="flex flex-col items-center text-center min-w-0"
+                  className="flex min-w-0 flex-col items-center text-center"
                 >
                   {/* Avatar Container */}
                   <div className="relative size-12 sm:size-16 md:size-20">
-                    <div className="size-full rounded-full border-2 border-border/80 overflow-hidden bg-muted shadow-xs">
+                    <div className="size-full overflow-hidden rounded-full border-2 border-border/80 bg-muted shadow-xs">
                       <img
                         src={userpicUrl(speaker.avatar)}
                         alt={speaker.name}
@@ -108,11 +91,11 @@ export function LiveStageHero() {
                   </div>
 
                   {/* Name & Role */}
-                  <div className="mt-1 sm:mt-2 w-full">
-                    <span className="font-display text-[10px] sm:text-xs font-bold text-foreground block truncate">
+                  <div className="mt-1 w-full sm:mt-2">
+                    <span className="block truncate font-display text-[10px] font-bold text-foreground sm:text-xs">
                       {speaker.name}
                     </span>
-                    <span className="font-mono text-[8px] sm:text-[10px] text-muted-foreground block truncate">
+                    <span className="block truncate font-mono text-[8px] text-muted-foreground sm:text-[10px]">
                       {speaker.role}
                     </span>
                   </div>
@@ -122,33 +105,18 @@ export function LiveStageHero() {
           </div>
         </div>
 
-        {/* Quick Launch Station */}
-        <div className="mt-6 sm:mt-8 max-w-xl mx-auto w-full">
-          <form
-            onSubmit={handleLaunchQuick}
-            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-card border border-border p-2 rounded-2xl sm:rounded-full shadow-lg"
+        {/* Lobby Action */}
+        <div className="mt-6 flex justify-center sm:mt-8">
+          <Link
+            href="/lobby"
+            className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-md transition-all hover:scale-[1.02] hover:bg-foreground/90 active:scale-95 sm:px-8 sm:py-3.5 sm:text-sm"
           >
-            <div className="flex items-center gap-2 px-3 py-1 sm:py-0 w-full sm:w-auto flex-1">
-              <RiRadio2Line className="text-muted-foreground shrink-0" size={18} />
-              <input
-                type="text"
-                value={spaceName}
-                onChange={(e) => setSpaceName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
-                placeholder="Name your space"
-                maxLength={25}
-                className="w-full bg-transparent text-xs sm:text-sm font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none py-1"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={!spaceName.trim()}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-full bg-foreground text-background px-5 sm:px-6 py-2.5 sm:py-3 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground/90 transition-transform active:scale-95 shrink-0 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              <RiAddLine size={16} />
-              <span>Launch Space</span>
-            </button>
-          </form>
+            <span>Lobby</span>
+            <RiArrowRightLine
+              size={16}
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
         </div>
       </div>
     </section>
