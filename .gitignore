@@ -37,3 +37,15 @@ next-env.d.ts
 
 # runtime state
 /.data/
+
+# agent working directories
+.agents/ORIGINAL_REQUEST.md
+.agents/orchestrator/
+.agents/reviewer_*/
+.agents/sentinel/
+.agents/teamwork_preview_*/
+
+# test infra (generated)
+TEST_INFRA.md
+TEST_READY.md
+tests/
