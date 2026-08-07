@@ -1,0 +1,58 @@
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+version-template: '$MAJOR.$MINOR.$PATCH'
+
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking'
+  minor:
+    labels:
+      - 'minor'
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'patch'
+      - 'fix'
+      - 'bug'
+  default: patch
+
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+      - 'feat'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bug'
+      - 'bugfix'
+  - title: '📚 Documentation'
+    labels:
+      - 'documentation'
+      - 'docs'
+  - title: '🛠️ Maintenance'
+    labels:
+      - 'maintenance'
+      - 'chore'
+      - 'refactor'
+      - 'ci'
+
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+
+exclude-labels:
+  - 'skip-changelog'
+  - 'duplicate'
+  - 'invalid'
+  - 'wontfix'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  ## New Contributors
+  $CONTRIBUTORS
