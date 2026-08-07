@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="bg-background text-muted-foreground flex min-h-screen items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
           Loading...
         </div>
       }

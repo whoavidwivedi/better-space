@@ -23,7 +23,9 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work"
+  ),
   title: {
     default: `${site.name} - ${site.tagline}`,
     template: `%s | ${site.name}`,
@@ -88,7 +90,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body className="min-h-svh selection:bg-foreground selection:text-background font-sans">
+      <body className="min-h-svh font-sans selection:bg-foreground selection:text-background">
         <Providers>{children}</Providers>
       </body>
     </html>

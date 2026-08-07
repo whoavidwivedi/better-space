@@ -9,7 +9,8 @@ class SoundEngine {
     if (!this.ctx) {
       const AudioCtx =
         window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext
       if (AudioCtx) {
         this.ctx = new AudioCtx()
       }
@@ -44,7 +45,10 @@ class SoundEngine {
 
       osc.type = "sine"
       osc.frequency.setValueAtTime(freq, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + duration)
+      osc.frequency.exponentialRampToValueAtTime(
+        100,
+        ctx.currentTime + duration
+      )
 
       gain.gain.setValueAtTime(0.06, ctx.currentTime)
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration)
@@ -70,7 +74,10 @@ class SoundEngine {
 
       osc.type = "triangle"
       osc.frequency.setValueAtTime(freq, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + 0.06)
+      osc.frequency.exponentialRampToValueAtTime(
+        freq * 1.5,
+        ctx.currentTime + 0.06
+      )
 
       gain.gain.setValueAtTime(0.08, ctx.currentTime)
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08)
@@ -109,7 +116,11 @@ class SoundEngine {
   }
 
   // Soundboard note generator
-  public playTone(freq: number, type: OscillatorType = "sine", duration = 0.25) {
+  public playTone(
+    freq: number,
+    type: OscillatorType = "sine",
+    duration = 0.25
+  ) {
     if (!this.enabled) return
     try {
       const ctx = this.getContext()
