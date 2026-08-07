@@ -3,12 +3,12 @@
 
 import React, { useState, useEffect } from "react"
 import {
-  RiSparklingLine,
-  RiCheckLine,
-  RiSearchLine,
-  RiVolumeUpLine,
-  RiUser3Line,
-} from "@remixicon/react"
+  Sparkles as RiSparklingLine,
+  Check as RiCheckLine,
+  Search as RiSearchLine,
+  Volume2 as RiVolumeUpLine,
+  User as RiUser3Line
+} from "lucide-react"
 import {
   USERPIC_NAMES,
   userpicUrl,

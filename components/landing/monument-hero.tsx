@@ -2,12 +2,12 @@
 "use client"
 
 import {
-  RiArrowRightLine,
-  RiShuffleLine,
-  RiVolumeUpLine,
-  RiMicLine,
-  RiMicOffLine,
-} from "@remixicon/react"
+  ArrowRight as RiArrowRightLine,
+  Shuffle as RiShuffleLine,
+  Volume2 as RiVolumeUpLine,
+  Mic as RiMicLine,
+  MicOff as RiMicOffLine
+} from "lucide-react"
 import Link from "next/link"
 import React, { useState, useEffect } from "react"
 

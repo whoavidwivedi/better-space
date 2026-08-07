@@ -1,4 +1,5 @@
-import { RiLoaderLine, type RemixiconComponentType } from "@remixicon/react"
+import { Loader2 as RiLoaderLine } from "lucide-react"
+type RemixiconComponentType = React.ComponentType<React.ComponentPropsWithoutRef<"svg">>
 
 import { cn } from "@/lib/utils"
 

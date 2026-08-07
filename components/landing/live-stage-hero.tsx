@@ -3,8 +3,11 @@
 
 import React from "react"
 import Link from "next/link"
-import { RiArrowRightLine } from "@remixicon/react"
+import {
+  ArrowRight as RiArrowRightLine
+} from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
+import { Button } from "@/components/ui/button"
 
 const DEMO_SPEAKERS = [
   { id: "sora", name: "Sora", role: "Host", avatar: "OSLO-1" },
@@ -60,13 +63,15 @@ export function LiveStageHero() {
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <Link
-                href="/lobby"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 font-mono text-[10px] font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:px-4 sm:py-1.5 sm:text-xs"
+              <Button
+                variant="outline"
+                className="h-8 gap-1.5 rounded-xl font-mono text-[10px] font-bold tracking-wider text-foreground uppercase hover:bg-muted shadow-xs"
+                render={<Link href="/lobby" />}
+                nativeButton={false}
               >
                 <span>Browse All Rooms</span>
                 <RiArrowRightLine size={13} />
-              </Link>
+              </Button>
             </div>
           </div>
 
@@ -107,16 +112,17 @@ export function LiveStageHero() {
 
         {/* Lobby Action */}
         <div className="mt-6 flex justify-center sm:mt-8">
-          <Link
-            href="/lobby"
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-md transition-all hover:scale-[1.02] hover:bg-foreground/90 active:scale-95 sm:px-8 sm:py-3.5 sm:text-sm"
+          <Button
+            className="h-11 gap-2 rounded-xl bg-foreground px-7 font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90 shadow-sm"
+            render={<Link href="/lobby" />}
+            nativeButton={false}
           >
             <span>Lobby</span>
             <RiArrowRightLine
               size={16}
               className="transition-transform group-hover:translate-x-0.5"
             />
-          </Link>
+          </Button>
         </div>
       </div>
     </section>

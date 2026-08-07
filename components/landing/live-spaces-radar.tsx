@@ -3,7 +3,10 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { RiArrowRightLine, RiAddLine } from "@remixicon/react"
+import {
+  ArrowRight as RiArrowRightLine,
+  Plus as RiAddLine
+} from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
 import {
   STARTER_TEMPLATES,
@@ -164,12 +167,12 @@ export function LiveSpacesRadar() {
 
                 {/* Enter / Start Button */}
                 {room.isLive ? (
-                  <div className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-foreground px-3 py-1.5 font-mono text-[11px] font-bold tracking-wider text-background uppercase transition-transform group-hover:bg-foreground/90 group-active:scale-95 sm:ml-0 sm:px-4 sm:py-2 sm:text-xs">
+                  <div className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-xl bg-foreground px-3 h-8 font-mono text-[10px] font-bold tracking-wider text-background uppercase transition-transform group-hover:bg-foreground/90 group-active:scale-95 sm:ml-0 sm:px-3.5">
                     <span>Join Space</span>
                     <RiArrowRightLine size={13} />
                   </div>
                 ) : (
-                  <div className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 font-mono text-[11px] font-bold tracking-wider text-foreground uppercase transition-transform group-hover:border-foreground/60 group-active:scale-95 hover:bg-muted sm:ml-0 sm:px-4 sm:py-2 sm:text-xs">
+                  <div className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-xl border border-border bg-background px-3 h-8 font-mono text-[10px] font-bold tracking-wider text-foreground uppercase transition-transform group-hover:border-foreground/60 group-active:scale-95 hover:bg-muted sm:ml-0 sm:px-3.5">
                     <RiAddLine size={13} />
                     <span>Start Space</span>
                   </div>
@@ -198,7 +201,7 @@ export function LiveSpacesRadar() {
               Host your own room on any topic with instant ephemeral audio.
             </p>
 
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 font-mono text-xs font-bold tracking-wider text-background uppercase transition-transform group-hover:bg-foreground/90 group-active:scale-95">
+            <div className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-4 h-9.5 font-mono text-xs font-bold tracking-wider text-background uppercase transition-transform group-hover:bg-foreground/90 group-active:scale-95">
               <RiAddLine size={14} />
               <span>Create New Space</span>
             </div>

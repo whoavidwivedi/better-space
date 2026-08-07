@@ -2,15 +2,16 @@
 "use client"
 
 import {
-  RiMicLine,
-  RiMicOffLine,
-  RiArrowRightLine,
-  RiVolumeUpLine,
-  RiSparklingLine,
-  RiShuffleLine,
-} from "@remixicon/react"
+  Mic as RiMicLine,
+  MicOff as RiMicOffLine,
+  ArrowRight as RiArrowRightLine,
+  Volume2 as RiVolumeUpLine,
+  Sparkles as RiSparklingLine,
+  Shuffle as RiShuffleLine
+} from "lucide-react"
 import Link from "next/link"
 import React, { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
 
 import {
   DoodleArrow,
@@ -176,13 +177,14 @@ export function HeroTypographyStage() {
           </p>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/lobby"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-7 font-mono text-xs font-bold tracking-wider text-background uppercase transition-opacity hover:opacity-90"
+            <Button
+              className="h-11 gap-2 rounded-xl bg-foreground px-7 font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90 shadow-sm"
+              render={<Link href="/lobby" />}
+              nativeButton={false}
             >
               <span>Launch Studio Space</span>
               <RiArrowRightLine size={16} />
-            </Link>
+            </Button>
 
             <div className="hidden items-center gap-1.5 lg:flex">
               <DoodleCurlyArrow className="size-7 -rotate-12 text-foreground/60" />
@@ -361,13 +363,14 @@ export function HeroTypographyStage() {
             </div>
 
             {/* Enter Stage Button */}
-            <Link
-              href="/lobby"
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase transition-opacity hover:opacity-90"
+            <Button
+              className="h-11 w-full gap-2 rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90 shadow-sm"
+              render={<Link href="/lobby" />}
+              nativeButton={false}
             >
               <span>Enter Live Stage Room</span>
               <RiArrowRightLine size={16} />
-            </Link>
+            </Button>
           </div>
         </div>
       </div>

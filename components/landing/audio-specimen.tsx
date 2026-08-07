@@ -2,11 +2,11 @@
 
 import React, { useState } from "react"
 import {
-  RiVolumeUpLine,
-  RiVoiceprintLine,
-  RiSoundModuleLine,
-  RiCpuLine,
-} from "@remixicon/react"
+  Volume2 as RiVolumeUpLine,
+  Activity as RiVoiceprintLine,
+  Sliders as RiSoundModuleLine,
+  Cpu as RiCpuLine
+} from "lucide-react"
 import { sound } from "@/lib/sound"
 import { DoodleSparkle } from "@/components/common/doodles"
 

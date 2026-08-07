@@ -1,5 +1,8 @@
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
-import { RiArrowDownSLine, RiArrowUpSLine } from "@remixicon/react"
+import {
+  ChevronDown as RiArrowDownSLine,
+  ChevronUp as RiArrowUpSLine
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 

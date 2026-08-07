@@ -2,11 +2,11 @@
 
 import React, { useState } from "react"
 import {
-  RiVolumeUpLine,
-  RiBroadcastLine,
-  RiShieldCheckLine,
-  RiCpuLine,
-} from "@remixicon/react"
+  Volume2 as RiVolumeUpLine,
+  Radio as RiBroadcastLine,
+  ShieldCheck as RiShieldCheckLine,
+  Cpu as RiCpuLine
+} from "lucide-react"
 import {
   DoodleArrow,
   DoodleCurlyArrow,

@@ -1,7 +1,10 @@
 "use client"
 
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
-import { RiArrowRightSLine, RiCheckLine } from "@remixicon/react"
+import {
+  ChevronRight as RiArrowRightSLine,
+  Check as RiCheckLine
+} from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
