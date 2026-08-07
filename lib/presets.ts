@@ -10,7 +10,12 @@ export type StarterTemplate = {
 export const STARTER_TEMPLATES: StarterTemplate[] = [
   {
     name: "techbetterspace-india-devs-startups-craft",
-    aliases: ["techbetterspace-india", "techbetterspace", "techtwitter-india", "techtwitter"],
+    aliases: [
+      "techbetterspace-india",
+      "techbetterspace",
+      "techtwitter-india",
+      "techtwitter",
+    ],
     title: "#TechBetterSpace India: Devs, Startups & Craft",
     desc: "Devs, founders, startups & craft discussions",
     topic: "#TechBetterSpace India",
@@ -34,7 +39,33 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
 ]
 
-const ROOM_CODE_PATTERN = /-[a-z0-9]{6}$/
+export const ROOM_CODE_PATTERN = /-[a-z0-9]{6}$/i
+
+const CODE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+export function toSlug(name: string): string {
+  if (!name) return ""
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+export function genRoomCode(): string {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const bytes = new Uint8Array(6)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes)
+      .map((b) => CODE_CHARS[b % CODE_CHARS.length])
+      .join("")
+  }
+  return Math.random().toString(36).substring(2, 8).padEnd(6, "0")
+}
+
+export function generateRoomSlug(baseName: string): string {
+  const cleanBase = toSlug(baseName) || "space"
+  return `${cleanBase}-${genRoomCode()}`
+}
 
 export function stripRoomCode(roomName: string): string {
   if (!roomName) return roomName
@@ -42,7 +73,9 @@ export function stripRoomCode(roomName: string): string {
   return cleaned.replace(ROOM_CODE_PATTERN, "") || cleaned
 }
 
-export function findTemplate(nameOrSlugOrTitle?: string | null): StarterTemplate | undefined {
+export function findTemplate(
+  nameOrSlugOrTitle?: string | null
+): StarterTemplate | undefined {
   if (!nameOrSlugOrTitle) return undefined
   const decoded = decodeURIComponent(nameOrSlugOrTitle).trim().toLowerCase()
   return STARTER_TEMPLATES.find(

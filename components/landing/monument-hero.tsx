@@ -21,8 +21,13 @@ import {
   DoodleStar,
   DoodleBurstBadge,
 } from "@/components/common/doodles"
-import { ALL_USERPICS, userpicUrl, getCharacterCollection } from "@/lib/userpics"
+import {
+  ALL_USERPICS,
+  userpicUrl,
+  getCharacterCollection,
+} from "@/lib/userpics"
 import { sound } from "@/lib/sound"
+import { generateRoomSlug } from "@/lib/presets"
 
 const HERO_PERSONAS = [
   {
@@ -84,7 +89,8 @@ export function MonumentHero() {
   }
 
   const handleRandomize = () => {
-    const randomSeed = ALL_USERPICS[Math.floor(Math.random() * ALL_USERPICS.length)]
+    const randomSeed =
+      ALL_USERPICS[Math.floor(Math.random() * ALL_USERPICS.length)]
     sound.playPop(650)
     setSelectedSeed(randomSeed)
     setActiveIdx(-1)
@@ -107,16 +113,16 @@ export function MonumentHero() {
   }
 
   return (
-    <section className="relative w-full pt-8 pb-20 border-b border-border/80">
+    <section className="relative w-full border-b border-border/80 pt-8 pb-20">
       {/* 1. ARCHITECTURAL MASTHEAD META */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-12 border-b border-border text-xs font-mono">
+      <div className="mb-12 flex flex-col justify-between gap-4 border-b border-border pb-6 font-mono text-xs sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <span className="size-2 rounded-full bg-foreground" />
           <span className="font-bold tracking-widest uppercase">
             SPECIMEN NO. 01 — 2026 EDITION
           </span>
         </div>
-        <div className="flex items-center gap-6 text-muted-foreground font-medium">
+        <div className="flex items-center gap-6 font-medium text-muted-foreground">
           <span>96 VECTOR PERSONAS</span>
           <span className="hidden md:inline">•</span>
           <span className="hidden md:inline">48KHZ STEREO OPUS</span>
@@ -128,40 +134,40 @@ export function MonumentHero() {
       {/* 2. MONUMENTAL TYPOGRAPHY HERO TITLE */}
       <div className="relative mb-16">
         {/* Handwritten margin note */}
-        <div className="absolute -top-7 left-1 hidden sm:flex items-center gap-2 font-handwritten text-lg text-muted-foreground">
+        <div className="absolute -top-7 left-1 hidden items-center gap-2 font-handwritten text-lg text-muted-foreground sm:flex">
           <span>(100% ephemeral voice rooms)</span>
-          <DoodleArrow className="size-5 text-foreground/50 rotate-45" />
+          <DoodleArrow className="size-5 rotate-45 text-foreground/50" />
         </div>
 
         <div className="flex flex-col gap-1">
-          <div className="flex items-baseline justify-between flex-wrap gap-4">
-            <h1 className="font-syne text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black uppercase tracking-tight text-foreground leading-[0.82] select-none">
+          <div className="flex flex-wrap items-baseline justify-between gap-4">
+            <h1 className="font-syne text-6xl leading-[0.82] font-black tracking-tight text-foreground uppercase select-none sm:text-8xl md:text-9xl lg:text-[11rem]">
               VOICE
             </h1>
-            <span className="font-serif-display italic text-2xl sm:text-4xl md:text-5xl text-muted-foreground self-end pb-2">
+            <span className="self-end pb-2 font-serif-display text-2xl text-muted-foreground italic sm:text-4xl md:text-5xl">
               pure &amp; unscripted
             </span>
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-            <h1 className="font-syne text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black uppercase tracking-tight text-foreground leading-[0.82] select-none">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <h1 className="font-syne text-6xl leading-[0.82] font-black tracking-tight text-foreground uppercase select-none sm:text-8xl md:text-9xl lg:text-[11rem]">
               SPACE
             </h1>
 
             {/* Embedded Active Character Pill */}
             <div className="inline-flex items-center gap-3 rounded-full border border-border bg-card px-4 py-2 shadow-xs">
-              <div className="size-10 sm:size-14 rounded-full overflow-hidden border border-border bg-background">
+              <div className="size-10 overflow-hidden rounded-full border border-border bg-background sm:size-14">
                 <img
                   src={userpicUrl(selectedSeed)}
                   alt={selectedSeed}
                   className="size-full object-cover"
                 />
               </div>
-              <div className="font-mono flex flex-col">
-                <span className="text-xs sm:text-sm font-bold text-foreground">
+              <div className="flex flex-col font-mono">
+                <span className="text-xs font-bold text-foreground sm:text-sm">
                   {selectedSeed}
                 </span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground sm:text-xs">
                   {persona.tagline}
                 </span>
               </div>
@@ -171,45 +177,45 @@ export function MonumentHero() {
       </div>
 
       {/* 3. MONUMENTAL SPLIT: GIGANTIC CHARACTER STAGE + EDITORIAL MANIFESTO */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
         {/* Left 7 Cols: Large Character Portrait & Equalizer */}
-        <div className="lg:col-span-7 flex flex-col items-center lg:items-start">
+        <div className="flex flex-col items-center lg:col-span-7 lg:items-start">
           {/* Dynamic Editorial Speech Quote */}
           <div className="relative mb-8 w-full max-w-lg">
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-              <div className="flex items-center justify-between text-[11px] font-mono font-bold text-muted-foreground uppercase mb-2">
+              <div className="mb-2 flex items-center justify-between font-mono text-[11px] font-bold text-muted-foreground uppercase">
                 <span>{persona.name}</span>
                 <span>SPEAKER // LIVE</span>
               </div>
-              <p className="font-serif-display italic text-2xl sm:text-3xl text-foreground leading-snug">
+              <p className="font-serif-display text-2xl leading-snug text-foreground italic sm:text-3xl">
                 &ldquo;{persona.quote}&rdquo;
               </p>
             </div>
-            <div className="absolute -bottom-2 left-10 size-3.5 bg-card border-r border-b border-border rotate-45" />
+            <div className="absolute -bottom-2 left-10 size-3.5 rotate-45 border-r border-b border-border bg-card" />
           </div>
 
           {/* Huge Character Avatar (300px+) */}
-          <div className="relative flex items-center justify-center my-4">
+          <div className="relative my-4 flex items-center justify-center">
             {/* Hand-drawn doodle circle */}
-            <DoodleCircle className="absolute -inset-6 size-72 sm:size-84 text-foreground/15 pointer-events-none rotate-[-6deg]" />
+            <DoodleCircle className="pointer-events-none absolute -inset-6 size-72 rotate-[-6deg] text-foreground/15 sm:size-84" />
 
-            <div className="relative size-60 sm:size-72 rounded-full border-2 border-foreground bg-background p-3 shadow-md">
+            <div className="relative size-60 rounded-full border-2 border-foreground bg-background p-3 shadow-md sm:size-72">
               <img
                 src={userpicUrl(selectedSeed)}
                 alt={selectedSeed}
-                className="size-full object-cover rounded-full"
+                className="size-full rounded-full object-cover"
               />
 
               {/* 48kHz Live Waveform Indicator */}
               {!isMuted && (
-                <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-foreground text-background px-3.5 py-1.5 rounded-full shadow-xs">
-                  <div className="flex items-end gap-0.5 h-3.5">
-                    <span className="w-0.5 bg-background rounded-full animate-eq-1" />
-                    <span className="w-0.5 bg-background rounded-full animate-eq-2" />
-                    <span className="w-0.5 bg-background rounded-full animate-eq-3" />
-                    <span className="w-0.5 bg-background rounded-full animate-eq-4" />
+                <div className="absolute right-3 bottom-3 flex items-center gap-2 rounded-full bg-foreground px-3.5 py-1.5 text-background shadow-xs">
+                  <div className="flex h-3.5 items-end gap-0.5">
+                    <span className="animate-eq-1 w-0.5 rounded-full bg-background" />
+                    <span className="animate-eq-2 w-0.5 rounded-full bg-background" />
+                    <span className="animate-eq-3 w-0.5 rounded-full bg-background" />
+                    <span className="animate-eq-4 w-0.5 rounded-full bg-background" />
                   </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
+                  <span className="font-mono text-[10px] font-bold tracking-wider uppercase">
                     48KHZ LIVE
                   </span>
                 </div>
@@ -218,7 +224,7 @@ export function MonumentHero() {
           </div>
 
           {/* Quick Persona Swapper Dock */}
-          <div className="mt-6 flex items-center gap-3 flex-wrap">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <span className="font-mono text-xs font-bold text-muted-foreground uppercase">
               Swap Cast:
             </span>
@@ -227,9 +233,9 @@ export function MonumentHero() {
                 <button
                   key={p.seed}
                   onClick={() => handleSelectSeed(p.seed, idx)}
-                  className={`size-10 sm:size-11 rounded-full border overflow-hidden transition-transform ${
+                  className={`size-10 overflow-hidden rounded-full border transition-transform sm:size-11 ${
                     selectedSeed === p.seed
-                      ? "border-foreground scale-110 shadow-xs"
+                      ? "scale-110 border-foreground shadow-xs"
                       : "border-border opacity-70 hover:opacity-100"
                   }`}
                 >
@@ -243,7 +249,7 @@ export function MonumentHero() {
               <button
                 onClick={handleRandomize}
                 title="Random Character"
-                className="size-10 sm:size-11 rounded-full border border-border flex items-center justify-center text-foreground hover:border-foreground transition-colors"
+                className="flex size-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-foreground sm:size-11"
               >
                 <RiShuffleLine size={16} />
               </button>
@@ -251,7 +257,7 @@ export function MonumentHero() {
 
             <button
               onClick={playPersonaHarmonic}
-              className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-muted-foreground hover:text-foreground transition-colors pl-2"
+              className="inline-flex items-center gap-1.5 pl-2 font-mono text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
             >
               <RiVolumeUpLine size={14} />
               <span>Harmonic Tone</span>
@@ -260,24 +266,26 @@ export function MonumentHero() {
         </div>
 
         {/* Right 5 Cols: Minimal Launch Station & Manifesto */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="flex flex-col gap-6 lg:col-span-5">
           <div>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="mb-3 flex items-center gap-2">
               <DoodleSparkle className="size-4 text-foreground/70" />
-              <span className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <span className="font-mono text-xs font-bold tracking-widest text-muted-foreground uppercase">
                 ZERO ONBOARDING
               </span>
             </div>
-            <h2 className="font-syne text-3xl sm:text-4xl font-bold uppercase tracking-tight text-foreground leading-tight">
+            <h2 className="font-syne text-3xl leading-tight font-bold tracking-tight text-foreground uppercase sm:text-4xl">
               Instant voice rooms without the friction.
             </h2>
-            <p className="mt-3 text-base text-muted-foreground font-normal leading-relaxed">
-              Every room is fully ephemeral. No user accounts, no passwords, no email collection. Simply name your studio space and enter with your vector persona.
+            <p className="mt-3 text-base leading-relaxed font-normal text-muted-foreground">
+              Every room is fully ephemeral. No user accounts, no passwords, no
+              email collection. Simply name your studio space and enter with
+              your vector persona.
             </p>
           </div>
 
           {/* Direct Room Launch Input */}
-          <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-3.5 shadow-xs">
+          <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-5 shadow-xs">
             <div className="flex items-center justify-between font-mono text-[11px] font-bold text-muted-foreground uppercase">
               <span>Quick Room Entry</span>
               <button
@@ -294,27 +302,32 @@ export function MonumentHero() {
                 type="text"
                 value={quickRoomName}
                 onChange={(e) =>
-                  setQuickRoomName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))
+                  setQuickRoomName(
+                    e.target.value.replace(/[^a-zA-Z0-9_-]/g, "")
+                  )
                 }
                 placeholder="e.g. design-critique"
-                className="h-11 flex-1 rounded-xl border border-border bg-background px-3.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground"
+                className="h-11 flex-1 rounded-xl border border-border bg-background px-3.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-foreground focus:outline-none"
               />
               <Link
                 href={
                   quickRoomName.trim()
-                    ? `/space/${quickRoomName.trim()}`
+                    ? `/space/${generateRoomSlug(quickRoomName.trim())}`
                     : "/lobby"
                 }
-                className="h-11 px-5 rounded-xl bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-foreground px-5 font-mono text-xs font-bold tracking-wider text-background uppercase transition-opacity hover:opacity-90"
               >
                 <span>Enter</span>
                 <RiArrowRightLine size={15} />
               </Link>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-1">
+            <div className="flex items-center justify-between pt-1 font-mono text-[11px] text-muted-foreground">
               <span>Active Persona: @{selectedSeed.toLowerCase()}</span>
-              <Link href="/lobby" className="text-foreground hover:underline font-bold">
+              <Link
+                href="/lobby"
+                className="font-bold text-foreground hover:underline"
+              >
                 Browse All Rooms →
               </Link>
             </div>

@@ -20,7 +20,10 @@ function load(): Record<string, EndedSpace> {
   if (cache) return cache
   try {
     if (fs.existsSync(FILE)) {
-      cache = JSON.parse(fs.readFileSync(FILE, "utf-8")) as Record<string, EndedSpace>
+      cache = JSON.parse(fs.readFileSync(FILE, "utf-8")) as Record<
+        string,
+        EndedSpace
+      >
     }
   } catch {
     cache = {}
@@ -40,26 +43,31 @@ function persist() {
 
 export function isSpaceEnded(name: string): boolean {
   if (!name) return false
-  return Boolean(load()[name])
+  const key = name.toLowerCase().trim()
+  return Boolean(load()[key])
 }
 
 export function getEndedSpace(name: string): EndedSpace | null {
   if (!name) return null
-  return load()[name] ?? null
+  const key = name.toLowerCase().trim()
+  return load()[key] ?? null
 }
 
 export function markSpaceEnded(
   name: string,
-  info: { host: string; cohosts: string[]; speakers: EndedSpaceParticipant[] },
+  info: { host: string; cohosts: string[]; speakers: EndedSpaceParticipant[] }
 ): void {
   if (!name) return
-  const existing = load()[name]
-  load()[name] = {
-    name,
+  const key = name.toLowerCase().trim()
+  const existing = load()[key]
+  load()[key] = {
+    name: key,
     endedAt: existing?.endedAt ?? Date.now(),
     host: info.host || existing?.host || "Unknown",
-    cohosts: info.cohosts?.length ? info.cohosts : existing?.cohosts ?? [],
-    speakers: info.speakers?.length ? info.speakers : existing?.speakers ?? [],
+    cohosts: info.cohosts?.length ? info.cohosts : (existing?.cohosts ?? []),
+    speakers: info.speakers?.length
+      ? info.speakers
+      : (existing?.speakers ?? []),
   }
   persist()
 }

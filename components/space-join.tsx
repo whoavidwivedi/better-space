@@ -16,22 +16,14 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 
 import { randomUserpic, userpicUrl } from "@/lib/userpics"
-import { findTemplate, stripRoomCode } from "@/lib/presets"
+import {
+  findTemplate,
+  stripRoomCode,
+  toSlug,
+  genRoomCode,
+  ROOM_CODE_PATTERN,
+} from "@/lib/presets"
 import type { EndedSpace } from "@/lib/ended-spaces"
-
-const CODE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
-const ROOM_CODE_PATTERN = /-([a-z0-9]{6})$/
-
-const toSlug = (name: string) =>
-  name.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/^[\s-]+|[\s-]+$/g, "")
-
-const genRoomCode = () => {
-  const bytes = new Uint8Array(6)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes)
-    .map((b) => CODE_CHARS[b % CODE_CHARS.length])
-    .join("")
-}
 
 export function SpaceJoin() {
   const params = useParams<{ name?: string | string[] }>()
@@ -54,7 +46,7 @@ export function SpaceJoin() {
 
   const initialRoom = getRouteRoom()
   const initialPreset = findTemplate(initialRoom)
-  const initialCode = ROOM_CODE_PATTERN.exec(initialRoom)?.[1] ?? ""
+  const initialCode = ROOM_CODE_PATTERN.exec(initialRoom)?.[0]?.slice(1) ?? ""
   const [spaceName, setSpaceName] = useState(() =>
     initialPreset ? initialPreset.title : stripRoomCode(getRouteRoom())
   )
@@ -112,6 +104,44 @@ export function SpaceJoin() {
     }
   }, [effectiveRoom]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* Pre-join mount check for ended spaces */
+  useEffect(() => {
+    if (!effectiveRoom) return
+    let active = true
+
+    const checkStatus = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
+        const res = await fetch(
+          `${apiUrl}/api/livekit/token?room=${encodeURIComponent(effectiveRoom)}`
+        )
+        const data = await res.json()
+        if (!active) return
+
+        if (res.status === 410 || data.ended || data.data?.ended) {
+          const info = data.space || data.data?.endedInfo
+          setEndedSpace(
+            (info as EndedSpace) || {
+              name: effectiveRoom,
+              endedAt: Date.now(),
+              host: "Unknown",
+              cohosts: [],
+              speakers: [],
+            }
+          )
+        }
+      } catch {
+        // Passive check; error handling on submit
+      }
+    }
+
+    checkStatus()
+
+    return () => {
+      active = false
+    }
+  }, [effectiveRoom])
+
   const matchingPreset = findTemplate(spaceName || initialRoom)
 
   const handleJoin = async (e: React.FormEvent) => {
@@ -132,19 +162,36 @@ export function SpaceJoin() {
     setIsJoining(true)
     localStorage.setItem("space_username", cleanUser)
     localStorage.setItem("better_space_active_avatar", avatarSeed)
-    localStorage.setItem(`space_profile_${cleanRoom}`, JSON.stringify({ userName: cleanUser, avatarSeed }))
+    localStorage.setItem(
+      `space_profile_${cleanRoom}`,
+      JSON.stringify({ userName: cleanUser, avatarSeed })
+    )
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
-      const query = new URLSearchParams({ room: cleanRoom, username: cleanUser, avatar: avatarSeed })
-      const savedSecret = localStorage.getItem(`space_host_secret_${cleanRoom}`) || ""
+      const query = new URLSearchParams({
+        room: cleanRoom,
+        username: cleanUser,
+        avatar: avatarSeed,
+      })
+      const savedSecret =
+        localStorage.getItem(`space_host_secret_${cleanRoom}`) || ""
       if (savedSecret) query.set("hostSecret", savedSecret)
 
       const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
 
-      if (data.data?.ended) {
-        setEndedSpace(data.data.endedInfo as EndedSpace)
+      if (res.status === 410 || data.ended || data.data?.ended) {
+        const info = data.space || data.data?.endedInfo
+        setEndedSpace(
+          (info as EndedSpace) || {
+            name: cleanRoom,
+            endedAt: Date.now(),
+            host: "Unknown",
+            cohosts: [],
+            speakers: [],
+          }
+        )
         return
       }
 
@@ -158,11 +205,16 @@ export function SpaceJoin() {
         setActiveRoomName(cleanRoom)
         setHasJoined(true)
         if (cleanRoom !== initialRoom) {
-          window.history.replaceState(null, "", `/space/${encodeURIComponent(cleanRoom)}`)
+          window.history.replaceState(
+            null,
+            "",
+            `/space/${encodeURIComponent(cleanRoom)}`
+          )
         }
       } else {
         toast.add({
-          title: "Failed to connect: " + (data.error?.message || "Unknown error"),
+          title:
+            "Failed to connect: " + (data.error?.message || "Unknown error"),
           type: "error",
         })
       }
@@ -202,7 +254,7 @@ export function SpaceJoin() {
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center p-4 sm:p-6">
         <div className="mb-8 flex flex-col items-center text-center">
           <span
-            className={`font-display text-xl sm:text-2xl font-bold tracking-tight ${
+            className={`font-display text-xl font-bold tracking-tight sm:text-2xl ${
               hasName ? "text-foreground" : "text-muted-foreground"
             }`}
           >
@@ -214,7 +266,7 @@ export function SpaceJoin() {
             </span>
           ) : null}
           {matchingPreset && (
-            <span className="mt-2 rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="mt-2 rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
               Template
             </span>
           )}
@@ -223,7 +275,10 @@ export function SpaceJoin() {
         <form className="w-full space-y-4 text-left" onSubmit={handleJoin}>
           {/* Space Name Input */}
           <Field className="space-y-1.5">
-            <FieldLabel htmlFor="space-name-input" className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <FieldLabel
+              htmlFor="space-name-input"
+              className="font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+            >
               Space Name
             </FieldLabel>
             <Input
@@ -233,17 +288,20 @@ export function SpaceJoin() {
               placeholder="Name your space"
               maxLength={65}
               autoComplete="off"
-              className="h-11 font-display text-sm rounded-xl bg-card border-border hover:border-foreground/40 focus:border-foreground transition-colors"
+              className="h-11 rounded-xl border-border bg-card font-display text-sm transition-colors hover:border-foreground/40 focus:border-foreground"
             />
           </Field>
 
           {/* Avatar Picker */}
           <div className="space-y-2.5">
-            <FieldLabel htmlFor="persona-trigger" className="block font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <FieldLabel
+              htmlFor="persona-trigger"
+              className="block font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+            >
               Persona
             </FieldLabel>
             <div className="flex items-center gap-3">
-              <div className="relative group inline-block shrink-0">
+              <div className="group relative inline-block shrink-0">
                 <CharacterPicker
                   value={avatarSeed}
                   onSelect={setAvatarSeed}
@@ -252,10 +310,10 @@ export function SpaceJoin() {
                     <button
                       id="persona-trigger"
                       type="button"
-                      className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 cursor-pointer"
+                      className="relative block cursor-pointer rounded-full focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
                       title="Choose your persona"
                     >
-                      <Avatar className="border-border bg-muted size-14 border-2 shadow-sm transition-transform group-hover:scale-105">
+                      <Avatar className="size-14 border-2 border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
                         <AvatarImage
                           src={userpicUrl(avatarSeed)}
                           alt="Your persona"
@@ -270,7 +328,7 @@ export function SpaceJoin() {
               <button
                 type="button"
                 onClick={() => setAvatarSeed(randomUserpic())}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 font-mono text-xs font-semibold text-foreground hover:bg-muted transition-all active:scale-95 cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 font-mono text-xs font-semibold text-foreground transition-all hover:bg-muted active:scale-95"
                 title="Randomize persona"
               >
                 <RiShuffleLine size={13} />
@@ -281,7 +339,10 @@ export function SpaceJoin() {
 
           {/* Username Input */}
           <Field className="space-y-1.5">
-            <FieldLabel htmlFor="join-user-name" className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <FieldLabel
+              htmlFor="join-user-name"
+              className="font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+            >
               Your Name
             </FieldLabel>
             <Input
@@ -292,14 +353,14 @@ export function SpaceJoin() {
               maxLength={20}
               autoComplete="off"
               autoFocus={!userName}
-              className="h-11 text-sm rounded-xl border-border hover:border-foreground/40 focus:border-foreground transition-colors"
+              className="h-11 rounded-xl border-border text-sm transition-colors hover:border-foreground/40 focus:border-foreground"
             />
           </Field>
 
           {/* Submit Button */}
           <Button
             type="submit"
-            className="h-12 w-full gap-2 rounded-xl font-bold uppercase tracking-wider font-mono bg-foreground text-background hover:bg-foreground/90 transition-all"
+            className="h-12 w-full gap-2 rounded-xl bg-foreground font-mono font-bold tracking-wider text-background uppercase transition-all hover:bg-foreground/90"
             disabled={!userName.trim() || !spaceName.trim() || isJoining}
           >
             {isJoining ? (

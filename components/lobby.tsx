@@ -30,7 +30,11 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import { userpicUrl, randomUserpic } from "@/lib/userpics"
-import { STARTER_TEMPLATES, getDisplayRoomTitle } from "@/lib/presets"
+import {
+  STARTER_TEMPLATES,
+  getDisplayRoomTitle,
+  generateRoomSlug,
+} from "@/lib/presets"
 
 const STARTER_PRESETS = STARTER_TEMPLATES
 
@@ -141,7 +145,8 @@ export function Lobby() {
       JSON.stringify({ userName: uName, avatarSeed: joinAvatarSeed })
     )
 
-    const savedSecret = localStorage.getItem(`space_host_secret_${roomName}`) || ""
+    const savedSecret =
+      localStorage.getItem(`space_host_secret_${roomName}`) || ""
     setHostSecret(savedSecret)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
@@ -173,9 +178,10 @@ export function Lobby() {
   }
 
   const handleCreateAndJoin = async () => {
-    const rName = newSpaceName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-")
     const uName = createUserName.trim()
-    if (!rName || !uName) return
+    const rawName = newSpaceName.trim()
+    if (!rawName || !uName) return
+    const rName = generateRoomSlug(rawName)
     setIsJoining(true)
     localStorage.setItem("space_username", uName)
     localStorage.setItem("better_space_active_avatar", createAvatarSeed)
@@ -199,7 +205,10 @@ export function Lobby() {
       if (res.ok && data.data?.token) {
         const secret = data.data.hostSecret
         if (secret) {
-          localStorage.setItem(`space_host_secret_${data.data.roomName || rName}`, secret)
+          localStorage.setItem(
+            `space_host_secret_${data.data.roomName || rName}`,
+            secret
+          )
           setHostSecret(secret)
         }
         setActiveUserName(uName)
@@ -264,21 +273,22 @@ export function Lobby() {
 
       <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col p-3.5 sm:p-6 md:p-8">
         {/* Header Hero Card */}
-        <div className="mb-5 sm:mb-8 flex flex-col justify-between gap-4 sm:gap-5 md:flex-row md:items-center rounded-2xl sm:rounded-3xl border border-border bg-card/80 p-4 sm:p-6 md:p-8 shadow-xs">
+        <div className="mb-5 flex flex-col justify-between gap-4 rounded-2xl border border-border bg-card/80 p-4 shadow-xs sm:mb-8 sm:gap-5 sm:rounded-3xl sm:p-6 md:flex-row md:items-center md:p-8">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase mb-1.5 sm:mb-2">
+            <div className="mb-1.5 inline-flex items-center gap-2 font-mono text-[10px] font-bold text-muted-foreground uppercase sm:mb-2 sm:text-[11px]">
               <span className="size-1.5 rounded-full bg-foreground" />
               <span>LIVE AUDIO LOUNGE</span>
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
+            <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">
               Active Broadcasts
             </h1>
-            <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-normal max-w-xl">
-              Drop into ongoing voice spaces or launch a fresh room with instant WebRTC audio.
+            <p className="mt-1 max-w-xl text-xs font-normal text-muted-foreground sm:text-sm">
+              Drop into ongoing voice spaces or launch a fresh room with instant
+              WebRTC audio.
             </p>
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full md:w-auto justify-between sm:justify-end shrink-0">
+          <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-2.5 sm:flex-nowrap sm:justify-end sm:gap-3 md:w-auto">
             {/* Active Persona Selector */}
             <CharacterPicker
               value={createAvatarSeed}
@@ -291,7 +301,7 @@ export function Lobby() {
               trigger={
                 <button
                   type="button"
-                  className="group flex h-9 items-center gap-2 bg-card hover:bg-muted pl-1.5 pr-3 rounded-full border border-border/80 shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-foreground shrink-0"
+                  className="group flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card pr-3 pl-1.5 shadow-xs hover:bg-muted focus:ring-2 focus:ring-foreground focus:outline-none"
                   title="Change avatar persona"
                 >
                   <div className="relative">
@@ -307,7 +317,7 @@ export function Lobby() {
                       <RiEditLine size={7} />
                     </div>
                   </div>
-                  <span className="font-mono text-[11px] font-semibold text-foreground tracking-wide">
+                  <span className="font-mono text-[11px] font-semibold tracking-wide text-foreground">
                     Change Avatar
                   </span>
                 </button>
@@ -318,11 +328,12 @@ export function Lobby() {
             <Popover open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <PopoverTrigger
                 render={
-                  <Button
-                    className="h-9 px-4 font-mono text-[11px] font-bold uppercase tracking-widest gap-2.5 rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0 shadow-sm"
-                  >
+                  <Button className="h-9 shrink-0 gap-2.5 rounded-full bg-foreground px-4 font-mono text-[11px] font-bold tracking-widest text-background uppercase shadow-sm hover:bg-foreground/90">
                     <span>Launch Space</span>
-                    <span className="h-3.5 w-px bg-background/40" aria-hidden="true" />
+                    <span
+                      className="h-3.5 w-px bg-background/40"
+                      aria-hidden="true"
+                    />
                     <RiArrowRightLine size={18} />
                   </Button>
                 }
@@ -330,18 +341,18 @@ export function Lobby() {
               <PopoverContent
                 side="bottom"
                 align="end"
-                className="w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card p-0 shadow-2xl"
+                className="w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl sm:rounded-3xl"
               >
-                <PopoverHeader className="px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border/70">
+                <PopoverHeader className="border-b border-border/70 px-5 pt-4 pb-3 sm:px-6 sm:pt-5">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-muted border border-border shrink-0">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-muted sm:size-8">
                       <RiTeamLine size={14} className="text-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <PopoverTitle className="font-display text-base font-bold text-foreground leading-tight">
+                      <PopoverTitle className="font-display text-base leading-tight font-bold text-foreground">
                         Launch New Space
                       </PopoverTitle>
-                      <PopoverDescription className="font-mono text-[10px] sm:text-[11px] text-muted-foreground truncate">
+                      <PopoverDescription className="truncate font-mono text-[10px] text-muted-foreground sm:text-[11px]">
                         Name your room and set your display identity.
                       </PopoverDescription>
                     </div>
@@ -349,7 +360,7 @@ export function Lobby() {
                       type="button"
                       onClick={() => setIsCreateOpen(false)}
                       aria-label="Close"
-                      className="grid size-7 sm:size-8 shrink-0 place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground/25 cursor-pointer"
+                      className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/25 focus-visible:outline-none sm:size-8"
                     >
                       <RiCloseLine size={15} aria-hidden="true" />
                     </button>
@@ -365,10 +376,16 @@ export function Lobby() {
                 >
                   <Field className="space-y-1.5">
                     <div className="flex items-baseline justify-between">
-                      <FieldLabel htmlFor="create-space-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
+                      <FieldLabel
+                        htmlFor="create-space-name"
+                        className="font-mono text-xs font-bold text-muted-foreground uppercase"
+                      >
                         Space Name
                       </FieldLabel>
-                      <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70" aria-hidden="true">
+                      <span
+                        className="font-mono text-[10px] text-muted-foreground/70 tabular-nums"
+                        aria-hidden="true"
+                      >
                         {newSpaceName.length}/30
                       </span>
                     </div>
@@ -376,7 +393,11 @@ export function Lobby() {
                       id="create-space-name"
                       value={newSpaceName}
                       onChange={(e) =>
-                        setNewSpaceName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-"))
+                        setNewSpaceName(
+                          e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9_-]/g, "-")
+                        )
                       }
                       placeholder="e.g. design-crit"
                       maxLength={30}
@@ -384,18 +405,20 @@ export function Lobby() {
                       autoCorrect="off"
                       autoCapitalize="off"
                       spellCheck={false}
-                      className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
+                      className="h-11 rounded-xl border border-border bg-background font-mono text-xs"
                       autoFocus
                     />
                     {/* Quick template suggestions */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="font-mono text-[10px] text-muted-foreground/80 mr-1">Templates:</span>
+                      <span className="mr-1 font-mono text-[10px] text-muted-foreground/80">
+                        Templates:
+                      </span>
                       {STARTER_PRESETS.map((preset) => (
                         <button
                           key={preset.name}
                           type="button"
                           onClick={() => setNewSpaceName(preset.name)}
-                          className="font-mono text-[10px] px-2 py-0.5 rounded-md border border-border bg-muted/60 hover:bg-muted text-foreground cursor-pointer"
+                          className="cursor-pointer rounded-md border border-border bg-muted/60 px-2 py-0.5 font-mono text-[10px] text-foreground hover:bg-muted"
                         >
                           {preset.name}
                         </button>
@@ -404,7 +427,10 @@ export function Lobby() {
                   </Field>
 
                   <Field className="space-y-1.5">
-                    <FieldLabel htmlFor="create-user-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
+                    <FieldLabel
+                      htmlFor="create-user-name"
+                      className="font-mono text-xs font-bold text-muted-foreground uppercase"
+                    >
                       Your Display Name
                     </FieldLabel>
                     <Input
@@ -414,23 +440,24 @@ export function Lobby() {
                       placeholder="What should people call you?"
                       maxLength={20}
                       autoComplete="nickname"
-                      className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
+                      className="h-11 rounded-xl border border-border bg-background font-mono text-xs"
                     />
                   </Field>
 
-                  <div className="mt-1 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 flex flex-col sm:flex-row items-center justify-between gap-2 px-5 sm:px-6 py-3.5 border-t border-border/70 bg-muted/30">
-                    {createUserName.trim() && rooms.some((r) => r.host === createUserName.trim()) ? (
-                      <span className="font-mono text-[10px] sm:text-xs font-medium text-destructive">
+                  <div className="-mx-5 mt-1 -mb-5 flex flex-col items-center justify-between gap-2 border-t border-border/70 bg-muted/30 px-5 py-3.5 sm:-mx-6 sm:-mb-6 sm:flex-row sm:px-6">
+                    {createUserName.trim() &&
+                    rooms.some((r) => r.host === createUserName.trim()) ? (
+                      <span className="font-mono text-[10px] font-medium text-destructive sm:text-xs">
                         Already hosting an active space.
                       </span>
                     ) : (
-                      <span className="font-mono text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+                      <span className="hidden font-mono text-[10px] text-muted-foreground sm:block sm:text-xs">
                         Instant WebRTC audio &middot; no accounts
                       </span>
                     )}
                     <Button
                       type="submit"
-                      className="font-mono text-xs font-bold uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-foreground/90 px-5 h-10 shrink-0 focus-visible:ring-4 focus-visible:ring-foreground/25"
+                      className="h-10 shrink-0 rounded-full bg-foreground px-5 font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90 focus-visible:ring-4 focus-visible:ring-foreground/25"
                       disabled={
                         !newSpaceName.trim() ||
                         !createUserName.trim() ||
@@ -449,38 +476,42 @@ export function Lobby() {
         </div>
 
         {/* Search & Stats Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <RiSearchLine className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 size-4" />
+        <div className="mb-6 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="relative max-w-sm flex-1">
+            <RiSearchLine className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search active spaces..."
-              className="pl-9 h-10 rounded-xl font-mono text-xs border border-border bg-card"
+              className="h-10 rounded-xl border border-border bg-card pl-9 font-mono text-xs"
             />
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground self-end sm:self-auto">
-            <span>{rooms.length} {rooms.length === 1 ? "room live" : "rooms live"}</span>
+          <div className="flex items-center gap-2 self-end font-mono text-xs text-muted-foreground sm:self-auto">
+            <span>
+              {rooms.length} {rooms.length === 1 ? "room live" : "rooms live"}
+            </span>
           </div>
         </div>
 
         {/* Room List Grid / Empty State */}
         {isLoading ? (
           <div className="flex flex-1 items-center justify-center py-24">
-            <Spinner className="size-7 text-foreground animate-spin" />
+            <Spinner className="size-7 animate-spin text-foreground" />
           </div>
         ) : filteredRooms.length === 0 ? (
           <div className="space-y-6">
             {/* Empty State Card */}
-            <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center rounded-3xl border border-border bg-card/60 p-6 sm:p-8 shadow-xs">
-              <div className="flex size-14 items-center justify-center rounded-2xl mb-4 bg-muted border border-border">
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-border bg-card/60 p-6 py-12 text-center shadow-xs sm:p-8 sm:py-16">
+              <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-muted">
                 <RiTeamLine className="size-7 text-foreground" />
               </div>
               <h3 className="font-display text-xl font-bold">
-                {searchQuery ? "No matching spaces found" : "No active voice spaces right now"}
+                {searchQuery
+                  ? "No matching spaces found"
+                  : "No active voice spaces right now"}
               </h3>
-              <p className="text-muted-foreground mt-1 max-w-sm font-mono text-xs">
+              <p className="mt-1 max-w-sm font-mono text-xs text-muted-foreground">
                 {searchQuery
                   ? "Try searching for a different room name or start a new space."
                   : "Be the first to start a room, or launch one of the popular topics below."}
@@ -489,30 +520,32 @@ export function Lobby() {
 
             {/* Quick Starter Topics */}
             <div>
-              <div className="mb-3.5 px-1 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="mb-3.5 px-1 font-mono text-xs font-bold tracking-wider text-muted-foreground uppercase">
                 <span>QUICK LAUNCH TEMPLATES</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                 {STARTER_PRESETS.map((preset) => (
                   <Link
                     key={preset.name}
-                    href={`/space/${preset.name}`}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-foreground/40 hover:bg-card/90 shadow-xs text-left"
+                    href={`/space/${generateRoomSlug(preset.name)}`}
+                    className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 text-left shadow-xs hover:border-foreground/40 hover:bg-card/90 sm:p-5"
                   >
                     <div>
-                      <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-2 py-0.5 rounded-full mb-2">
+                      <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground uppercase">
                         Template
                       </span>
                       <h4 className="font-display text-base font-bold text-foreground group-hover:text-foreground">
                         {preset.title}
                       </h4>
-                      <p className="font-mono text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                      <p className="mt-1 line-clamp-2 font-mono text-[11px] text-muted-foreground">
                         {preset.desc}
                       </p>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/60 font-mono text-xs font-bold text-foreground">
-                      <span className="font-mono text-xs font-bold">Launch Template</span>
+                    <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 font-mono text-xs font-bold text-foreground">
+                      <span className="font-mono text-xs font-bold">
+                        Launch Template
+                      </span>
                       <RiArrowRightLine size={14} />
                     </div>
                   </Link>
@@ -521,7 +554,7 @@ export function Lobby() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3.5 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {filteredRooms.map((room) => {
               const disconnectTimeStr =
                 typeof window !== "undefined"
@@ -540,36 +573,39 @@ export function Lobby() {
                 <button
                   key={room.name}
                   onClick={(e) => onRoomClick(room.name, e.currentTarget)}
-                  className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-left border border-border bg-card hover:border-foreground/40 hover:bg-card/95 shadow-xs overflow-hidden"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-4 text-left shadow-xs hover:border-foreground/40 hover:bg-card/95 sm:rounded-3xl sm:p-6"
                 >
                   {timeLeft > 0 && (
-                    <div className="absolute top-0 left-0 right-0 bg-foreground text-background text-[10px] font-mono font-bold text-center py-1">
+                    <div className="absolute top-0 right-0 left-0 bg-foreground py-1 text-center font-mono text-[10px] font-bold text-background">
                       Host disconnected. Rejoin within {timeLeft}s!
                     </div>
                   )}
 
-                  <div className={`mb-5 sm:mb-6 flex w-full items-start justify-between ${timeLeft > 0 ? "mt-3" : ""}`}>
-                    <div className="truncate pr-2.5 min-w-0">
-                      <h3 className="truncate font-display text-base sm:text-lg font-bold text-foreground group-hover:underline">
+                  <div
+                    className={`mb-5 flex w-full items-start justify-between sm:mb-6 ${timeLeft > 0 ? "mt-3" : ""}`}
+                  >
+                    <div className="min-w-0 truncate pr-2.5">
+                      <h3 className="truncate font-display text-base font-bold text-foreground group-hover:underline sm:text-lg">
                         {getDisplayRoomTitle(room.name)}
                       </h3>
-                      <p className="text-muted-foreground mt-0.5 font-mono text-[11px] sm:text-xs truncate">
-                        Host: <span className="text-foreground">{room.host}</span>
+                      <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground sm:text-xs">
+                        Host:{" "}
+                        <span className="text-foreground">{room.host}</span>
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-full bg-foreground text-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase shrink-0">
+                    <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold text-background uppercase">
                       <span className="size-1.5 rounded-full bg-background" />
                       Live
                     </div>
                   </div>
 
                   {/* Participant Avatars Strip */}
-                  <div className="mt-auto flex w-full items-center justify-between gap-2 pt-3 sm:pt-4 border-t border-border/60">
-                    <div className="flex -space-x-1.5 sm:-space-x-2 shrink-0">
+                  <div className="mt-auto flex w-full items-center justify-between gap-2 border-t border-border/60 pt-3 sm:pt-4">
+                    <div className="flex shrink-0 -space-x-1.5 sm:-space-x-2">
                       {room.participants.slice(0, 4).map((p) => (
                         <div
                           key={p.identity}
-                          className="bg-card border border-border relative size-7 sm:size-8 overflow-hidden rounded-full shadow-xs"
+                          className="relative size-7 overflow-hidden rounded-full border border-border bg-card shadow-xs sm:size-8"
                         >
                           <img
                             src={userpicUrl(p.avatar || p.identity)}
@@ -579,13 +615,13 @@ export function Lobby() {
                         </div>
                       ))}
                       {room.participants.length > 4 && (
-                        <div className="bg-muted border border-border text-foreground flex size-7 sm:size-8 items-center justify-center rounded-full font-mono text-[9px] sm:text-[10px] font-bold">
+                        <div className="flex size-7 items-center justify-center rounded-full border border-border bg-muted font-mono text-[9px] font-bold text-foreground sm:size-8 sm:text-[10px]">
                           +{room.participants.length - 4}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs font-bold text-foreground shrink-0">
+                    <div className="flex shrink-0 items-center gap-1 font-mono text-[11px] font-bold text-foreground sm:text-xs">
                       <span>
                         {room.numParticipants}{" "}
                         {room.numParticipants === 1 ? "Speaker" : "Speakers"}
@@ -605,7 +641,7 @@ export function Lobby() {
         <PopoverContent
           side="top"
           align="center"
-          className="w-[min(24rem,calc(100vw-2rem))] rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-border bg-card shadow-xl"
+          className="w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-5 shadow-xl sm:rounded-3xl sm:p-6"
           anchor={joinAnchorRef.current ?? undefined}
         >
           <PopoverHeader>
@@ -625,8 +661,8 @@ export function Lobby() {
             }}
           >
             <Field className="space-y-1.5">
-              <div className="flex items-center justify-center gap-3 mb-2 mt-1">
-                <div className="relative group inline-block">
+              <div className="mt-1 mb-2 flex items-center justify-center gap-3">
+                <div className="group relative inline-block">
                   <CharacterPicker
                     value={joinAvatarSeed}
                     onSelect={setJoinAvatarSeed}
@@ -634,10 +670,10 @@ export function Lobby() {
                     trigger={
                       <button
                         type="button"
-                        className="relative block rounded-full focus:outline-none focus:ring-2 focus:ring-foreground cursor-pointer"
+                        className="relative block cursor-pointer rounded-full focus:ring-2 focus:ring-foreground focus:outline-none"
                         title="Click to choose avatar persona"
                       >
-                        <Avatar className="size-16 sm:size-20 border border-border shadow-xs">
+                        <Avatar className="size-16 border border-border shadow-xs sm:size-20">
                           <AvatarImage
                             src={userpicUrl(joinAvatarSeed)}
                             alt="Avatar preview"
@@ -645,12 +681,12 @@ export function Lobby() {
                           />
                           <AvatarFallback />
                         </Avatar>
-                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider bg-card px-2 py-0.5 rounded-full border border-border">
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 transition-opacity group-hover:opacity-100">
+                          <span className="rounded-full border border-border bg-card px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-foreground uppercase">
                             Change
                           </span>
                         </div>
-                        <div className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md border-2 border-background">
+                        <div className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full border-2 border-background bg-foreground text-background shadow-md">
                           <RiEditLine size={13} />
                         </div>
                       </button>
@@ -661,7 +697,7 @@ export function Lobby() {
                 <button
                   type="button"
                   onClick={() => setJoinAvatarSeed(randomUserpic())}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted font-mono text-xs font-semibold text-foreground shadow-xs cursor-pointer"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 font-mono text-xs font-semibold text-foreground shadow-xs hover:bg-muted"
                   title="Randomize avatar"
                 >
                   <RiShuffleLine size={13} />
@@ -669,7 +705,10 @@ export function Lobby() {
                 </button>
               </div>
 
-              <FieldLabel htmlFor="join-user-name" className="text-xs font-bold font-mono uppercase text-muted-foreground">
+              <FieldLabel
+                htmlFor="join-user-name"
+                className="font-mono text-xs font-bold text-muted-foreground uppercase"
+              >
                 Your Display Name
               </FieldLabel>
               <Input
@@ -679,7 +718,7 @@ export function Lobby() {
                 placeholder="What should people call you?"
                 maxLength={20}
                 autoComplete="off"
-                className="h-11 rounded-xl font-mono text-xs border border-border bg-background"
+                className="h-11 rounded-xl border border-border bg-background font-mono text-xs"
                 autoFocus
               />
             </Field>
@@ -687,7 +726,7 @@ export function Lobby() {
             <div className="pt-2">
               <Button
                 type="submit"
-                className="w-full h-11 font-mono text-xs font-bold uppercase tracking-wider rounded-xl bg-foreground text-background"
+                className="h-11 w-full rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase"
                 disabled={!joinUserName.trim() || isJoining}
               >
                 {isJoining ? <Spinner className="mr-2" /> : null}
