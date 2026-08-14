@@ -48,9 +48,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="mt-10 flex flex-col gap-3 border-t border-border/40 pt-6 font-mono text-[10px] tracking-wider text-muted-foreground/80 uppercase sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            &copy; {year} betterspace
-          </span>
+          <span>&copy; {year} betterspace</span>
           <span className="text-muted-foreground/60">
             Built by{" "}
             <a
