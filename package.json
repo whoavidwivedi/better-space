@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@livekit/components-react": "^2.9.23",
+    "@livekit/components-react": "^2.9.24",
     "@livekit/components-styles": "^1.2.0",
-    "@livekit/krisp-noise-filter": "^0.4.3",
+    "@livekit/krisp-noise-filter": "^0.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "emoji-picker-react": "^4.19.1",
