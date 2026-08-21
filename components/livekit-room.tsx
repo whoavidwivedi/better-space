@@ -1015,7 +1015,7 @@ function RoomUI({
         <div
           role="toolbar"
           aria-label="Space controls"
-          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-x-auto rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2"
+          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 items-center overflow-x-auto rounded-full border border-border bg-card/95 p-1.5 shadow-2xl backdrop-blur-md"
         >
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
             {/* Audio Settings Popover */}
@@ -1044,9 +1044,9 @@ function RoomUI({
                     <PopoverTrigger
                       render={
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
-                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                          className="size-9 shrink-0 rounded-full text-muted-foreground sm:size-10"
                           aria-label="Audio settings"
                         >
                           <HugeiconsIcon icon={Settings01Icon} size={17} />
@@ -1235,10 +1235,10 @@ function RoomUI({
                     <PopoverTrigger
                       render={
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
                           aria-label="Open emoji reactions"
-                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                          className="size-9 shrink-0 rounded-full text-muted-foreground sm:size-10"
                         >
                           <HugeiconsIcon icon={Happy01Icon} size={17} />
                         </Button>
@@ -1296,10 +1296,10 @@ function RoomUI({
                       <PopoverTrigger
                         render={
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
                             aria-label={`Open microphone requests${micRequests.length ? ` (${micRequests.length} pending)` : ""}`}
-                            className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                            className="relative size-9 shrink-0 rounded-full text-muted-foreground sm:size-10"
                           >
                             <HugeiconsIcon icon={VoiceIcon} size={17} />
                             {micRequests.length > 0 && (
@@ -1394,15 +1394,19 @@ function RoomUI({
             )}
 
             {/* Mute & Deafen Controls */}
+            <div
+              className="mx-0.5 h-6 w-px shrink-0 bg-border sm:mx-1"
+              aria-hidden="true"
+            />
             {canPublish ? (
               <>
                 <Button
                   onClick={toggleDeafen}
                   aria-label={isDeafened ? "Undeafen" : "Deafen"}
                   aria-pressed={isDeafened}
-                  variant={isDeafened ? "destructive" : "secondary"}
+                  variant={isDeafened ? "destructive" : "ghost"}
                   size="lg"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4"
+                  className={`h-9 shrink-0 gap-1.5 rounded-full px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4 ${isDeafened ? "" : "text-muted-foreground"}`}
                 >
                   {isDeafened ? (
                     <HugeiconsIcon icon={VolumeMute01Icon} size={16} />
@@ -1419,7 +1423,7 @@ function RoomUI({
                   aria-pressed={isMuted}
                   variant={isMuted ? "destructive" : "default"}
                   size="lg"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
+                  className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
                 >
                   {isMuted ? (
                     <>
@@ -1448,7 +1452,7 @@ function RoomUI({
                     : "Request microphone"
                 }
                 size="lg"
-                className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
+                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
               >
                 <HugeiconsIcon icon={Mic01Icon} size={16} />
                 <span>
