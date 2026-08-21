@@ -20,6 +20,7 @@ let metadata = JSON.stringify({
 let deleted = false
 let tombstoneCreated = false
 let sentCredentials = ""
+let cohostCanPublish = false
 
 class FakeRoomServiceClient {
   async listRooms() {
@@ -41,6 +42,31 @@ class FakeRoomServiceClient {
 
   async listParticipants() {
     return [{ identity: host }, { identity: cohost }]
+  }
+
+  async getParticipant(_room: string, identity: string) {
+    return {
+      identity,
+      metadata: "{}",
+      permission: {
+        canPublish: identity === cohost ? cohostCanPublish : true,
+        canSubscribe: true,
+        canPublishData: true,
+        canUpdateMetadata: false,
+        hidden: false,
+        recorder: false,
+      },
+    }
+  }
+
+  async updateParticipant(
+    _room: string,
+    identity: string,
+    options: { permission?: { canPublish?: boolean } }
+  ) {
+    if (identity === cohost) {
+      cohostCanPublish = options.permission?.canPublish ?? false
+    }
   }
 
   async deleteRoom() {
@@ -100,12 +126,14 @@ describe("moderation room flow", () => {
     deleted = false
     tombstoneCreated = false
     sentCredentials = ""
+    cohostCanPublish = false
 
     const grantResponse = await POST(
       request(host, hostSecret, "grant_cohost", cohost)
     )
     expect(grantResponse.status).toBe(200)
     expect(await grantResponse.json()).toEqual({ data: { success: true } })
+    expect(cohostCanPublish).toBe(true)
     expect(sentCredentials).toContain('"type":"COHOST_CREDENTIALS"')
     expect(sentCredentials).toContain(`"identity":"${cohost}"`)
     expect(sentCredentials).toContain('"secret":"')
@@ -133,9 +161,15 @@ describe("moderation room flow", () => {
       request(host, hostSecret, "revoke_cohost", cohost)
     )
     expect(revokeResponse.status).toBe(200)
+    expect(cohostCanPublish).toBe(false)
     const revokedMeta = JSON.parse(metadata)
     expect(revokedMeta.cohosts).toEqual([])
     expect(decryptCohostSecrets(revokedMeta.cohostSecretsEncrypted)).toEqual({})
+
+    const revokedActionResponse = await POST(
+      request(cohost, cohostSecret, "end")
+    )
+    expect(revokedActionResponse.status).toBe(403)
   })
 
   test("keeps cohost management host-only", async () => {

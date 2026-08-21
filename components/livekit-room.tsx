@@ -216,7 +216,20 @@ function RoomUI({
 
   const isHost = localParticipant.identity === roomHost
   const isCohost = roomCohosts.includes(localParticipant.identity)
-  const isHostOrCohost = isHost || isCohost
+  const [cohostAccessReady, setCohostAccessReady] = useState(
+    () => !isCohost || Boolean(localParticipant.permissions?.canPublish)
+  )
+  const previousCohostRef = useRef(isCohost)
+  useEffect(() => {
+    if (isCohost && !previousCohostRef.current) {
+      setCohostAccessReady(false)
+    } else if (!isCohost) {
+      setCohostAccessReady(true)
+    }
+    previousCohostRef.current = isCohost
+  }, [isCohost])
+
+  const isHostOrCohost = isHost || (isCohost && cohostAccessReady)
 
   const canPublish = Boolean(
     localParticipant.permissions?.canPublish || isHostOrCohost
@@ -377,6 +390,8 @@ function RoomUI({
                     title: "Could not activate co-host access",
                     type: "error",
                   })
+                } else {
+                  setCohostAccessReady(true)
                 }
               })
               .catch(() => {

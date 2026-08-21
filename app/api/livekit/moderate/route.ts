@@ -24,6 +24,31 @@ function getRoomService() {
   return new RoomServiceClient(wsUrl, apiKey, apiSecret)
 }
 
+async function syncParticipantPublishPermission(
+  roomService: RoomServiceClient,
+  roomName: string,
+  identity: string,
+  canPublish: boolean
+) {
+  const participants = await roomService.listParticipants(roomName)
+  if (!participants.some((participant) => participant.identity === identity)) {
+    return
+  }
+
+  const participant = await roomService.getParticipant(roomName, identity)
+  await roomService.updateParticipant(roomName, identity, {
+    metadata: participant.metadata,
+    permission: {
+      canPublish,
+      canSubscribe: participant.permission?.canSubscribe ?? true,
+      canPublishData: participant.permission?.canPublishData ?? true,
+      canUpdateMetadata: participant.permission?.canUpdateMetadata ?? false,
+      hidden: participant.permission?.hidden ?? false,
+      recorder: participant.permission?.recorder ?? false,
+    },
+  })
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { roomName, targetIdentity, action, token } = body
@@ -152,6 +177,12 @@ export async function POST(req: NextRequest) {
       meta.cohostSecretsEncrypted = encryptCohostSecrets(cohostSecrets)
       delete meta.cohostSecrets
       await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+      await syncParticipantPublishPermission(
+        roomService,
+        cleanRoom,
+        targetIdentity,
+        true
+      )
       await roomService.sendData(
         cleanRoom,
         new TextEncoder().encode(
@@ -185,6 +216,12 @@ export async function POST(req: NextRequest) {
       meta.cohostSecretsEncrypted = encryptCohostSecrets(updatedCohostSecrets)
       delete meta.cohostSecrets
       await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+      await syncParticipantPublishPermission(
+        roomService,
+        cleanRoom,
+        targetIdentity,
+        false
+      )
       return NextResponse.json({ data: { success: true } })
 
     case "end":
