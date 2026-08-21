@@ -85,10 +85,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (
-    (action === "grant_cohost" || action === "revoke_cohost") &&
-    !isHost
-  ) {
+  if ((action === "grant_cohost" || action === "revoke_cohost") && !isHost) {
     return NextResponse.json(
       { error: { message: "Only the main host can manage co-hosts" } },
       { status: 403 }
