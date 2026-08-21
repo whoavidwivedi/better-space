@@ -32,6 +32,12 @@ export function Footer() {
 
           {/* Social Links */}
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/changelog"
+              className="rounded-full border border-foreground/30 bg-foreground px-3.5 py-1.5 font-mono text-[10px] tracking-wider text-background uppercase transition-colors hover:bg-foreground/90"
+            >
+              Changelog
+            </Link>
             {socials.map(({ label, href }) => (
               <a
                 key={label}

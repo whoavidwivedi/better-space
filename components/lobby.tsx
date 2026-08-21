@@ -351,6 +351,11 @@ export function Lobby() {
               <PopoverContent
                 side="bottom"
                 align="end"
+                collisionAvoidance={{
+                  side: "none",
+                  align: "shift",
+                  fallbackAxisSide: "none",
+                }}
                 className="w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6"
               >
                 <PopoverHeader className="mb-4">
