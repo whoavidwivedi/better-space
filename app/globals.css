@@ -170,6 +170,23 @@
   font-family: var(--font-google-sans), sans-serif;
 }
 
+/* Bring the third-party emoji tray into the room's quiet, tactile UI. */
+.emoji-picker-room {
+  --epr-highlight-color: var(--foreground);
+  --epr-hover-bg-color: var(--muted);
+  --epr-focus-bg-color: var(--muted);
+  --epr-text-color: var(--muted-foreground);
+  --epr-search-input-bg-color: var(--muted);
+  --epr-picker-border-color: var(--border);
+  --epr-bg-color: var(--card);
+  --epr-category-icon-active-color: var(--foreground);
+  --epr-picker-border-radius: 0px;
+  --epr-horizontal-padding: 12px;
+  --epr-search-input-border-radius: 10px;
+  --epr-search-border-color: var(--border);
+  --epr-search-border-color-active: var(--ring);
+}
+
 /* Grounded Tactile Button & Press State */
 button:active,
 [role="button"]:active {

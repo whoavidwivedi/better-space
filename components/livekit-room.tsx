@@ -31,6 +31,7 @@ import {
 } from "lucide-react"
 import { EmojiClickData, Theme } from "emoji-picker-react"
 import EmojiPicker from "emoji-picker-react"
+import { useTheme } from "next-themes"
 import {
   ConnectionQuality,
   ConnectionState,
@@ -144,6 +145,7 @@ function RoomUI({
   onLeave: () => void
 }) {
   const room = useRoomContext()
+  const { resolvedTheme } = useTheme()
   const { localParticipant } = useLocalParticipant()
   const participants = useParticipants()
   const { metadata } = useRoomInfo()
@@ -1246,8 +1248,28 @@ function RoomUI({
                 />
                 <TooltipContent>Emoji</TooltipContent>
               </Tooltip>
-              <PopoverContent className="z-50 w-auto max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl">
-                <div className="flex items-center justify-between gap-1 overflow-x-auto border-b border-border bg-muted/40 p-2">
+              <PopoverContent className="z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl ring-1 ring-foreground/5">
+                <div className="border-b border-border/70 px-3.5 pt-3 pb-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background">
+                        <HugeiconsIcon icon={Happy01Icon} size={15} />
+                      </span>
+                      <div>
+                        <p className="font-display text-sm font-bold leading-tight">
+                          Send a reaction
+                        </p>
+                        <p className="font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase">
+                          Quick picks
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      or search below
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-1 overflow-x-auto border-b border-border/70 bg-muted/25 px-2.5 py-2">
                   {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map(
                     (emoji) => (
                       <Button
@@ -1257,7 +1279,7 @@ function RoomUI({
                         onClick={() => handleSendReaction(emoji)}
                         variant="ghost"
                         size="icon"
-                        className="size-8 shrink-0 rounded-lg text-lg active:scale-95"
+                        className="size-8 shrink-0 rounded-lg text-lg transition-transform hover:-translate-y-0.5 hover:bg-background active:scale-90"
                       >
                         {emoji}
                       </Button>
@@ -1266,10 +1288,13 @@ function RoomUI({
                 </div>
                 <EmojiPicker
                   onEmojiClick={handleSendReaction}
-                  theme={Theme.AUTO}
+                  theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
                   lazyLoadEmojis={true}
                   autoFocusSearch={false}
-                  width="min(21.875rem,calc(100vw-1rem))"
+                  searchPlaceholder="Find an emoji"
+                  previewConfig={{ showPreview: false }}
+                  className="emoji-picker-room"
+                  width="100%"
                 />
               </PopoverContent>
             </Popover>
