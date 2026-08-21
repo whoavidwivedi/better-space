@@ -1256,7 +1256,7 @@ function RoomUI({
                         <HugeiconsIcon icon={Happy01Icon} size={15} />
                       </span>
                       <div>
-                        <p className="font-display text-sm font-bold leading-tight">
+                        <p className="font-display text-sm leading-tight font-bold">
                           Send a reaction
                         </p>
                         <p className="font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase">
