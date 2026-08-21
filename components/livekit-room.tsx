@@ -1015,107 +1015,192 @@ function RoomUI({
         <div
           role="toolbar"
           aria-label="Space controls"
-          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 items-center overflow-x-auto rounded-full border border-border bg-card/95 p-1.5 shadow-2xl backdrop-blur-md"
+          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 items-center gap-1.5 overflow-x-auto sm:gap-2"
         >
-          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
-            {/* Audio Settings Popover */}
-            <Popover
-              onOpenChange={(open) => {
-                if (!open) return
-                if (
-                  audioInputDevices.length === 0 ||
-                  audioInputDevices.some((d) => !d.label)
-                ) {
-                  navigator.mediaDevices
-                    ?.getUserMedia({ audio: true })
-                    .then((stream) => {
-                      stream.getTracks().forEach((t) => t.stop())
-                      fetchDevices()
-                    })
-                    .catch(() => fetchDevices())
-                } else {
-                  fetchDevices()
+          {/* Audio Settings Popover */}
+          <Popover
+            onOpenChange={(open) => {
+              if (!open) return
+              if (
+                audioInputDevices.length === 0 ||
+                audioInputDevices.some((d) => !d.label)
+              ) {
+                navigator.mediaDevices
+                  ?.getUserMedia({ audio: true })
+                  .then((stream) => {
+                    stream.getTracks().forEach((t) => t.stop())
+                    fetchDevices()
+                  })
+                  .catch(() => fetchDevices())
+              } else {
+                fetchDevices()
+              }
+            }}
+          >
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="h-9 shrink-0 gap-1.5 rounded-full border-border bg-card/95 px-3 font-mono text-xs font-bold text-muted-foreground shadow-2xl backdrop-blur-md hover:text-foreground sm:h-10 sm:px-4"
+                        aria-label="Audio settings"
+                      >
+                        <HugeiconsIcon icon={Settings01Icon} size={15} />
+                        <span>Audio</span>
+                      </Button>
+                    }
+                  />
                 }
-              }}
+              />
+              <TooltipContent>Audio settings</TooltipContent>
+            </Tooltip>
+            <PopoverContent
+              className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-5"
+              align="center"
+              side="top"
+              sideOffset={12}
             >
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <PopoverTrigger
-                      render={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-9 shrink-0 rounded-full text-muted-foreground sm:size-10"
-                          aria-label="Audio settings"
-                        >
-                          <HugeiconsIcon icon={Settings01Icon} size={17} />
-                        </Button>
-                      }
-                    />
-                  }
-                />
-                <TooltipContent>Audio settings</TooltipContent>
-              </Tooltip>
-              <PopoverContent
-                className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-5"
-                align="center"
-                side="top"
-                sideOffset={12}
-              >
-                <PopoverHeader className="space-y-1">
-                  <PopoverTitle className="flex items-center gap-2 font-mono text-xs font-bold tracking-wider uppercase">
-                    <HugeiconsIcon
-                      icon={Settings01Icon}
-                      className="size-3.5"
-                      aria-hidden="true"
-                    />
-                    Audio Hardware Routing
-                  </PopoverTitle>
-                  <PopoverDescription className="text-xs text-muted-foreground">
-                    Configure microphone input &amp; speaker output.
-                  </PopoverDescription>
-                </PopoverHeader>
+              <PopoverHeader className="space-y-1">
+                <PopoverTitle className="flex items-center gap-2 font-mono text-xs font-bold tracking-wider uppercase">
+                  <HugeiconsIcon
+                    icon={Settings01Icon}
+                    className="size-3.5"
+                    aria-hidden="true"
+                  />
+                  Audio Hardware Routing
+                </PopoverTitle>
+                <PopoverDescription className="text-xs text-muted-foreground">
+                  Configure microphone input &amp; speaker output.
+                </PopoverDescription>
+              </PopoverHeader>
 
-                <div className="mt-3 space-y-3 font-mono text-xs">
-                  {/* Microphone selection */}
-                  <Field className="gap-1.5">
-                    <div className="flex items-center justify-between">
+              <div className="mt-3 space-y-3 font-mono text-xs">
+                {/* Microphone selection */}
+                <Field className="gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <FieldLabel
+                      htmlFor="mic-select"
+                      className="flex items-center gap-1.5 text-xs font-bold"
+                    >
+                      <HugeiconsIcon
+                        icon={Mic01Icon}
+                        className="size-3.5 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      Microphone
+                    </FieldLabel>
+                    {isMuted && (
+                      <span className="text-[10px] text-muted-foreground">
+                        Muted
+                      </span>
+                    )}
+                  </div>
+                  <Select
+                    value={selectedMicId}
+                    onValueChange={handleMicChange}
+                    items={micItems}
+                  >
+                    <SelectTrigger
+                      id="mic-select"
+                      className="h-8 w-full rounded-lg text-xs"
+                    >
+                      <SelectValue placeholder="Select a microphone">
+                        {(val: string | null) => {
+                          const found = micItems.find((m) => m.value === val)
+                          return found?.label || "Default Microphone"
+                        }}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {micItems.map((item) => (
+                        <SelectItem
+                          key={item.value}
+                          value={item.value}
+                          className="text-xs"
+                        >
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Live Mic Level Test Bar */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Input Signal</span>
+                      <span>
+                        {isMuted
+                          ? "0%"
+                          : `${Math.min(100, Math.round(localMicVolume * 100 * 2.5))}%`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-foreground transition-all duration-75 ease-out"
+                        style={{
+                          width: isMuted
+                            ? "0%"
+                            : `${Math.min(100, Math.round(localMicVolume * 100 * 2.5))}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </Field>
+
+                {/* Speaker / Output device selection */}
+                {audioOutputDevices.length > 0 && (
+                  <Field className="gap-1.5 border-t border-border/50 pt-1">
+                    <div className="flex items-center justify-between pt-1">
                       <FieldLabel
-                        htmlFor="mic-select"
+                        htmlFor="speaker-select"
                         className="flex items-center gap-1.5 text-xs font-bold"
                       >
                         <HugeiconsIcon
-                          icon={Mic01Icon}
                           className="size-3.5 text-muted-foreground"
                           aria-hidden="true"
+                          icon={HeadphonesIcon}
                         />
-                        Microphone
+                        Speaker / Headphones
                       </FieldLabel>
-                      {isMuted && (
-                        <span className="text-[10px] text-muted-foreground">
-                          Muted
-                        </span>
-                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={playTestSound}
+                        disabled={isPlayingTestSound}
+                        className="h-6 gap-1 px-2 font-mono text-[10px] text-foreground"
+                      >
+                        <HugeiconsIcon
+                          className="size-3"
+                          aria-hidden="true"
+                          icon={VolumeUpIcon}
+                        />
+                        {isPlayingTestSound ? "Testing..." : "Test"}
+                      </Button>
                     </div>
                     <Select
-                      value={selectedMicId}
-                      onValueChange={handleMicChange}
-                      items={micItems}
+                      value={selectedSpeakerId}
+                      onValueChange={handleSpeakerChange}
+                      items={speakerItems}
                     >
                       <SelectTrigger
-                        id="mic-select"
+                        id="speaker-select"
                         className="h-8 w-full rounded-lg text-xs"
                       >
-                        <SelectValue placeholder="Select a microphone">
+                        <SelectValue placeholder="Default speaker">
                           {(val: string | null) => {
-                            const found = micItems.find((m) => m.value === val)
-                            return found?.label || "Default Microphone"
+                            const found = speakerItems.find(
+                              (s) => s.value === val
+                            )
+                            return found?.label || "Default Speaker"
                           }}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {micItems.map((item) => (
+                        {speakerItems.map((item) => (
                           <SelectItem
                             key={item.value}
                             value={item.value}
@@ -1126,108 +1211,85 @@ function RoomUI({
                         ))}
                       </SelectContent>
                     </Select>
-
-                    {/* Live Mic Level Test Bar */}
-                    <div className="space-y-1 pt-1">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>Input Signal</span>
-                        <span>
-                          {isMuted
-                            ? "0%"
-                            : `${Math.min(100, Math.round(localMicVolume * 100 * 2.5))}%`}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-foreground transition-all duration-75 ease-out"
-                          style={{
-                            width: isMuted
-                              ? "0%"
-                              : `${Math.min(100, Math.round(localMicVolume * 100 * 2.5))}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
                   </Field>
+                )}
 
-                  {/* Speaker / Output device selection */}
-                  {audioOutputDevices.length > 0 && (
-                    <Field className="gap-1.5 border-t border-border/50 pt-1">
-                      <div className="flex items-center justify-between pt-1">
-                        <FieldLabel
-                          htmlFor="speaker-select"
-                          className="flex items-center gap-1.5 text-xs font-bold"
-                        >
-                          <HugeiconsIcon
-                            className="size-3.5 text-muted-foreground"
-                            aria-hidden="true"
-                            icon={HeadphonesIcon}
-                          />
-                          Speaker / Headphones
-                        </FieldLabel>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={playTestSound}
-                          disabled={isPlayingTestSound}
-                          className="h-6 gap-1 px-2 font-mono text-[10px] text-foreground"
-                        >
-                          <HugeiconsIcon
-                            className="size-3"
-                            aria-hidden="true"
-                            icon={VolumeUpIcon}
-                          />
-                          {isPlayingTestSound ? "Testing..." : "Test"}
-                        </Button>
-                      </div>
-                      <Select
-                        value={selectedSpeakerId}
-                        onValueChange={handleSpeakerChange}
-                        items={speakerItems}
-                      >
-                        <SelectTrigger
-                          id="speaker-select"
-                          className="h-8 w-full rounded-lg text-xs"
-                        >
-                          <SelectValue placeholder="Default speaker">
-                            {(val: string | null) => {
-                              const found = speakerItems.find(
-                                (s) => s.value === val
-                              )
-                              return found?.label || "Default Speaker"
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {speakerItems.map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                              className="text-xs"
-                            >
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
-
-                  {/* Audio enhancement status */}
-                  <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/40 px-2.5 py-2 text-[10px] text-muted-foreground">
-                    <HugeiconsIcon
-                      className="size-3.5 shrink-0 text-foreground"
-                      aria-hidden="true"
-                      icon={Shield01Icon}
-                    />
-                    <span>Noise suppression active</span>
-                  </div>
+                {/* Audio enhancement status */}
+                <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/40 px-2.5 py-2 text-[10px] text-muted-foreground">
+                  <HugeiconsIcon
+                    className="size-3.5 shrink-0 text-foreground"
+                    aria-hidden="true"
+                    icon={Shield01Icon}
+                  />
+                  <span>Noise suppression active</span>
                 </div>
-              </PopoverContent>
-            </Popover>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-            {/* Emoji Reaction Popover */}
+          {/* Emoji Reaction Popover */}
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        aria-label="Open emoji reactions"
+                        className="h-9 shrink-0 gap-1.5 rounded-full border-border bg-card/95 px-3 font-mono text-xs font-bold text-muted-foreground shadow-2xl backdrop-blur-md hover:text-foreground sm:h-10 sm:px-4"
+                      >
+                        <HugeiconsIcon icon={Happy01Icon} size={15} />
+                        <span>React</span>
+                      </Button>
+                    }
+                  />
+                }
+              />
+              <TooltipContent>Emoji</TooltipContent>
+            </Tooltip>
+            <PopoverContent className="z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
+                <h3 className="font-mono text-xs font-bold tracking-wider text-foreground uppercase">
+                  Reactions
+                </h3>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  Tap or search
+                </span>
+              </div>
+              <div className="flex items-center gap-1 overflow-x-auto border-b border-border/70 px-2.5 py-2">
+                {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map(
+                  (emoji) => (
+                    <Button
+                      key={emoji}
+                      type="button"
+                      aria-label={`React with ${emoji}`}
+                      onClick={() => handleSendReaction(emoji)}
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0 rounded-lg text-lg transition-colors hover:bg-muted active:bg-muted"
+                    >
+                      {emoji}
+                    </Button>
+                  )
+                )}
+              </div>
+              <EmojiPicker
+                onEmojiClick={handleSendReaction}
+                theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
+                lazyLoadEmojis={true}
+                autoFocusSearch={false}
+                searchPlaceholder="Find an emoji"
+                previewConfig={{ showPreview: false }}
+                className="emoji-picker-room"
+                width="100%"
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Host/Co-host Moderation Popover */}
+          {isHostOrCohost && (
             <Popover>
               <Tooltip>
                 <TooltipTrigger
@@ -1235,232 +1297,165 @@ function RoomUI({
                     <PopoverTrigger
                       render={
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Open emoji reactions"
-                          className="size-9 shrink-0 rounded-full text-muted-foreground sm:size-10"
+                          variant="outline"
+                          size="lg"
+                          aria-label={`Open microphone requests${micRequests.length ? ` (${micRequests.length} pending)` : ""}`}
+                          className="relative h-9 shrink-0 gap-1.5 rounded-full border-border bg-card/95 px-3 font-mono text-xs font-bold text-muted-foreground shadow-2xl backdrop-blur-md hover:text-foreground sm:h-10 sm:px-4"
                         >
-                          <HugeiconsIcon icon={Happy01Icon} size={17} />
+                          <HugeiconsIcon icon={VoiceIcon} size={15} />
+                          <span>Requests</span>
+                          {micRequests.length > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
+                              {micRequests.length}
+                            </span>
+                          )}
                         </Button>
                       }
                     />
                   }
                 />
-                <TooltipContent>Emoji</TooltipContent>
+                <TooltipContent>Mic requests</TooltipContent>
               </Tooltip>
-              <PopoverContent className="z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl">
+              <PopoverContent
+                className="w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl"
+                align="center"
+                side="top"
+                sideOffset={12}
+              >
                 <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
                   <h3 className="font-mono text-xs font-bold tracking-wider text-foreground uppercase">
-                    Reactions
+                    Mic Requests
                   </h3>
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    Tap or search
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 overflow-x-auto border-b border-border/70 px-2.5 py-2">
-                  {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map(
-                    (emoji) => (
-                      <Button
-                        key={emoji}
-                        type="button"
-                        aria-label={`React with ${emoji}`}
-                        onClick={() => handleSendReaction(emoji)}
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0 rounded-lg text-lg transition-colors hover:bg-muted active:bg-muted"
-                      >
-                        {emoji}
-                      </Button>
-                    )
+                  {micRequests.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-[10px] font-bold"
+                    >
+                      {micRequests.length} Pending
+                    </Badge>
                   )}
                 </div>
-                <EmojiPicker
-                  onEmojiClick={handleSendReaction}
-                  theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
-                  lazyLoadEmojis={true}
-                  autoFocusSearch={false}
-                  searchPlaceholder="Find an emoji"
-                  previewConfig={{ showPreview: false }}
-                  className="emoji-picker-room"
-                  width="100%"
-                />
+                <div className="max-h-72 overflow-y-auto p-2">
+                  {micRequests.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <HugeiconsIcon
+                        className="mb-2 size-6 text-muted-foreground/40"
+                        aria-hidden="true"
+                        icon={VoiceIcon}
+                      />
+                      <p className="font-mono text-xs text-muted-foreground">
+                        No pending mic requests
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {micRequests.map((identity) => (
+                        <div
+                          key={identity}
+                          className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-2"
+                        >
+                          <div className="mr-2 flex min-w-0 items-center gap-2.5">
+                            <Avatar className="size-7 border border-border">
+                              <AvatarImage
+                                src={userpicUrl(identity)}
+                                alt={identity}
+                                className="object-cover"
+                              />
+                              <AvatarFallback className="text-xs font-bold">
+                                {identity.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate text-xs font-bold text-foreground">
+                              {identity}
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 font-mono text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                              onClick={() => rejectMicRequest(identity)}
+                            >
+                              Decline
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-7 px-2.5 font-mono text-[10px] font-bold"
+                              onClick={() => grantMicToRequest(identity)}
+                            >
+                              Grant Mic
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </PopoverContent>
             </Popover>
+          )}
 
-            {/* Host/Co-host Moderation Popover */}
-            {isHostOrCohost && (
-              <Popover>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <PopoverTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Open microphone requests${micRequests.length ? ` (${micRequests.length} pending)` : ""}`}
-                            className="relative size-9 shrink-0 rounded-full text-muted-foreground sm:size-10"
-                          >
-                            <HugeiconsIcon icon={VoiceIcon} size={17} />
-                            {micRequests.length > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
-                                {micRequests.length}
-                              </span>
-                            )}
-                          </Button>
-                        }
-                      />
-                    }
-                  />
-                  <TooltipContent>Mic requests</TooltipContent>
-                </Tooltip>
-                <PopoverContent
-                  className="w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl"
-                  align="center"
-                  side="top"
-                  sideOffset={12}
-                >
-                  <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
-                    <h3 className="font-mono text-xs font-bold tracking-wider text-foreground uppercase">
-                      Mic Requests
-                    </h3>
-                    {micRequests.length > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className="font-mono text-[10px] font-bold"
-                      >
-                        {micRequests.length} Pending
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="max-h-72 overflow-y-auto p-2">
-                    {micRequests.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <HugeiconsIcon
-                          className="mb-2 size-6 text-muted-foreground/40"
-                          aria-hidden="true"
-                          icon={VoiceIcon}
-                        />
-                        <p className="font-mono text-xs text-muted-foreground">
-                          No pending mic requests
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1.5">
-                        {micRequests.map((identity) => (
-                          <div
-                            key={identity}
-                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-2"
-                          >
-                            <div className="mr-2 flex min-w-0 items-center gap-2.5">
-                              <Avatar className="size-7 border border-border">
-                                <AvatarImage
-                                  src={userpicUrl(identity)}
-                                  alt={identity}
-                                  className="object-cover"
-                                />
-                                <AvatarFallback className="text-xs font-bold">
-                                  {identity.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="truncate text-xs font-bold text-foreground">
-                                {identity}
-                              </span>
-                            </div>
-                            <div className="flex shrink-0 gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 font-mono text-[10px] font-bold text-destructive hover:bg-destructive/10"
-                                onClick={() => rejectMicRequest(identity)}
-                              >
-                                Decline
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="h-7 px-2.5 font-mono text-[10px] font-bold"
-                                onClick={() => grantMicToRequest(identity)}
-                              >
-                                Grant Mic
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-
-            {/* Mute & Deafen Controls */}
-            <div
-              className="mx-0.5 h-6 w-px shrink-0 bg-border sm:mx-1"
-              aria-hidden="true"
-            />
-            {canPublish ? (
-              <>
-                <Button
-                  onClick={toggleDeafen}
-                  aria-label={isDeafened ? "Undeafen" : "Deafen"}
-                  aria-pressed={isDeafened}
-                  variant={isDeafened ? "destructive" : "ghost"}
-                  size="lg"
-                  className={`h-9 shrink-0 gap-1.5 rounded-full px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4 ${isDeafened ? "" : "text-muted-foreground"}`}
-                >
-                  {isDeafened ? (
-                    <HugeiconsIcon icon={VolumeMute01Icon} size={16} />
-                  ) : (
-                    <HugeiconsIcon icon={HeadphonesIcon} size={16} />
-                  )}
-                  <span className="hidden sm:inline">Deafen</span>
-                </Button>
-
-                <Button
-                  onClick={toggleMute}
-                  disabled={isDeafened}
-                  aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
-                  aria-pressed={isMuted}
-                  variant={isMuted ? "destructive" : "default"}
-                  size="lg"
-                  className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
-                >
-                  {isMuted ? (
-                    <>
-                      <HugeiconsIcon icon={MicOff01Icon} size={16} />
-                      <span>MIC MUTED</span>
-                    </>
-                  ) : (
-                    <>
-                      <HugeiconsIcon
-                        icon={Mic01Icon}
-                        size={16}
-                        className="text-primary-foreground"
-                      />
-                      <span>MIC LIVE</span>
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
+          {/* Mute & Deafen Controls */}
+          {canPublish ? (
+            <>
               <Button
-                onClick={requestMic}
-                disabled={hasRequestedMicLocal}
-                aria-label={
-                  hasRequestedMicLocal
-                    ? "Microphone requested"
-                    : "Request microphone"
-                }
+                onClick={toggleDeafen}
+                aria-label={isDeafened ? "Undeafen" : "Deafen"}
+                aria-pressed={isDeafened}
+                variant={isDeafened ? "destructive" : "outline"}
                 size="lg"
-                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
+                className="h-9 shrink-0 gap-1.5 rounded-full border-border bg-card/95 px-3 font-mono text-xs font-bold shadow-2xl backdrop-blur-md sm:h-10 sm:px-4"
               >
-                <HugeiconsIcon icon={Mic01Icon} size={16} />
-                <span>
-                  {hasRequestedMicLocal ? "Requested" : "Request Mic"}
-                </span>
+                {isDeafened ? (
+                  <HugeiconsIcon icon={VolumeMute01Icon} size={16} />
+                ) : (
+                  <HugeiconsIcon icon={HeadphonesIcon} size={16} />
+                )}
+                <span className="hidden sm:inline">Deafen</span>
               </Button>
-            )}
-          </div>
+
+              <Button
+                onClick={toggleMute}
+                disabled={isDeafened}
+                aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                aria-pressed={isMuted}
+                variant={isMuted ? "destructive" : "default"}
+                size="lg"
+                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold shadow-2xl backdrop-blur-md sm:h-10 sm:gap-2 sm:px-5"
+              >
+                {isMuted ? (
+                  <>
+                    <HugeiconsIcon icon={MicOff01Icon} size={16} />
+                    <span>MIC MUTED</span>
+                  </>
+                ) : (
+                  <>
+                    <HugeiconsIcon
+                      icon={Mic01Icon}
+                      size={16}
+                      className="text-primary-foreground"
+                    />
+                    <span>MIC LIVE</span>
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={requestMic}
+              disabled={hasRequestedMicLocal}
+              aria-label={
+                hasRequestedMicLocal
+                  ? "Microphone requested"
+                  : "Request microphone"
+              }
+              size="lg"
+              className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold shadow-2xl backdrop-blur-md sm:h-10 sm:gap-2 sm:px-5"
+            >
+              <HugeiconsIcon icon={Mic01Icon} size={16} />
+              <span>{hasRequestedMicLocal ? "Requested" : "Request Mic"}</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>
