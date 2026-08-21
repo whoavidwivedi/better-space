@@ -20,6 +20,19 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v1.3.4",
+    date: "2026-08-21",
+    label: "Dependency security hardening",
+    summary:
+      "Updated the framework and dependency graph, then pinned patched transitive packages so the production install is audit-clean.",
+    highlights: [
+      "Updated Next.js and its lint integration to patched releases.",
+      "Added Bun dependency overrides for vulnerable transitive packages.",
+      "Verified a clean high-severity vulnerability audit with a frozen lockfile.",
+    ],
+    tone: "security",
+  },
+  {
     version: "v1.3.3",
     date: "2026-08-21",
     label: "Public changelog & keyboard-safe popovers",
@@ -176,7 +189,7 @@ export default function ChangelogPage() {
           <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1fr_20rem] lg:items-end lg:px-8">
             <div>
               <p className="mb-6 font-mono text-[10px] font-bold tracking-[0.28em] text-muted-foreground uppercase">
-                Public changelog / 10 releases
+                Public changelog / 11 releases
               </p>
               <h1 className="max-w-3xl font-display text-5xl leading-[0.94] font-black tracking-[-0.055em] sm:text-7xl">
                 Built in public.
@@ -212,7 +225,7 @@ export default function ChangelogPage() {
 
         <section className="mx-auto grid max-w-6xl grid-cols-3 divide-x divide-border border-b border-border px-4 sm:px-6 lg:px-8">
           {[
-            ["10", "published releases"],
+            ["11", "published releases"],
             ["03", "security milestones"],
             ["∞", "rooms to come"],
           ].map(([value, label]) => (
