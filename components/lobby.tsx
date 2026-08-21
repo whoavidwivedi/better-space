@@ -92,6 +92,36 @@ export function Lobby() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isCreateOpen) return
+
+    const scrollY = window.scrollY
+    const body = document.body
+    const html = document.documentElement
+    const previousBody = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+    }
+    const previousHtmlOverflow = html.style.overflow
+
+    body.style.position = "fixed"
+    body.style.top = `-${scrollY}px`
+    body.style.width = "100%"
+    body.style.overflow = "hidden"
+    html.style.overflow = "hidden"
+
+    return () => {
+      body.style.overflow = previousBody.overflow
+      body.style.position = previousBody.position
+      body.style.top = previousBody.top
+      body.style.width = previousBody.width
+      html.style.overflow = previousHtmlOverflow
+      window.scrollTo(0, scrollY)
+    }
+  }, [isCreateOpen])
+
   const fetchRooms = async () => {
     try {
       const res = await fetch("/api/livekit/rooms")
