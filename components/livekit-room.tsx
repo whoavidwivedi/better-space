@@ -1248,28 +1248,16 @@ function RoomUI({
                 />
                 <TooltipContent>Emoji</TooltipContent>
               </Tooltip>
-              <PopoverContent className="z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl ring-1 ring-foreground/5">
-                <div className="border-b border-border/70 px-3.5 pt-3 pb-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background">
-                        <HugeiconsIcon icon={Happy01Icon} size={15} />
-                      </span>
-                      <div>
-                        <p className="font-display text-sm leading-tight font-bold">
-                          Send a reaction
-                        </p>
-                        <p className="font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase">
-                          Quick picks
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      or search below
-                    </span>
-                  </div>
+              <PopoverContent className="z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
+                  <h3 className="font-mono text-xs font-bold tracking-wider text-foreground uppercase">
+                    Reactions
+                  </h3>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    Tap or search
+                  </span>
                 </div>
-                <div className="flex items-center justify-between gap-1 overflow-x-auto border-b border-border/70 bg-muted/25 px-2.5 py-2">
+                <div className="flex items-center gap-1 overflow-x-auto border-b border-border/70 px-2.5 py-2">
                   {["👏", "🔥", "❤️", "😂", "🎉", "👍", "🚀", "💯"].map(
                     (emoji) => (
                       <Button
@@ -1279,7 +1267,7 @@ function RoomUI({
                         onClick={() => handleSendReaction(emoji)}
                         variant="ghost"
                         size="icon"
-                        className="size-8 shrink-0 rounded-lg text-lg transition-transform hover:-translate-y-0.5 hover:bg-background active:scale-90"
+                        className="size-8 shrink-0 rounded-lg text-lg transition-colors hover:bg-muted active:bg-muted"
                       >
                         {emoji}
                       </Button>
