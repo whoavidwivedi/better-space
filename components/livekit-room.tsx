@@ -31,7 +31,12 @@ import {
 } from "lucide-react"
 import { EmojiClickData, Theme } from "emoji-picker-react"
 import EmojiPicker from "emoji-picker-react"
-import { RoomEvent, Track } from "livekit-client"
+import {
+  ConnectionQuality,
+  ConnectionState,
+  RoomEvent,
+  Track,
+} from "livekit-client"
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 
 import { AudioVisualizer } from "@/components/audio-visualizer"
@@ -83,13 +88,11 @@ export function SpaceRoomLiveKit({
   roomName,
   userName,
   token,
-  hostSecret,
   onLeave,
 }: {
   roomName: string
   userName: string
   token: string
-  hostSecret?: string
   onLeave: () => void
 }) {
   const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
@@ -122,7 +125,6 @@ export function SpaceRoomLiveKit({
       <RoomUI
         roomName={roomName}
         userName={userName}
-        hostSecret={hostSecret}
         token={token}
         onLeave={onLeave}
       />
@@ -133,13 +135,11 @@ export function SpaceRoomLiveKit({
 function RoomUI({
   roomName,
   userName,
-  hostSecret,
   token,
   onLeave,
 }: {
   roomName: string
   userName: string
-  hostSecret?: string
   token: string
   onLeave: () => void
 }) {
@@ -147,6 +147,12 @@ function RoomUI({
   const { localParticipant } = useLocalParticipant()
   const participants = useParticipants()
   const { metadata } = useRoomInfo()
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    room.state
+  )
+  const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(
+    localParticipant.connectionQuality
+  )
 
   const [isDeafened, setIsDeafened] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -215,6 +221,27 @@ function RoomUI({
   const canPublish = Boolean(
     localParticipant.permissions?.canPublish || isHostOrCohost
   )
+
+  useEffect(() => {
+    const handleConnectionState = (state: ConnectionState) => {
+      setConnectionState(state)
+    }
+    const handleConnectionQuality = (
+      quality: ConnectionQuality,
+      participant: { identity: string }
+    ) => {
+      if (participant.identity === localParticipant.identity) {
+        setConnectionQuality(quality)
+      }
+    }
+
+    room.on(RoomEvent.ConnectionStateChanged, handleConnectionState)
+    room.on(RoomEvent.ConnectionQualityChanged, handleConnectionQuality)
+    return () => {
+      room.off(RoomEvent.ConnectionStateChanged, handleConnectionState)
+      room.off(RoomEvent.ConnectionQualityChanged, handleConnectionQuality)
+    }
+  }, [localParticipant.identity, room])
   const prevCanPublish = useRef(canPublish)
 
   useEffect(() => {
@@ -257,21 +284,56 @@ function RoomUI({
   })
 
   const [isEndSpaceOpen, setIsEndSpaceOpen] = useState(false)
+  const [isEndingSpace, setIsEndingSpace] = useState(false)
 
   const handleEndSpace = async () => {
+    if (isEndingSpace) return
+    setIsEndingSpace(true)
     setIsEndSpaceOpen(false)
     intentionalLeaveRef.current = true
     localStorage.removeItem(`space_host_disconnected_${roomName}`)
     try {
-      await fetch("/api/livekit/moderate", {
+      const res = await fetch("/api/livekit/moderate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomName, token, action: "end" }),
       })
+      if (!res.ok) {
+        intentionalLeaveRef.current = false
+        setIsEndingSpace(false)
+        const data = await res.json().catch(() => null)
+        toast.add({
+          title: data?.error?.message || "Failed to end space",
+          type: "error",
+        })
+      }
     } catch {
+      intentionalLeaveRef.current = false
+      setIsEndingSpace(false)
       toast.add({ title: "Failed to end space", type: "error" })
     }
   }
+
+  const connectionLabel =
+    connectionState === ConnectionState.Reconnecting ||
+    connectionState === ConnectionState.SignalReconnecting
+      ? "Reconnecting"
+      : connectionState === ConnectionState.Connecting
+        ? "Joining"
+        : connectionState === ConnectionState.Disconnected
+          ? "Disconnected"
+          : connectionQuality === ConnectionQuality.Poor ||
+              connectionQuality === ConnectionQuality.Lost
+            ? "Poor connection"
+            : "Connected"
+  const connectionTone =
+    connectionLabel === "Connected"
+      ? "bg-emerald-500"
+      : connectionLabel === "Poor connection"
+        ? "bg-amber-500"
+        : connectionLabel === "Disconnected"
+          ? "bg-destructive"
+          : "bg-amber-500 animate-pulse"
 
   const [micRequests, setMicRequests] = useState<string[]>([])
   const [reactions, setReactions] = useState<Record<string, string>>({})
@@ -296,7 +358,35 @@ function RoomUI({
       try {
         const decoder = new TextDecoder()
         const data = JSON.parse(decoder.decode(payload))
-        if (data.type === "REACTION" && data.emoji) {
+        if (
+          data.type === "COHOST_CREDENTIALS" &&
+          data.identity === userName &&
+          (!participant || participant.identity === roomHost)
+        ) {
+          if (data.secret) {
+            const query = new URLSearchParams({
+              room: roomName,
+              username: userName,
+            })
+            fetch(`/api/livekit/token?${query.toString()}`, {
+              headers: { "x-cohost-secret": data.secret },
+            })
+              .then((res) => {
+                if (!res.ok) {
+                  toast.add({
+                    title: "Could not activate co-host access",
+                    type: "error",
+                  })
+                }
+              })
+              .catch(() => {
+                toast.add({
+                  title: "Could not activate co-host access",
+                  type: "error",
+                })
+              })
+          }
+        } else if (data.type === "REACTION" && data.emoji) {
           displayReaction(
             participant?.identity || data.senderIdentity,
             data.emoji
@@ -335,7 +425,15 @@ function RoomUI({
       room.off(RoomEvent.DataReceived, handleData)
       room.off(RoomEvent.Disconnected, handleDisconnected)
     }
-  }, [room, isHostOrCohost, localParticipant, onLeave, userName])
+  }, [
+    room,
+    isHostOrCohost,
+    localParticipant,
+    onLeave,
+    roomHost,
+    roomName,
+    userName,
+  ])
 
   useEffect(() => {
     setMicRequests((prev) => {
@@ -694,6 +792,14 @@ function RoomUI({
           <h1 className="max-w-[180px] truncate font-display text-xs font-bold text-foreground sm:max-w-md sm:text-sm md:max-w-xl">
             {getDisplayRoomTitle(roomName)}
           </h1>
+          <div
+            role="status"
+            aria-label={`Connection status: ${connectionLabel}`}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-2 py-1 font-mono text-[9px] font-bold tracking-wide text-muted-foreground uppercase"
+          >
+            <span className={`size-1.5 rounded-full ${connectionTone}`} />
+            <span className="hidden sm:inline">{connectionLabel}</span>
+          </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -767,9 +873,10 @@ function RoomUI({
                     <Button
                       variant="destructive"
                       size="sm"
+                      disabled={isEndingSpace}
                       className="h-8 font-mono text-xs font-bold"
                     >
-                      End Space
+                      {isEndingSpace ? "Ending…" : "End Space"}
                     </Button>
                   }
                 />
@@ -791,6 +898,7 @@ function RoomUI({
                     <Button
                       variant="destructive"
                       onClick={handleEndSpace}
+                      disabled={isEndingSpace}
                       className="font-bold"
                     >
                       End for everyone
@@ -805,6 +913,15 @@ function RoomUI({
                   </div>
                 </PopoverContent>
               </Popover>
+              {isCohost && (
+                <Button
+                  variant="ghost"
+                  onClick={onLeave}
+                  className="h-8 rounded-xl font-mono text-xs font-bold text-red-500 hover:bg-red-500/10 hover:text-red-500"
+                >
+                  Leave
+                </Button>
+              )}
             </>
           ) : (
             <Button
@@ -878,7 +995,11 @@ function RoomUI({
         )}
 
         {/* Tactile Hardware Bottom Audio Controls Bar */}
-        <div className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2">
+        <div
+          role="toolbar"
+          aria-label="Space controls"
+          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-x-auto rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2"
+        >
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
             {/* Audio Settings Popover */}
             <Popover
@@ -1099,6 +1220,7 @@ function RoomUI({
                         <Button
                           variant="outline"
                           size="icon"
+                          aria-label="Open emoji reactions"
                           className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
                         >
                           <HugeiconsIcon icon={Happy01Icon} size={17} />
@@ -1148,6 +1270,7 @@ function RoomUI({
                           <Button
                             variant="outline"
                             size="icon"
+                            aria-label={`Open microphone requests${micRequests.length ? ` (${micRequests.length} pending)` : ""}`}
                             className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
                           >
                             <HugeiconsIcon icon={VoiceIcon} size={17} />
@@ -1247,6 +1370,8 @@ function RoomUI({
               <>
                 <Button
                   onClick={toggleDeafen}
+                  aria-label={isDeafened ? "Undeafen" : "Deafen"}
+                  aria-pressed={isDeafened}
                   variant={isDeafened ? "destructive" : "secondary"}
                   size="lg"
                   className="h-9 shrink-0 gap-1.5 rounded-xl px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4"
@@ -1262,6 +1387,8 @@ function RoomUI({
                 <Button
                   onClick={toggleMute}
                   disabled={isDeafened}
+                  aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                  aria-pressed={isMuted}
                   variant={isMuted ? "destructive" : "default"}
                   size="lg"
                   className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
@@ -1287,6 +1414,11 @@ function RoomUI({
               <Button
                 onClick={requestMic}
                 disabled={hasRequestedMicLocal}
+                aria-label={
+                  hasRequestedMicLocal
+                    ? "Microphone requested"
+                    : "Request microphone"
+                }
                 size="lg"
                 className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
               >
@@ -1328,6 +1460,7 @@ function ParticipantTile({
   hasRequestedMic?: boolean
   onClearRequest?: () => void
 }) {
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
   const isSpeaking = useIsSpeaking(participant)
   const isAudioMuted = !participant.isMicrophoneEnabled
   const name = participant.identity || "Unknown"
@@ -1352,6 +1485,8 @@ function ParticipantTile({
   const volume = useTrackVolume(trackPub?.track)
 
   const handleModerate = async (action: string) => {
+    if (pendingAction) return
+    setPendingAction(action)
     try {
       const res = await fetch("/api/livekit/moderate", {
         method: "POST",
@@ -1364,8 +1499,8 @@ function ParticipantTile({
           action,
         }),
       })
+      const data = await res.json()
       if (!res.ok) {
-        const data = await res.json()
         toast.add({
           title: `Failed to ${action}: ${data.error?.message || "Unknown"}`,
           type: "error",
@@ -1390,6 +1525,8 @@ function ParticipantTile({
       }
     } catch {
       toast.add({ title: `Failed to ${action}`, type: "error" })
+    } finally {
+      setPendingAction(null)
     }
   }
 
@@ -1492,6 +1629,7 @@ function ParticipantTile({
               {!canPublish && !isThisParticipantHost && (
                 <DropdownMenuItem
                   onClick={() => handleModerate("grant_mic")}
+                  disabled={pendingAction !== null}
                   className="font-semibold text-foreground focus:text-foreground"
                 >
                   Grant Mic
@@ -1501,12 +1639,13 @@ function ParticipantTile({
                 <>
                   <DropdownMenuItem
                     onClick={() => handleModerate("mute")}
-                    disabled={isAudioMuted}
+                    disabled={isAudioMuted || pendingAction !== null}
                   >
                     Mute Speaker
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleModerate("revoke_mic")}
+                    disabled={pendingAction !== null}
                     className="text-amber-600 focus:text-amber-600"
                   >
                     Revoke Mic
@@ -1516,6 +1655,7 @@ function ParticipantTile({
               {!isThisParticipantHost && (
                 <DropdownMenuItem
                   onClick={() => handleModerate("kick")}
+                  disabled={pendingAction !== null}
                   className="text-destructive focus:text-destructive"
                 >
                   Remove from space
@@ -1526,6 +1666,7 @@ function ParticipantTile({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => handleModerate("grant_cohost")}
+                    disabled={pendingAction !== null}
                   >
                     Make Co-host
                   </DropdownMenuItem>
@@ -1536,6 +1677,7 @@ function ParticipantTile({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => handleModerate("revoke_cohost")}
+                    disabled={pendingAction !== null}
                     className="text-destructive focus:text-destructive"
                   >
                     Remove Co-host

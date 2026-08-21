@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { isSpaceEnded } from "@/lib/ended-spaces"
+import { roleCookieName } from "@/lib/space-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -179,5 +180,15 @@ export async function POST(req: NextRequest) {
   })
 
   const token = await at.toJwt()
-  return NextResponse.json({ data: { roomName: cleanRoom, token, hostSecret } })
+  const response = NextResponse.json({ data: { roomName: cleanRoom, token } })
+  response.cookies.set({
+    name: roleCookieName(cleanRoom),
+    value: hostSecret,
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/api/livekit",
+    maxAge: 60 * 60 * 24 * 30,
+  })
+  return response
 }

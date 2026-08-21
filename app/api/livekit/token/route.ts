@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import { hasCohostAccess, roleCookieName } from "@/lib/space-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
   const usernameQuery = req.nextUrl.searchParams.get("username")
   const avatarQuery = req.nextUrl.searchParams.get("avatar")
   const hostSecret = req.headers.get("x-host-secret")?.trim() ?? ""
+  const cohostSecret = req.headers.get("x-cohost-secret")?.trim() ?? ""
 
   if (!room) {
     return NextResponse.json(
@@ -35,6 +37,11 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     )
   }
+
+  const savedRoleSecret =
+    req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
+  const suppliedHostSecret = hostSecret || savedRoleSecret
+  const suppliedCohostSecret = cohostSecret || savedRoleSecret
 
   if (isSpaceEnded(cleanRoom)) {
     const ended = getEndedSpace(cleanRoom)
@@ -116,12 +123,12 @@ export async function GET(req: NextRequest) {
           )
         }
         if (meta.host === username) {
-          if (meta.hostSecret && hostSecret === meta.hostSecret) {
+          if (meta.hostSecret && suppliedHostSecret === meta.hostSecret) {
             isHost = true
             activeHostSecret = meta.hostSecret
           } else if (!meta.hostSecret) {
             isHost = true
-            activeHostSecret = hostSecret || crypto.randomUUID()
+            activeHostSecret = suppliedHostSecret || crypto.randomUUID()
             meta.hostSecret = activeHostSecret
             await roomService.updateRoomMetadata(
               cleanRoom,
@@ -143,7 +150,14 @@ export async function GET(req: NextRequest) {
         }
 
         if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
-          isCohost = true
+          if (hasCohostAccess(meta, username, suppliedCohostSecret)) {
+            isCohost = true
+          } else {
+            return NextResponse.json(
+              { error: { message: "Invalid co-host credentials" } },
+              { status: 403 }
+            )
+          }
         }
       } catch {}
     } else {
@@ -206,13 +220,29 @@ export async function GET(req: NextRequest) {
   })
 
   const token = await at.toJwt()
-  return NextResponse.json({
+  const response = NextResponse.json({
     data: {
       token,
-      hostSecret: isHost ? activeHostSecret : undefined,
       isHost,
       isCohost,
       roomName: cleanRoom,
     },
   })
+  const roleSecret = isHost
+    ? activeHostSecret
+    : isCohost
+      ? suppliedCohostSecret
+      : ""
+  if (roleSecret) {
+    response.cookies.set({
+      name: roleCookieName(cleanRoom),
+      value: roleSecret,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      path: "/api/livekit",
+      maxAge: 60 * 60 * 24 * 30,
+    })
+  }
+  return response
 }

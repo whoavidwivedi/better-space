@@ -57,7 +57,6 @@ export function SpaceJoin() {
   const [hasJoined, setHasJoined] = useState(false)
   const [token, setToken] = useState("")
   const [activeRoomName, setActiveRoomName] = useState("")
-  const [hostSecret, setHostSecret] = useState("")
   const [endedSpace, setEndedSpace] = useState<EndedSpace | null>(null)
   const [roomHost, setRoomHost] = useState("")
   const [avatarSeed, setAvatarSeed] = useState(() => {
@@ -191,14 +190,7 @@ export function SpaceJoin() {
         username: cleanUser,
         avatar: avatarSeed,
       })
-      const savedSecret =
-        localStorage.getItem(`space_host_secret_${cleanRoom}`) || ""
-      const res = await fetch(
-        `${apiUrl}/api/livekit/token?${query.toString()}`,
-        {
-          headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
-        }
-      )
+      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
 
       if (res.status === 410 || data.ended || data.data?.ended) {
@@ -216,11 +208,6 @@ export function SpaceJoin() {
       }
 
       if (data.data?.token) {
-        const receivedSecret = data.data.hostSecret || savedSecret
-        if (receivedSecret) {
-          localStorage.setItem(`space_host_secret_${cleanRoom}`, receivedSecret)
-          setHostSecret(receivedSecret)
-        }
         setToken(data.data.token)
         setActiveRoomName(cleanRoom)
         setHasJoined(true)
@@ -255,7 +242,6 @@ export function SpaceJoin() {
         roomName={activeRoomName}
         userName={userName}
         token={token}
-        hostSecret={hostSecret}
         onLeave={() => {
           setHasJoined(false)
           setToken("")

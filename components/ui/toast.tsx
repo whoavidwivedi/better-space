@@ -16,6 +16,20 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const toast = ToastPrimitive.createToastManager()
+const addToast = toast.add.bind(toast)
+
+toast.add = ((options) => {
+  const title =
+    typeof options.title === "string" ? options.title : "notification"
+  const type = options.type || "info"
+  return addToast({
+    ...options,
+    id: options.id || `toast:${type}:${title}`,
+    priority:
+      options.priority ||
+      (["error", "warning", "mic-request"].includes(type) ? "high" : "low"),
+  })
+}) as typeof toast.add
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />
@@ -50,7 +64,7 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
         "data-expanded:[transform:translateY(var(--offset-y))]",
         "data-starting-style:translate-y-4 data-starting-style:scale-95 data-starting-style:opacity-0",
         "data-ending-style:translate-y-4 data-ending-style:scale-95 data-ending-style:opacity-0",
-        "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+        "transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform",
         className
       )}
       {...props}

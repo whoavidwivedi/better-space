@@ -1,6 +1,17 @@
-import { RoomServiceClient, TokenVerifier } from "livekit-server-sdk"
+import {
+  DataPacket_Kind,
+  RoomServiceClient,
+  TokenVerifier,
+} from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { markSpaceEnded, type EndedSpaceParticipant } from "@/lib/ended-spaces"
+import {
+  decryptCohostSecrets,
+  encryptCohostSecrets,
+  hasCohostAccess,
+  roleCookieName,
+} from "@/lib/space-auth"
+import { canPerformModerationAction } from "@/lib/moderation-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -16,6 +27,13 @@ function getRoomService() {
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { roomName, targetIdentity, action, token } = body
+  const origin = req.headers.get("origin")
+  if (origin && origin !== new URL(req.url).origin) {
+    return NextResponse.json(
+      { error: { message: "Cross-origin requests are not allowed" } },
+      { status: 403 }
+    )
+  }
 
   if (!roomName || !action || !token) {
     return NextResponse.json(
@@ -25,6 +43,7 @@ export async function POST(req: NextRequest) {
   }
 
   const cleanRoom = roomName.trim().substring(0, 30)
+  const roleSecret = req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
 
   let identity = ""
   try {
@@ -67,12 +86,10 @@ export async function POST(req: NextRequest) {
     targetRoom = rooms.length > 0 ? rooms[0] : null
     if (targetRoom && targetRoom.metadata) {
       meta = JSON.parse(targetRoom.metadata)
-      if (meta.host === identity) {
+      if (meta.host === identity && meta.hostSecret === roleSecret) {
         isHost = true
       }
-      if (meta.cohosts && meta.cohosts.includes(identity)) {
-        isCohost = true
-      }
+      isCohost = hasCohostAccess(meta, identity, roleSecret)
     }
   } catch {}
 
@@ -85,7 +102,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if ((action === "grant_cohost" || action === "revoke_cohost") && !isHost) {
+  if (!canPerformModerationAction(action, isHost, isCohost)) {
     return NextResponse.json(
       { error: { message: "Only the main host can manage co-hosts" } },
       { status: 403 }
@@ -128,8 +145,25 @@ export async function POST(req: NextRequest) {
       }
       if (!meta.cohosts.includes(targetIdentity)) {
         meta.cohosts.push(targetIdentity)
-        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
       }
+      const cohostSecrets = decryptCohostSecrets(meta.cohostSecretsEncrypted)
+      const cohostSecret = cohostSecrets[targetIdentity] || crypto.randomUUID()
+      cohostSecrets[targetIdentity] = cohostSecret
+      meta.cohostSecretsEncrypted = encryptCohostSecrets(cohostSecrets)
+      delete meta.cohostSecrets
+      await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+      await roomService.sendData(
+        cleanRoom,
+        new TextEncoder().encode(
+          JSON.stringify({
+            type: "COHOST_CREDENTIALS",
+            identity: targetIdentity,
+            secret: cohostSecret,
+          })
+        ),
+        DataPacket_Kind.RELIABLE,
+        { destinationIdentities: [targetIdentity] }
+      )
       return NextResponse.json({ data: { success: true } })
 
     case "revoke_cohost":
@@ -143,8 +177,14 @@ export async function POST(req: NextRequest) {
         meta.cohosts = meta.cohosts.filter(
           (id: string) => id !== targetIdentity
         )
-        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
       }
+      const updatedCohostSecrets = decryptCohostSecrets(
+        meta.cohostSecretsEncrypted
+      )
+      delete updatedCohostSecrets[targetIdentity]
+      meta.cohostSecretsEncrypted = encryptCohostSecrets(updatedCohostSecrets)
+      delete meta.cohostSecrets
+      await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
       return NextResponse.json({ data: { success: true } })
 
     case "end":
@@ -191,7 +231,10 @@ export async function POST(req: NextRequest) {
         try {
           await roomService.createRoom({
             name: cleanRoom,
-            emptyTimeout: 86400,
+            // LiveKit is the durable tombstone store on Vercel. Keep the
+            // ended name reserved for a year; the local JSON write is only a
+            // best-effort cache for local development.
+            emptyTimeout: 31536000,
             maxParticipants: 0,
             metadata: JSON.stringify({
               ended: true,

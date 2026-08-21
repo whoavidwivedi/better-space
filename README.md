@@ -1,9 +1,9 @@
 <div align="center">
   <img src="public/Userpics/SVG/Circle/dynamic-logo.svg" alt="Better Space Logo" width="120" height="120" />
-  
-  # Better Space
 
-  High-fidelity, zero-account real-time audio spaces built with Next.js 16, LiveKit, and Base UI.
+# Better Space
+
+High-fidelity, zero-account real-time audio spaces built with Next.js 16, LiveKit, and Base UI.
 </div>
 
 <br/>
@@ -30,18 +30,22 @@
 ## Getting Started
 
 ### 1. Clone the repository
+
 ```bash
 git clone https://github.com/whoavidwivedi/better-space.git
 cd better-space
 ```
 
 ### 2. Install dependencies
+
 ```bash
 bun install
 ```
 
 ### 3. Set up Environment Variables
+
 Create a `.env.local` file with your LiveKit credentials:
+
 ```env
 LIVEKIT_API_KEY=your_livekit_api_key
 LIVEKIT_API_SECRET=your_livekit_api_secret
@@ -49,7 +53,24 @@ NEXT_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
+## Deployment
+
+Production is deployed through the Vercel Git integration from `main`. GitHub
+Actions runs CI checks on pull requests and pushes; there is no Render deploy
+step. Configure the LiveKit variables in the Vercel project environment before
+enabling production traffic.
+
+### Vercel preview smoke test
+
+- Create a space as the host and join it from a second browser session.
+- Promote the second session to co-host, then verify it can end or leave the space.
+- Revoke co-host access and verify the old session can no longer moderate or end it.
+- Refresh during a temporary network interruption and verify the connection status changes visibly.
+- Confirm toasts remain above the bottom audio-control dock on narrow screens.
+- Confirm the browser has no `space_host_secret_*` or `space_cohost_secret_*` local-storage entries.
+
 ### 4. Run the development server
+
 ```bash
 bun run dev
 ```
@@ -58,9 +79,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Scripts
 
-- `bun run dev`   Start the local development server
-- `bun run build`   Create an optimized production build
-- `bun run lint`   Run ESLint checks
-- `bun run typecheck`   Run TypeScript type checks
-- `bun run format`   Format code files with Prettier
-- `bun test`   Run the test suite
+- `bun run dev` Start the local development server
+- `bun run build` Create an optimized production build
+- `bun run lint` Run ESLint checks
+- `bun run typecheck` Run TypeScript type checks
+- `bun run format` Format code files with Prettier
+- `bun test` Run the test suite

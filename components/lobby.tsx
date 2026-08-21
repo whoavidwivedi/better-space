@@ -76,7 +76,6 @@ export function Lobby() {
   const [hasJoined, setHasJoined] = useState(false)
   const [token, setToken] = useState("")
   const [activeRoomName, setActiveRoomName] = useState("")
-  const [hostSecret, setHostSecret] = useState("")
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isJoinOpen, setIsJoinOpen] = useState(false)
@@ -145,9 +144,6 @@ export function Lobby() {
       JSON.stringify({ userName: uName, avatarSeed: joinAvatarSeed })
     )
 
-    const savedSecret =
-      localStorage.getItem(`space_host_secret_${roomName}`) || ""
-    setHostSecret(savedSecret)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
       const query = new URLSearchParams({
@@ -155,12 +151,7 @@ export function Lobby() {
         username: uName,
         avatar: joinAvatarSeed,
       })
-      const res = await fetch(
-        `${apiUrl}/api/livekit/token?${query.toString()}`,
-        {
-          headers: savedSecret ? { "x-host-secret": savedSecret } : undefined,
-        }
-      )
+      const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
       if (data.data?.token) {
         setActiveUserName(uName)
@@ -207,14 +198,6 @@ export function Lobby() {
       const data = await res.json()
 
       if (res.ok && data.data?.token) {
-        const secret = data.data.hostSecret
-        if (secret) {
-          localStorage.setItem(
-            `space_host_secret_${data.data.roomName || rName}`,
-            secret
-          )
-          setHostSecret(secret)
-        }
         setActiveUserName(uName)
         setToken(data.data.token)
         setActiveRoomName(data.data.roomName || rName)
@@ -257,7 +240,6 @@ export function Lobby() {
         roomName={activeRoomName}
         userName={activeUserName}
         token={token}
-        hostSecret={hostSecret}
         onLeave={() => {
           setHasJoined(false)
           setToken("")
