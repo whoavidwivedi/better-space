@@ -20,6 +20,19 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v1.3.5",
+    date: "2026-08-21",
+    label: "Vercel deployment stability",
+    summary:
+      "Pinned the Vercel build to a stable Bun runtime after the previous runtime crashed after a successful build.",
+    highlights: [
+      "Pinned Vercel install and build commands to Bun 1.3.1.",
+      "Kept the build pipeline Bun-only from dependency install through production build.",
+      "Verified the Vercel-style build command locally with all routes generated.",
+    ],
+    tone: "security",
+  },
+  {
     version: "v1.3.4",
     date: "2026-08-21",
     label: "Dependency security hardening",
@@ -189,7 +202,7 @@ export default function ChangelogPage() {
           <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1fr_20rem] lg:items-end lg:px-8">
             <div>
               <p className="mb-6 font-mono text-[10px] font-bold tracking-[0.28em] text-muted-foreground uppercase">
-                Public changelog / 11 releases
+                Public changelog / 12 releases
               </p>
               <h1 className="max-w-3xl font-display text-5xl leading-[0.94] font-black tracking-[-0.055em] sm:text-7xl">
                 Built in public.
@@ -225,7 +238,7 @@ export default function ChangelogPage() {
 
         <section className="mx-auto grid max-w-6xl grid-cols-3 divide-x divide-border border-b border-border px-4 sm:px-6 lg:px-8">
           {[
-            ["11", "published releases"],
+            ["12", "published releases"],
             ["03", "security milestones"],
             ["∞", "rooms to come"],
           ].map(([value, label]) => (
