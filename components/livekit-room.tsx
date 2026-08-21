@@ -688,7 +688,6 @@ function RoomUI({
       <header className="sticky top-0 z-40 flex h-12 items-center justify-between gap-2 border-b border-border bg-card/80 px-2.5 backdrop-blur-md sm:h-14 sm:gap-3 sm:px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <BetterSpaceMark
-            animated
             className="size-3.5 shrink-0 text-foreground sm:size-4"
             strokeWidth={4}
           />
@@ -762,52 +761,50 @@ function RoomUI({
 
           {isHostOrCohost ? (
             <>
-              {isHost && (
-                <Popover open={isEndSpaceOpen} onOpenChange={setIsEndSpaceOpen}>
-                  <PopoverTrigger
-                    render={
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-8 font-mono text-xs font-bold"
-                      >
-                        End Space
-                      </Button>
-                    }
-                  />
-                  <PopoverContent
-                    side="bottom"
-                    align="end"
-                    className="w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-xl"
-                  >
-                    <PopoverHeader>
-                      <PopoverTitle className="text-sm font-bold">
-                        End Studio Space
-                      </PopoverTitle>
-                      <PopoverDescription className="text-xs">
-                        Are you sure you want to end this space? Everyone will
-                        be disconnected.
-                      </PopoverDescription>
-                    </PopoverHeader>
-                    <div className="flex flex-col gap-2 pt-3 font-mono text-xs">
-                      <Button
-                        variant="destructive"
-                        onClick={handleEndSpace}
-                        className="font-bold"
-                      >
-                        End for everyone
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsEndSpaceOpen(false)}
-                        className="rounded-xl"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
+              <Popover open={isEndSpaceOpen} onOpenChange={setIsEndSpaceOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 font-mono text-xs font-bold"
+                    >
+                      End Space
+                    </Button>
+                  }
+                />
+                <PopoverContent
+                  side="bottom"
+                  align="end"
+                  className="w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-xl"
+                >
+                  <PopoverHeader>
+                    <PopoverTitle className="text-sm font-bold">
+                      End Studio Space
+                    </PopoverTitle>
+                    <PopoverDescription className="text-xs">
+                      Are you sure you want to end this space? Everyone will be
+                      disconnected.
+                    </PopoverDescription>
+                  </PopoverHeader>
+                  <div className="flex flex-col gap-2 pt-3 font-mono text-xs">
+                    <Button
+                      variant="destructive"
+                      onClick={handleEndSpace}
+                      className="font-bold"
+                    >
+                      End for everyone
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEndSpaceOpen(false)}
+                      className="rounded-xl"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </>
           ) : (
             <Button
