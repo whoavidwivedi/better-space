@@ -96,8 +96,7 @@ const releases = [
     version: "v1.1.0",
     date: "2026-08-07",
     label: "Mobile experience & space lifecycle",
-    summary:
-      "Better Space became more dependable across devices and links.",
+    summary: "Better Space became more dependable across devices and links.",
     highlights: [
       "Added responsive lobby and room experiences for mobile and tablet.",
       "Ended spaces now stay closed, so old invite links no longer reopen them.",
@@ -155,8 +154,8 @@ export default function ChangelogPage() {
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground">
-              Every release of Better Space — features, improvements, and
-              fixes. {releases.length} releases so far.
+              Every release of Better Space — features, improvements, and fixes.{" "}
+              {releases.length} releases so far.
             </p>
           </div>
         </header>

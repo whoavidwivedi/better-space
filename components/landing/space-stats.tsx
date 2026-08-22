@@ -1,16 +1,16 @@
 const UNIQUE_PARTICIPANTS = {
   value: "266",
   spark: [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 8, 22, 9, 4, 7, 3, 10, 2, 5,
-    1, 4, 2, 6,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 8, 22, 9, 4, 7, 3, 10, 2, 5, 1,
+    4, 2, 6,
   ],
 }
 
 const TOTAL_ROOMS = {
   value: "157",
   spark: [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 6, 16, 7, 3, 5, 2, 7, 1, 3,
-    1, 4, 2, 5,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 6, 16, 7, 3, 5, 2, 7, 1, 3, 1,
+    4, 2, 5,
   ],
 }
 
@@ -70,13 +70,7 @@ function StatCard({
   )
 }
 
-function BigStat({
-  value,
-  unit,
-}: {
-  value: string
-  unit?: string
-}) {
+function BigStat({ value, unit }: { value: string; unit?: string }) {
   return (
     <p className="flex items-baseline gap-1.5 font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
       {value}
@@ -101,7 +95,8 @@ function Sparkline({
   const max = Math.max(...data) || 1
   const step = w / Math.max(data.length - 1, 1)
   const points = data.map(
-    (v, i) => `${(i * step).toFixed(2)},${(h - 3 - (v / max) * (h - 8)).toFixed(2)}`
+    (v, i) =>
+      `${(i * step).toFixed(2)},${(h - 3 - (v / max) * (h - 8)).toFixed(2)}`
   )
 
   return (
@@ -133,14 +128,11 @@ function Sparkline({
   )
 }
 
-function Donut({
-  segments,
-}: {
-  segments: { label: string; value: number }[]
-}) {
+function Donut({ segments }: { segments: { label: string; value: number }[] }) {
   const arcs = segments.map((s, i) => ({
     ...s,
-    dashOffset: 25 - segments.slice(0, i).reduce((sum, prev) => sum + prev.value, 0),
+    dashOffset:
+      25 - segments.slice(0, i).reduce((sum, prev) => sum + prev.value, 0),
   }))
 
   return (
@@ -191,7 +183,7 @@ function DonutLegend({
             style={{ opacity: SHADES[i] }}
           />
           <span className="text-muted-foreground">{s.label}</span>
-          <span className="ml-auto tabular-nums text-foreground">
+          <span className="ml-auto text-foreground tabular-nums">
             {s.value}%
           </span>
         </li>
@@ -291,7 +283,7 @@ export function SpaceStats() {
                       {c.rank}
                     </span>
                     <span>{c.name}</span>
-                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
                       {c.count}
                     </span>
                   </div>
@@ -323,7 +315,7 @@ export function SpaceStats() {
                 <span className="text-muted-foreground">
                   WebRTC participant minutes
                 </span>
-                <span className="tabular-nums text-foreground">5,118 min</span>
+                <span className="text-foreground tabular-nums">5,118 min</span>
               </p>
             </div>
           </StatCard>
