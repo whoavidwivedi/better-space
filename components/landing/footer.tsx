@@ -111,8 +111,11 @@ export function Footer() {
       </div>
 
       {/* Oversized brand statement */}
-      <div aria-hidden="true" className="pointer-events-none relative -mt-2 select-none">
-        <p className="animate-pulse flex flex-wrap items-baseline justify-center gap-x-[0.18em] px-2 [animation-duration:5s] [font-size:clamp(3rem,14vw,13rem)] font-display leading-[0.82] font-black tracking-tighter whitespace-nowrap text-foreground/90 motion-reduce:animate-none">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none relative -mt-2 select-none"
+      >
+        <p className="flex animate-pulse flex-wrap items-baseline justify-center gap-x-[0.18em] px-2 font-display [font-size:clamp(3rem,14vw,13rem)] leading-[0.82] font-black tracking-tighter whitespace-nowrap text-foreground/90 [animation-duration:5s] motion-reduce:animate-none">
           BETTER
           <span className="font-serif-display font-normal tracking-normal text-muted-foreground normal-case italic">
             space
