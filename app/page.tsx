@@ -2,6 +2,7 @@ import React from "react"
 import { Navbar } from "@/components/common/navbar"
 import { LiveStageHero } from "@/components/landing/live-stage-hero"
 import { LiveSpacesRadar } from "@/components/landing/live-spaces-radar"
+import { SpaceStats } from "@/components/landing/space-stats"
 import { ProductPillars } from "@/components/landing/product-pillars"
 import { Footer } from "@/components/landing/footer"
 
@@ -12,6 +13,7 @@ export default function HomePage() {
       <main className="flex flex-1 flex-col">
         <LiveStageHero />
         <LiveSpacesRadar />
+        <SpaceStats />
         <ProductPillars />
       </main>
       <Footer />

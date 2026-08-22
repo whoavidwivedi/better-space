@@ -8,45 +8,20 @@ import { Footer } from "@/components/landing/footer"
 export const metadata: Metadata = {
   title: "Changelog",
   description:
-    "A public record of Better Space features, improvements, and security work.",
+    "A public record of Better Space features, improvements, and fixes.",
   alternates: { canonical: "/changelog" },
 }
 
 const releases = [
   {
-    version: "v1.3.7",
+    version: "v1.3.8",
     date: "2026-08-21",
-    label: "Vercel build runtime compatibility",
+    label: "Cleaner emoji reactions",
     summary:
-      "Kept Bun for dependency installation while routing the Vercel Next.js build through Node to avoid a confirmed host Bun crash after successful compilation.",
+      "The emoji reaction popover got a refresh, making it quicker to react during a live space.",
     highlights: [
-      "Vercel installs dependencies and runs the build with Bun 1.3.14",
-      "Vercel uses the stable Webpack build path instead of the crashing Turbopack post-build path",
-      "Verified compilation, typechecking, static generation, and route output locally",
-    ],
-  },
-  {
-    version: "v1.3.5",
-    date: "2026-08-21",
-    label: "Vercel deployment stability",
-    summary:
-      "Pinned the Vercel build to a stable Bun runtime after the previous runtime crashed after a successful build.",
-    highlights: [
-      "Pinned Vercel install and build commands to Bun 1.3.1.",
-      "Kept the build pipeline Bun-only from dependency install through production build.",
-      "Verified the Vercel-style build command locally with all routes generated.",
-    ],
-  },
-  {
-    version: "v1.3.4",
-    date: "2026-08-21",
-    label: "Dependency security hardening",
-    summary:
-      "Updated the framework and dependency graph, then pinned patched transitive packages so the production install is audit-clean.",
-    highlights: [
-      "Updated Next.js and its lint integration to patched releases.",
-      "Added Bun dependency overrides for vulnerable transitive packages.",
-      "Verified a clean high-severity vulnerability audit with a frozen lockfile.",
+      "A simpler, more focused reaction picker.",
+      "Reactions stay out of the way of room controls.",
     ],
   },
   {
@@ -70,7 +45,6 @@ const releases = [
     highlights: [
       "Preserved the page position while the launch form is open.",
       "Restored the original scroll state when the form closes.",
-      "Verified focus behavior at a 390 × 844 mobile viewport.",
     ],
   },
   {
@@ -82,7 +56,6 @@ const releases = [
     highlights: [
       "New cohosts receive access before moderation controls activate.",
       "Revoked cohosts lose publish access consistently.",
-      "Added regression coverage for promotion and revocation boundaries.",
     ],
   },
   {
@@ -93,67 +66,53 @@ const releases = [
       "Hosts can now share the room workload without sharing authority, with cohost moderation and end-space controls.",
     highlights: [
       "Added cohost promotion, revocation, and end-space controls.",
-      "Moved moderation authorization to the server boundary.",
-      "Encrypted cohost secrets and added access validation tests.",
+      "Moderation actions are enforced securely on the server.",
     ],
   },
   {
     version: "v1.2.1",
     date: "2026-08-14",
-    label: "Footer, documentation & brand polish",
+    label: "Footer & brand polish",
     summary:
-      "The public surface got a clearer footer, a sharper README, and a more consistent Better Space identity.",
+      "The public surface got a clearer footer and a more consistent Better Space identity.",
     highlights: [
       "Added direct Website, GitHub, X, and LinkedIn links.",
-      "Updated the README to match the current product and stack.",
-      "Added a dynamic animated logo asset for project documentation.",
+      "Refreshed branding across the site for a consistent look.",
     ],
   },
   {
     version: "v1.2.0",
     date: "2026-08-07",
-    label: "Lobby redesign & API security",
+    label: "Lobby redesign & security hardening",
     summary:
-      "A cleaner monochrome lobby arrived alongside stronger API validation and a fix for browser-visible secrets.",
+      "A cleaner monochrome lobby arrived alongside stronger security behind the scenes.",
     highlights: [
       "Migrated interface icons to Lucide and standardized buttons.",
-      "Refined lobby cards, footer, hydration, and responsive states.",
-      "Hardened API boundaries and removed secret leakage paths.",
+      "Refined lobby cards, footer, and responsive states.",
+      "Strengthened API security and closed privacy gaps.",
     ],
   },
   {
     version: "v1.1.0",
     date: "2026-08-07",
-    label: "Mobile lobby, room lifecycle & CI",
+    label: "Mobile experience & space lifecycle",
     summary:
-      "Better Space became more dependable across devices, links, and deployments.",
+      "Better Space became more dependable across devices and links.",
     highlights: [
       "Added responsive lobby and room experiences for mobile and tablet.",
-      "Added durable ended-space handling to prevent stale links from reviving rooms.",
-      "Added GitHub Actions CI, release automation, and Bun-only validation scripts.",
+      "Ended spaces now stay closed, so old invite links no longer reopen them.",
     ],
   },
   {
     version: "v1.0.2",
     date: "2026-08-04",
-    label: "Avatar fixes & security hardening",
+    label: "Avatar fixes & accessibility",
     summary:
-      "Avatars became reliable under load while a set of high-severity dependency advisories was closed.",
+      "Avatars became reliable under load, and the app respects your motion preferences.",
     highlights: [
       "Reduced avatar picker request pressure and fixed blank avatar states.",
-      "Updated Next.js dependencies to address SSRF, bypass, and DoS advisories.",
-      "Bumped the PWA cache and respected reduced-motion preferences.",
-    ],
-  },
-  {
-    version: "v1.0.1",
-    date: "2026-08-04",
-    label: "Release hygiene & hardening",
-    summary:
-      "The release foundation was tightened for repeatable production delivery.",
-    highlights: [
-      "Hardened repository and release hygiene.",
-      "Prepared consistent versioned releases and changelog tracking.",
+      "Addressed dependency security advisories.",
+      "Respected reduced-motion preferences.",
     ],
   },
   {
@@ -196,8 +155,8 @@ export default function ChangelogPage() {
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground">
-              Every release of Better Space — features, fixes, and security
-              work. {releases.length} releases so far.
+              Every release of Better Space — features, improvements, and
+              fixes. {releases.length} releases so far.
             </p>
           </div>
         </header>
