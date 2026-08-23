@@ -1,7 +1,18 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
-import { hasCohostAccess, roleCookieName } from "@/lib/space-auth"
+import {
+  decryptSpaceSecret,
+  encryptSpaceSecret,
+  hasCohostAccess,
+  hasHostAccess,
+  roleCookieName,
+} from "@/lib/space-auth"
+
+const ROOM_PATTERN = /^[a-zA-Z0-9_-]+$/
+const MAX_ROOM_LENGTH = 30
+const MAX_USERNAME_LENGTH = 30
+const MAX_AVATAR_LENGTH = 200
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -14,30 +25,46 @@ function getRoomService() {
   return new RoomServiceClient(wsUrl, apiKey, apiSecret)
 }
 
+function badRequest(message: string) {
+  return NextResponse.json({ error: { message } }, { status: 400 })
+}
+
+function serverError() {
+  return NextResponse.json(
+    { error: { message: "Unable to issue a room token" } },
+    { status: 500 }
+  )
+}
+
 export async function GET(req: NextRequest) {
-  const room = req.nextUrl.searchParams.get("room")
-  const usernameQuery = req.nextUrl.searchParams.get("username")
-  const avatarQuery = req.nextUrl.searchParams.get("avatar")
+  const room = req.nextUrl.searchParams.get("room")?.trim() ?? ""
+  const usernameQuery = req.nextUrl.searchParams.get("username")?.trim() ?? ""
+  const avatar = req.nextUrl.searchParams.get("avatar")?.trim() ?? ""
   const hostSecret = req.headers.get("x-host-secret")?.trim() ?? ""
   const cohostSecret = req.headers.get("x-cohost-secret")?.trim() ?? ""
 
-  if (!room) {
+  const origin = req.headers.get("origin")
+  if (origin && origin !== new URL(req.url).origin) {
     return NextResponse.json(
-      { error: { message: "Missing room" } },
-      { status: 400 }
+      { error: { message: "Cross-origin requests are not allowed" } },
+      { status: 403 }
     )
   }
 
-  const cleanRoom = room.trim().substring(0, 30)
-  const avatar = avatarQuery?.trim() ?? ""
-
-  if (!/^[a-zA-Z0-9_-]+$/.test(cleanRoom)) {
-    return NextResponse.json(
-      { error: { message: "Invalid room name" } },
-      { status: 400 }
-    )
+  if (!room) return badRequest("Missing room")
+  if (room.length > MAX_ROOM_LENGTH || !ROOM_PATTERN.test(room)) {
+    return badRequest("Invalid room name")
+  }
+  if (!usernameQuery) return badRequest("Missing username")
+  if (usernameQuery.length > MAX_USERNAME_LENGTH) {
+    return badRequest("Username is too long")
+  }
+  if (avatar.length > MAX_AVATAR_LENGTH) {
+    return badRequest("Avatar is too long")
   }
 
+  const cleanRoom = room
+  const username = usernameQuery
   const savedRoleSecret =
     req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
   const suppliedHostSecret = hostSecret || savedRoleSecret
@@ -56,20 +83,11 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  if (!usernameQuery) {
-    return NextResponse.json(
-      { error: { message: "Missing username" } },
-      { status: 400 }
-    )
-  }
-
-  const username = usernameQuery.trim().substring(0, 30)
-
   let roomService: RoomServiceClient
   try {
     roomService = getRoomService()
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 500 })
+  } catch {
+    return serverError()
   }
 
   const getRoomMeta = async () => {
@@ -77,112 +95,123 @@ export async function GET(req: NextRequest) {
       try {
         const rooms = await roomService.listRooms([cleanRoom])
         if (rooms.length > 0) return rooms[0]
-      } catch {}
-      await new Promise((r) => setTimeout(r, 500))
+      } catch {
+        // Retry transient LiveKit list failures before treating the room as absent.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
     }
     return null
   }
 
   const targetRoom = await getRoomMeta()
-
   let isHost = false
   let isCohost = false
   let activeHostSecret = hostSecret
 
   if (targetRoom) {
     if (targetRoom.metadata) {
+      let meta: any
       try {
-        const meta = JSON.parse(targetRoom.metadata)
-        if (meta.ended) {
-          const endedData = {
-            name: cleanRoom,
-            endedAt: meta.endedAt ?? Date.now(),
-            host: meta.host || "Unknown",
-            cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
-            speakers: Array.isArray(meta.speakers)
-              ? meta.speakers.map((id: string) => ({ identity: id }))
-              : [],
-          }
-          return NextResponse.json(
-            {
-              ended: true,
-              error: "Space has ended",
-              space: endedData,
-              data: {
-                ended: true,
-                endedInfo: endedData,
-              },
-            },
-            { status: 410 }
-          )
+        meta = JSON.parse(targetRoom.metadata)
+      } catch {
+        return NextResponse.json(
+          { error: { message: "Space metadata is invalid" } },
+          { status: 503 }
+        )
+      }
+
+      if (meta.ended) {
+        const endedData = {
+          name: cleanRoom,
+          endedAt: meta.endedAt ?? Date.now(),
+          host: meta.host || "Unknown",
+          cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
+          speakers: Array.isArray(meta.speakers)
+            ? meta.speakers.map((id: string) => ({ identity: id }))
+            : [],
         }
-        if (meta.banned && meta.banned.includes(username)) {
+        return NextResponse.json(
+          {
+            ended: true,
+            error: "Space has ended",
+            space: endedData,
+            data: { ended: true, endedInfo: endedData },
+          },
+          { status: 410 }
+        )
+      }
+
+      if (Array.isArray(meta.banned) && meta.banned.includes(username)) {
+        return NextResponse.json(
+          { error: { message: "You have been kicked from this space" } },
+          { status: 403 }
+        )
+      }
+
+      if (meta.host === username) {
+        if (hasHostAccess(meta, username, suppliedHostSecret)) {
+          isHost = true
+          activeHostSecret = suppliedHostSecret
+
+          // Migrate legacy plaintext host secrets on successful authentication.
+          if (meta.hostSecret && !meta.hostSecretEncrypted) {
+            meta.hostSecretEncrypted = encryptSpaceSecret(suppliedHostSecret)
+            delete meta.hostSecret
+            await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+          }
+        } else if (!meta.hostSecret && !meta.hostSecretEncrypted) {
+          isHost = true
+          activeHostSecret = suppliedHostSecret || crypto.randomUUID()
+          meta.hostSecretEncrypted = encryptSpaceSecret(activeHostSecret)
+          delete meta.hostSecret
+          await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+        } else {
           return NextResponse.json(
-            { error: { message: "You have been kicked from this space" } },
+            { error: { message: "Invalid host secret for this identity" } },
             { status: 403 }
           )
         }
-        if (meta.host === username) {
-          if (meta.hostSecret && suppliedHostSecret === meta.hostSecret) {
-            isHost = true
-            activeHostSecret = meta.hostSecret
-          } else if (!meta.hostSecret) {
-            isHost = true
-            activeHostSecret = suppliedHostSecret || crypto.randomUUID()
-            meta.hostSecret = activeHostSecret
-            await roomService.updateRoomMetadata(
-              cleanRoom,
-              JSON.stringify(meta)
-            )
-          } else {
-            return NextResponse.json(
-              { error: { message: "Invalid host secret for this identity" } },
-              { status: 403 }
-            )
-          }
-        } else if (!meta.host || meta.host === "Unknown") {
-          // Room exists but has no designated host - assign this user as host
-          isHost = true
-          activeHostSecret = hostSecret || crypto.randomUUID()
-          meta.host = username
-          meta.hostSecret = activeHostSecret
-          await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
-        }
+      } else if (!meta.host || meta.host === "Unknown") {
+        isHost = true
+        activeHostSecret = suppliedHostSecret || crypto.randomUUID()
+        meta.host = username
+        meta.hostSecretEncrypted = encryptSpaceSecret(activeHostSecret)
+        delete meta.hostSecret
+        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+      }
 
-        if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
-          if (hasCohostAccess(meta, username, suppliedCohostSecret)) {
-            isCohost = true
-          } else {
-            return NextResponse.json(
-              { error: { message: "Invalid co-host credentials" } },
-              { status: 403 }
-            )
-          }
+      if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
+        if (hasCohostAccess(meta, username, suppliedCohostSecret)) {
+          isCohost = true
+        } else {
+          return NextResponse.json(
+            { error: { message: "Invalid co-host credentials" } },
+            { status: 403 }
+          )
         }
-      } catch {}
+      }
     } else {
-      // Room exists on LiveKit but has no metadata - initialize it with this user as host
       isHost = true
-      activeHostSecret = hostSecret || crypto.randomUUID()
+      activeHostSecret = suppliedHostSecret || crypto.randomUUID()
       try {
         const meta = {
           host: username,
-          hostSecret: activeHostSecret,
+          hostSecretEncrypted: encryptSpaceSecret(activeHostSecret),
           banned: [],
           cohosts: [],
         }
         await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
-      } catch {}
+      } catch {
+        return serverError()
+      }
     }
   } else {
-    // Room does NOT exist yet: This user is creating the space!
-    // Initialize room on LiveKit and grant full Host publishing permissions
     isHost = true
-    activeHostSecret = hostSecret || crypto.randomUUID()
+    activeHostSecret = suppliedHostSecret || crypto.randomUUID()
     try {
       const meta = {
         host: username,
-        hostSecret: activeHostSecret,
+        hostSecretEncrypted: encryptSpaceSecret(activeHostSecret),
         banned: [],
         cohosts: [],
       }
@@ -192,7 +221,22 @@ export async function GET(req: NextRequest) {
         maxParticipants: 50,
         metadata: JSON.stringify(meta),
       })
-    } catch {}
+    } catch {
+      // A concurrent creator may have won the race. Re-read the room before failing.
+      const existing = await getRoomMeta()
+      if (!existing) return serverError()
+      if (existing.metadata) {
+        try {
+          const meta = JSON.parse(existing.metadata)
+          if (meta.host && meta.host !== username) {
+            isHost = false
+            activeHostSecret = ""
+          }
+        } catch {
+          return serverError()
+        }
+      }
+    }
   }
 
   if (targetRoom && targetRoom.numParticipants >= 50 && !isHost) {
@@ -202,14 +246,14 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const at = new AccessToken(
-    process.env.LIVEKIT_API_KEY!,
-    process.env.LIVEKIT_API_SECRET!,
-    {
-      identity: username,
-      metadata: JSON.stringify({ avatar }),
-    }
-  )
+  const apiKey = process.env.LIVEKIT_API_KEY
+  const apiSecret = process.env.LIVEKIT_API_SECRET
+  if (!apiKey || !apiSecret) return serverError()
+
+  const at = new AccessToken(apiKey, apiSecret, {
+    identity: username,
+    metadata: JSON.stringify({ avatar }),
+  })
   at.addGrant({
     room: cleanRoom,
     roomJoin: true,
@@ -219,30 +263,30 @@ export async function GET(req: NextRequest) {
     canUpdateOwnMetadata: true,
   })
 
-  const token = await at.toJwt()
-  const response = NextResponse.json({
-    data: {
-      token,
-      isHost,
-      isCohost,
-      roomName: cleanRoom,
-    },
-  })
-  const roleSecret = isHost
-    ? activeHostSecret
-    : isCohost
-      ? suppliedCohostSecret
-      : ""
-  if (roleSecret) {
-    response.cookies.set({
-      name: roleCookieName(cleanRoom),
-      value: roleSecret,
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      path: "/api/livekit",
-      maxAge: 60 * 60 * 24 * 30,
+  try {
+    const token = await at.toJwt()
+    const response = NextResponse.json({
+      data: { token, isHost, isCohost, roomName: cleanRoom },
     })
+    const roleSecret = isHost
+      ? activeHostSecret
+      : isCohost
+        ? suppliedCohostSecret
+        : ""
+
+    if (roleSecret) {
+      response.cookies.set({
+        name: roleCookieName(cleanRoom),
+        value: roleSecret,
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        path: "/api/livekit",
+        maxAge: 60 * 60 * 24 * 30,
+      })
+    }
+    return response
+  } catch {
+    return serverError()
   }
-  return response
 }
