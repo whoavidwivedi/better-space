@@ -2,7 +2,6 @@ import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
 import {
-  decryptSpaceSecret,
   encryptSpaceSecret,
   hasCohostAccess,
   hasHostAccess,
@@ -19,9 +18,7 @@ function getRoomService() {
   const apiSecret = process.env.LIVEKIT_API_SECRET
   const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
 
-  if (!apiKey || !apiSecret || !wsUrl) {
-    throw new Error("LiveKit credentials missing")
-  }
+  if (!apiKey || !apiSecret || !wsUrl) throw new Error("LiveKit credentials missing")
   return new RoomServiceClient(wsUrl, apiKey, apiSecret)
 }
 
@@ -59,26 +56,18 @@ export async function GET(req: NextRequest) {
   if (usernameQuery.length > MAX_USERNAME_LENGTH) {
     return badRequest("Username is too long")
   }
-  if (avatar.length > MAX_AVATAR_LENGTH) {
-    return badRequest("Avatar is too long")
-  }
+  if (avatar.length > MAX_AVATAR_LENGTH) return badRequest("Avatar is too long")
 
   const cleanRoom = room
   const username = usernameQuery
-  const savedRoleSecret =
-    req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
+  const savedRoleSecret = req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
   const suppliedHostSecret = hostSecret || savedRoleSecret
   const suppliedCohostSecret = cohostSecret || savedRoleSecret
 
   if (isSpaceEnded(cleanRoom)) {
     const ended = getEndedSpace(cleanRoom)
     return NextResponse.json(
-      {
-        ended: true,
-        error: "Space has ended",
-        space: ended,
-        data: { ended: true, endedInfo: ended },
-      },
+      { ended: true, error: "Space has ended", space: ended, data: { ended: true, endedInfo: ended } },
       { status: 410 }
     )
   }
@@ -103,7 +92,7 @@ export async function GET(req: NextRequest) {
     return null
   }
 
-  const targetRoom = await getRoomMeta()
+  let targetRoom = await getRoomMeta()
   let isHost = false
   let isCohost = false
   let activeHostSecret = hostSecret
@@ -114,10 +103,7 @@ export async function GET(req: NextRequest) {
       try {
         meta = JSON.parse(targetRoom.metadata)
       } catch {
-        return NextResponse.json(
-          { error: { message: "Space metadata is invalid" } },
-          { status: 503 }
-        )
+        return NextResponse.json({ error: { message: "Space metadata is invalid" } }, { status: 503 })
       }
 
       if (meta.ended) {
@@ -126,34 +112,22 @@ export async function GET(req: NextRequest) {
           endedAt: meta.endedAt ?? Date.now(),
           host: meta.host || "Unknown",
           cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
-          speakers: Array.isArray(meta.speakers)
-            ? meta.speakers.map((id: string) => ({ identity: id }))
-            : [],
+          speakers: Array.isArray(meta.speakers) ? meta.speakers.map((id: string) => ({ identity: id })) : [],
         }
         return NextResponse.json(
-          {
-            ended: true,
-            error: "Space has ended",
-            space: endedData,
-            data: { ended: true, endedInfo: endedData },
-          },
+          { ended: true, error: "Space has ended", space: endedData, data: { ended: true, endedInfo: endedData } },
           { status: 410 }
         )
       }
 
       if (Array.isArray(meta.banned) && meta.banned.includes(username)) {
-        return NextResponse.json(
-          { error: { message: "You have been kicked from this space" } },
-          { status: 403 }
-        )
+        return NextResponse.json({ error: { message: "You have been kicked from this space" } }, { status: 403 })
       }
 
       if (meta.host === username) {
         if (hasHostAccess(meta, username, suppliedHostSecret)) {
           isHost = true
           activeHostSecret = suppliedHostSecret
-
-          // Migrate legacy plaintext host secrets on successful authentication.
           if (meta.hostSecret && !meta.hostSecretEncrypted) {
             meta.hostSecretEncrypted = encryptSpaceSecret(suppliedHostSecret)
             delete meta.hostSecret
@@ -166,10 +140,7 @@ export async function GET(req: NextRequest) {
           delete meta.hostSecret
           await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
         } else {
-          return NextResponse.json(
-            { error: { message: "Invalid host secret for this identity" } },
-            { status: 403 }
-          )
+          return NextResponse.json({ error: { message: "Invalid host secret for this identity" } }, { status: 403 })
         }
       } else if (!meta.host || meta.host === "Unknown") {
         isHost = true
@@ -184,23 +155,22 @@ export async function GET(req: NextRequest) {
         if (hasCohostAccess(meta, username, suppliedCohostSecret)) {
           isCohost = true
         } else {
-          return NextResponse.json(
-            { error: { message: "Invalid co-host credentials" } },
-            { status: 403 }
-          )
+          return NextResponse.json({ error: { message: "Invalid co-host credentials" } }, { status: 403 })
         }
       }
     } else {
       isHost = true
       activeHostSecret = suppliedHostSecret || crypto.randomUUID()
       try {
-        const meta = {
-          host: username,
-          hostSecretEncrypted: encryptSpaceSecret(activeHostSecret),
-          banned: [],
-          cohosts: [],
-        }
-        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+        await roomService.updateRoomMetadata(
+          cleanRoom,
+          JSON.stringify({
+            host: username,
+            hostSecretEncrypted: encryptSpaceSecret(activeHostSecret),
+            banned: [],
+            cohosts: [],
+          })
+        )
       } catch {
         return serverError()
       }
@@ -209,41 +179,38 @@ export async function GET(req: NextRequest) {
     isHost = true
     activeHostSecret = suppliedHostSecret || crypto.randomUUID()
     try {
-      const meta = {
-        host: username,
-        hostSecretEncrypted: encryptSpaceSecret(activeHostSecret),
-        banned: [],
-        cohosts: [],
-      }
       await roomService.createRoom({
         name: cleanRoom,
         emptyTimeout: 43200,
         maxParticipants: 50,
-        metadata: JSON.stringify(meta),
+        metadata: JSON.stringify({
+          host: username,
+          hostSecretEncrypted: encryptSpaceSecret(activeHostSecret),
+          banned: [],
+          cohosts: [],
+        }),
       })
     } catch {
-      // A concurrent creator may have won the race. Re-read the room before failing.
-      const existing = await getRoomMeta()
-      if (!existing) return serverError()
-      if (existing.metadata) {
+      targetRoom = await getRoomMeta()
+      if (!targetRoom) return serverError()
+      if (targetRoom.metadata) {
         try {
-          const meta = JSON.parse(existing.metadata)
-          if (meta.host && meta.host !== username) {
+          const meta = JSON.parse(targetRoom.metadata)
+          if (meta.host !== username || !hasHostAccess(meta, username, suppliedHostSecret)) {
             isHost = false
             activeHostSecret = ""
           }
         } catch {
           return serverError()
         }
+      } else {
+        return serverError()
       }
     }
   }
 
   if (targetRoom && targetRoom.numParticipants >= 50 && !isHost) {
-    return NextResponse.json(
-      { error: { message: "This space is full (max 50 participants)." } },
-      { status: 403 }
-    )
+    return NextResponse.json({ error: { message: "This space is full (max 50 participants)." } }, { status: 403 })
   }
 
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -265,15 +232,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const token = await at.toJwt()
-    const response = NextResponse.json({
-      data: { token, isHost, isCohost, roomName: cleanRoom },
-    })
-    const roleSecret = isHost
-      ? activeHostSecret
-      : isCohost
-        ? suppliedCohostSecret
-        : ""
-
+    const response = NextResponse.json({ data: { token, isHost, isCohost, roomName: cleanRoom } })
+    const roleSecret = isHost ? activeHostSecret : isCohost ? suppliedCohostSecret : ""
     if (roleSecret) {
       response.cookies.set({
         name: roleCookieName(cleanRoom),
