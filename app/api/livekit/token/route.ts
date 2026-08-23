@@ -18,7 +18,9 @@ function getRoomService() {
   const apiSecret = process.env.LIVEKIT_API_SECRET
   const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
 
-  if (!apiKey || !apiSecret || !wsUrl) throw new Error("LiveKit credentials missing")
+  if (!apiKey || !apiSecret || !wsUrl) {
+    throw new Error("LiveKit credentials missing")
+  }
   return new RoomServiceClient(wsUrl, apiKey, apiSecret)
 }
 
@@ -67,7 +69,12 @@ export async function GET(req: NextRequest) {
   if (isSpaceEnded(cleanRoom)) {
     const ended = getEndedSpace(cleanRoom)
     return NextResponse.json(
-      { ended: true, error: "Space has ended", space: ended, data: { ended: true, endedInfo: ended } },
+      {
+        ended: true,
+        error: "Space has ended",
+        space: ended,
+        data: { ended: true, endedInfo: ended },
+      },
       { status: 410 }
     )
   }
@@ -103,7 +110,10 @@ export async function GET(req: NextRequest) {
       try {
         meta = JSON.parse(targetRoom.metadata)
       } catch {
-        return NextResponse.json({ error: { message: "Space metadata is invalid" } }, { status: 503 })
+        return NextResponse.json(
+          { error: { message: "Space metadata is invalid" } },
+          { status: 503 }
+        )
       }
 
       if (meta.ended) {
@@ -112,16 +122,26 @@ export async function GET(req: NextRequest) {
           endedAt: meta.endedAt ?? Date.now(),
           host: meta.host || "Unknown",
           cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
-          speakers: Array.isArray(meta.speakers) ? meta.speakers.map((id: string) => ({ identity: id })) : [],
+          speakers: Array.isArray(meta.speakers)
+            ? meta.speakers.map((id: string) => ({ identity: id }))
+            : [],
         }
         return NextResponse.json(
-          { ended: true, error: "Space has ended", space: endedData, data: { ended: true, endedInfo: endedData } },
+          {
+            ended: true,
+            error: "Space has ended",
+            space: endedData,
+            data: { ended: true, endedInfo: endedData },
+          },
           { status: 410 }
         )
       }
 
       if (Array.isArray(meta.banned) && meta.banned.includes(username)) {
-        return NextResponse.json({ error: { message: "You have been kicked from this space" } }, { status: 403 })
+        return NextResponse.json(
+          { error: { message: "You have been kicked from this space" } },
+          { status: 403 }
+        )
       }
 
       if (meta.host === username) {
@@ -140,7 +160,10 @@ export async function GET(req: NextRequest) {
           delete meta.hostSecret
           await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
         } else {
-          return NextResponse.json({ error: { message: "Invalid host secret for this identity" } }, { status: 403 })
+          return NextResponse.json(
+            { error: { message: "Invalid host secret for this identity" } },
+            { status: 403 }
+          )
         }
       } else if (!meta.host || meta.host === "Unknown") {
         isHost = true
@@ -155,7 +178,10 @@ export async function GET(req: NextRequest) {
         if (hasCohostAccess(meta, username, suppliedCohostSecret)) {
           isCohost = true
         } else {
-          return NextResponse.json({ error: { message: "Invalid co-host credentials" } }, { status: 403 })
+          return NextResponse.json(
+            { error: { message: "Invalid co-host credentials" } },
+            { status: 403 }
+          )
         }
       }
     } else {
@@ -196,7 +222,10 @@ export async function GET(req: NextRequest) {
       if (targetRoom.metadata) {
         try {
           const meta = JSON.parse(targetRoom.metadata)
-          if (meta.host !== username || !hasHostAccess(meta, username, suppliedHostSecret)) {
+          if (
+            meta.host !== username ||
+            !hasHostAccess(meta, username, suppliedHostSecret)
+          ) {
             isHost = false
             activeHostSecret = ""
           }
@@ -210,7 +239,10 @@ export async function GET(req: NextRequest) {
   }
 
   if (targetRoom && targetRoom.numParticipants >= 50 && !isHost) {
-    return NextResponse.json({ error: { message: "This space is full (max 50 participants)." } }, { status: 403 })
+    return NextResponse.json(
+      { error: { message: "This space is full (max 50 participants)." } },
+      { status: 403 }
+    )
   }
 
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -232,7 +264,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const token = await at.toJwt()
-    const response = NextResponse.json({ data: { token, isHost, isCohost, roomName: cleanRoom } })
+    const response = NextResponse.json({
+      data: { token, isHost, isCohost, roomName: cleanRoom },
+    })
     const roleSecret = isHost ? activeHostSecret : isCohost ? suppliedCohostSecret : ""
     if (roleSecret) {
       response.cookies.set({
