@@ -9,6 +9,7 @@ import {
   decryptCohostSecrets,
   encryptCohostSecrets,
   hasCohostAccess,
+  hasHostAccess,
   roleCookieName,
 } from "@/lib/space-auth"
 import { canPerformModerationAction } from "@/lib/moderation-auth"
@@ -50,7 +51,16 @@ async function syncParticipantPublishPermission(
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Invalid JSON body" } },
+      { status: 400 }
+    )
+  }
+
   const { roomName, targetIdentity, action, token } = body
   const origin = req.headers.get("origin")
   if (origin && origin !== new URL(req.url).origin) {
@@ -60,22 +70,34 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!roomName || !action || !token) {
+  if (
+    typeof roomName !== "string" ||
+    typeof action !== "string" ||
+    typeof token !== "string"
+  ) {
     return NextResponse.json(
       { error: { message: "Missing parameters" } },
       { status: 400 }
     )
   }
 
-  const cleanRoom = roomName.trim().substring(0, 30)
+  const cleanRoom = roomName.trim()
+  if (!/^[a-zA-Z0-9_-]+$/.test(cleanRoom) || cleanRoom.length > 30) {
+    return NextResponse.json(
+      { error: { message: "Invalid room name" } },
+      { status: 400 }
+    )
+  }
+
   const roleSecret = req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
 
   let identity = ""
   try {
-    const verifier = new TokenVerifier(
-      process.env.LIVEKIT_API_KEY!,
-      process.env.LIVEKIT_API_SECRET!
-    )
+    const apiKey = process.env.LIVEKIT_API_KEY
+    const apiSecret = process.env.LIVEKIT_API_SECRET
+    if (!apiKey || !apiSecret) throw new Error("Missing LiveKit credentials")
+
+    const verifier = new TokenVerifier(apiKey, apiSecret)
     const claims = await verifier.verify(token)
     identity = claims.sub || ""
     if (!identity) throw new Error("Invalid token identity")
@@ -87,7 +109,7 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       )
     }
-  } catch (e: any) {
+  } catch {
     return NextResponse.json(
       { error: { message: "Invalid or expired token" } },
       { status: 401 }
@@ -97,8 +119,11 @@ export async function POST(req: NextRequest) {
   let roomService: RoomServiceClient
   try {
     roomService = getRoomService()
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 500 })
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Unable to reach the realtime service" } },
+      { status: 500 }
+    )
   }
 
   let isHost = false
@@ -111,18 +136,19 @@ export async function POST(req: NextRequest) {
     targetRoom = rooms.length > 0 ? rooms[0] : null
     if (targetRoom && targetRoom.metadata) {
       meta = JSON.parse(targetRoom.metadata)
-      if (meta.host === identity && meta.hostSecret === roleSecret) {
-        isHost = true
-      }
+      isHost = hasHostAccess(meta, identity, roleSecret)
       isCohost = hasCohostAccess(meta, identity, roleSecret)
     }
-  } catch {}
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Unable to authorize this action" } },
+      { status: 503 }
+    )
+  }
 
   if (!isHost && !isCohost) {
     return NextResponse.json(
-      {
-        error: { message: "Only the host or co-host can perform this action" },
-      },
+      { error: { message: "Only the host or co-host can perform this action" } },
       { status: 403 }
     )
   }
@@ -144,7 +170,8 @@ export async function POST(req: NextRequest) {
   if (
     targetIdentity &&
     meta &&
-    meta.cohosts?.includes(targetIdentity) &&
+    Array.isArray(meta.cohosts) &&
+    meta.cohosts.includes(targetIdentity) &&
     !isHost
   ) {
     return NextResponse.json(
@@ -154,7 +181,7 @@ export async function POST(req: NextRequest) {
   }
 
   switch (action) {
-    case "grant_cohost":
+    case "grant_cohost": {
       if (!targetIdentity) {
         return NextResponse.json(
           { error: { message: "Missing targetIdentity" } },
@@ -177,12 +204,7 @@ export async function POST(req: NextRequest) {
       meta.cohostSecretsEncrypted = encryptCohostSecrets(cohostSecrets)
       delete meta.cohostSecrets
       await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
-      await syncParticipantPublishPermission(
-        roomService,
-        cleanRoom,
-        targetIdentity,
-        true
-      )
+      await syncParticipantPublishPermission(roomService, cleanRoom, targetIdentity, true)
       await roomService.sendData(
         cleanRoom,
         new TextEncoder().encode(
@@ -196,223 +218,127 @@ export async function POST(req: NextRequest) {
         { destinationIdentities: [targetIdentity] }
       )
       return NextResponse.json({ data: { success: true } })
+    }
 
-    case "revoke_cohost":
+    case "revoke_cohost": {
       if (!targetIdentity) {
         return NextResponse.json(
           { error: { message: "Missing targetIdentity" } },
           { status: 400 }
         )
       }
-      if (meta.cohosts && meta.cohosts.includes(targetIdentity)) {
-        meta.cohosts = meta.cohosts.filter(
-          (id: string) => id !== targetIdentity
-        )
+      if (Array.isArray(meta.cohosts)) {
+        meta.cohosts = meta.cohosts.filter((id: string) => id !== targetIdentity)
       }
-      const updatedCohostSecrets = decryptCohostSecrets(
-        meta.cohostSecretsEncrypted
-      )
+      const updatedCohostSecrets = decryptCohostSecrets(meta.cohostSecretsEncrypted)
       delete updatedCohostSecrets[targetIdentity]
       meta.cohostSecretsEncrypted = encryptCohostSecrets(updatedCohostSecrets)
       delete meta.cohostSecrets
       await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
-      await syncParticipantPublishPermission(
-        roomService,
-        cleanRoom,
-        targetIdentity,
-        false
-      )
+      await syncParticipantPublishPermission(roomService, cleanRoom, targetIdentity, false)
       return NextResponse.json({ data: { success: true } })
+    }
 
-    case "end":
-      {
-        let host = "Unknown"
-        let cohosts: string[] = []
-        let participants: any[] = []
-        try {
-          participants = await roomService.listParticipants(cleanRoom)
-        } catch {}
-        try {
-          if (meta?.host) host = meta.host
-          if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts
-        } catch {}
+    case "end": {
+      let host = "Unknown"
+      let cohosts: string[] = []
+      let participants: any[] = []
+      try {
+        participants = await roomService.listParticipants(cleanRoom)
+      } catch {}
+      if (meta?.host) host = meta.host
+      if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts
 
-        const speakers: EndedSpaceParticipant[] = participants
-          .map((p: any) => {
-            let avatar = p.identity
-            try {
-              if (p.metadata) {
-                const m = JSON.parse(p.metadata)
-                if (m.avatar) avatar = m.avatar
-              }
-            } catch {}
-            return { identity: p.identity, avatar }
-          })
-          .filter(
-            (p: any, i: number, arr: any[]) =>
-              arr.findIndex((x) => x.identity === p.identity) === i
-          )
-
-        markSpaceEnded(cleanRoom.toLowerCase().trim(), {
-          host,
-          cohosts,
-          speakers,
+      const speakers: EndedSpaceParticipant[] = participants
+        .map((p: any) => {
+          let avatar = p.identity
+          try {
+            if (p.metadata) {
+              const participantMeta = JSON.parse(p.metadata)
+              if (participantMeta.avatar) avatar = participantMeta.avatar
+            }
+          } catch {}
+          return { identity: p.identity, avatar }
         })
-
-        // Disconnect everyone by deleting the room...
-        await roomService.deleteRoom(cleanRoom)
-
-        // ...then re-create it as a durable "ended" tombstone so the name stays
-        // reserved and the join route can never fall through to "create + host".
-        // Roster lives in metadata (shared LiveKit state), not the server disk.
-        try {
-          await roomService.createRoom({
-            name: cleanRoom,
-            // LiveKit is the durable tombstone store on Vercel. Keep the
-            // ended name reserved for a year; the local JSON write is only a
-            // best-effort cache for local development.
-            emptyTimeout: 31536000,
-            maxParticipants: 0,
-            metadata: JSON.stringify({
-              ended: true,
-              endedAt: Date.now(),
-              host,
-              cohosts,
-              speakers: participants.map((p) => p.identity),
-            }),
-          })
-        } catch {}
-      }
-      return NextResponse.json({ data: { success: true } })
-
-    case "kick":
-      if (!targetIdentity) {
-        return NextResponse.json(
-          { error: { message: "Missing targetIdentity" } },
-          { status: 400 }
+        .filter(
+          (p: any, i: number, arr: any[]) =>
+            arr.findIndex((x) => x.identity === p.identity) === i
         )
-      }
+
+      markSpaceEnded(cleanRoom.toLowerCase().trim(), { host, cohosts, speakers })
+      await roomService.deleteRoom(cleanRoom)
+
+      try {
+        await roomService.createRoom({
+          name: cleanRoom,
+          emptyTimeout: 31536000,
+          maxParticipants: 0,
+          metadata: JSON.stringify({
+            ended: true,
+            endedAt: Date.now(),
+            host,
+            cohosts,
+            speakers: participants.map((p) => p.identity),
+          }),
+        })
+      } catch {}
+      return NextResponse.json({ data: { success: true } })
+    }
+
+    case "kick": {
+      if (!targetIdentity) return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 })
       if (meta) {
-        try {
-          const banned = meta.banned || []
-          if (!banned.includes(targetIdentity)) {
-            banned.push(targetIdentity)
-            meta.banned = banned
-            await roomService.updateRoomMetadata(
-              cleanRoom,
-              JSON.stringify(meta)
-            )
-          }
-        } catch {}
+        const banned = Array.isArray(meta.banned) ? meta.banned : []
+        if (!banned.includes(targetIdentity)) banned.push(targetIdentity)
+        meta.banned = banned
+        await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
       }
       try {
         await roomService.removeParticipant(cleanRoom, targetIdentity)
-      } catch (e: any) {
-        return NextResponse.json(
-          { error: { message: e.message } },
-          { status: 500 }
-        )
+      } catch {
+        return NextResponse.json({ error: { message: "Unable to remove participant" } }, { status: 500 })
       }
       return NextResponse.json({ data: { success: true } })
+    }
 
     case "grant_mic":
-      if (!targetIdentity) {
-        return NextResponse.json(
-          { error: { message: "Missing targetIdentity" } },
-          { status: 400 }
-        )
-      }
+    case "revoke_mic": {
+      if (!targetIdentity) return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 })
       try {
-        const participant = await roomService.getParticipant(
-          cleanRoom,
-          targetIdentity
-        )
+        const participant = await roomService.getParticipant(cleanRoom, targetIdentity)
         await roomService.updateParticipant(cleanRoom, targetIdentity, {
           metadata: participant.metadata,
           permission: {
-            canPublish: true,
+            canPublish: action === "grant_mic",
             canSubscribe: participant.permission?.canSubscribe ?? true,
             canPublishData: participant.permission?.canPublishData ?? true,
-            canUpdateMetadata:
-              participant.permission?.canUpdateMetadata ?? false,
+            canUpdateMetadata: participant.permission?.canUpdateMetadata ?? false,
             hidden: participant.permission?.hidden ?? false,
             recorder: participant.permission?.recorder ?? false,
           },
         })
-      } catch (e: any) {
-        return NextResponse.json(
-          { error: { message: e.message } },
-          { status: 500 }
-        )
+      } catch {
+        return NextResponse.json({ error: { message: "Unable to update microphone permission" } }, { status: 500 })
       }
       return NextResponse.json({ data: { success: true } })
+    }
 
-    case "revoke_mic":
-      if (!targetIdentity) {
-        return NextResponse.json(
-          { error: { message: "Missing targetIdentity" } },
-          { status: 400 }
-        )
-      }
+    case "mute": {
+      if (!targetIdentity) return NextResponse.json({ error: { message: "Missing targetIdentity" } }, { status: 400 })
       try {
-        const participant = await roomService.getParticipant(
-          cleanRoom,
-          targetIdentity
-        )
-        await roomService.updateParticipant(cleanRoom, targetIdentity, {
-          metadata: participant.metadata,
-          permission: {
-            canPublish: false,
-            canSubscribe: participant.permission?.canSubscribe ?? true,
-            canPublishData: participant.permission?.canPublishData ?? true,
-            canUpdateMetadata:
-              participant.permission?.canUpdateMetadata ?? false,
-            hidden: participant.permission?.hidden ?? false,
-            recorder: participant.permission?.recorder ?? false,
-          },
-        })
-      } catch (e: any) {
-        return NextResponse.json(
-          { error: { message: e.message } },
-          { status: 500 }
-        )
-      }
-      return NextResponse.json({ data: { success: true } })
-
-    case "mute":
-      if (!targetIdentity) {
-        return NextResponse.json(
-          { error: { message: "Missing targetIdentity" } },
-          { status: 400 }
-        )
-      }
-      try {
-        const participant = await roomService.getParticipant(
-          cleanRoom,
-          targetIdentity
-        )
+        const participant = await roomService.getParticipant(cleanRoom, targetIdentity)
         for (const track of participant.tracks) {
           if (track.source === 2) {
-            await roomService.mutePublishedTrack(
-              cleanRoom,
-              targetIdentity,
-              track.sid,
-              true
-            )
+            await roomService.mutePublishedTrack(cleanRoom, targetIdentity, track.sid, true)
           }
         }
-      } catch (e: any) {
-        return NextResponse.json(
-          { error: { message: e.message } },
-          { status: 500 }
-        )
+      } catch {
+        return NextResponse.json({ error: { message: "Unable to mute participant" } }, { status: 500 })
       }
       return NextResponse.json({ data: { success: true } })
+    }
 
     default:
-      return NextResponse.json(
-        { error: { message: "Invalid action" } },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: { message: "Invalid action" } }, { status: 400 })
   }
 }
