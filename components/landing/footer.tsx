@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
-import { motion } from "framer-motion"
 
 import { SiteLogo } from "@/components/common/site-logo"
 
@@ -20,105 +19,113 @@ export function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <div className="relative h-[75vh] w-full sm:h-[85vh]">
-      <footer className="fixed right-0 bottom-0 left-0 -z-10 flex h-[75vh] w-full flex-col items-center justify-center overflow-hidden bg-zinc-950 pt-24 pb-8 text-zinc-50 sm:h-[85vh] dark:bg-black">
-        {/* Ambient background glows for premium feel */}
-        <div className="pointer-events-none absolute top-1/2 left-1/2 h-[400px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[120px]" />
-        <div className="pointer-events-none absolute right-1/4 bottom-0 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-[150px]" />
-
-        {/* Center Monolith CTA */}
-        <div className="relative z-10 flex flex-col items-center justify-center px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            viewport={{ once: true, margin: "-100px" }}
-            className="flex flex-col items-center"
-          >
-            <SiteLogo className="mb-10 size-12 text-zinc-50 opacity-90 sm:size-16" />
-
-            <p className="mb-6 font-mono text-[10px] font-bold tracking-[0.25em] text-emerald-400/80 uppercase">
-              Real voices, no clutter
-            </p>
-
-            <h2 className="font-display text-5xl leading-[0.95] font-black tracking-tight text-white sm:text-7xl md:text-[6rem]">
-              Start <br />
-              <span className="font-serif-display font-normal text-zinc-400 italic">
-                broadcasting.
+    <footer className="w-full border-t border-border bg-background">
+      <div className="mx-auto max-w-7xl">
+        {/* Top Massive CTA */}
+        <div className="flex flex-col items-center justify-between gap-8 border-b border-border px-6 py-16 sm:flex-row sm:px-12 sm:py-24">
+          <div className="text-center sm:text-left">
+            <h2 className="font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
+              Ready to{" "}
+              <span className="font-serif-display font-normal text-muted-foreground italic">
+                broadcast?
               </span>
             </h2>
-
-            <motion.div
-              className="mt-14"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            >
-              <Link
-                href="/"
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-white px-10 font-mono text-xs font-bold tracking-[0.2em] text-zinc-950 uppercase shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] transition-colors hover:bg-zinc-200"
-              >
-                Launch a Space
-              </Link>
-            </motion.div>
-          </motion.div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Low-latency audio rooms you can spin up in seconds.
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="group relative inline-flex h-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground px-8 font-mono text-[10px] font-bold tracking-[0.2em] text-background uppercase transition-transform active:scale-95"
+          >
+            <span className="relative z-10">Launch a Space</span>
+            <div className="absolute inset-0 z-0 bg-gradient-to-r from-[#93c5fd] to-[#c4b5fd] opacity-0 transition-opacity duration-300 group-hover:opacity-20" />
+          </Link>
         </div>
 
-        {/* Anchored Corners Navigation */}
-        <div className="absolute inset-x-0 bottom-0 z-10 mx-auto w-full max-w-7xl px-6 pb-8 sm:px-12 sm:pb-12">
-          <div className="flex flex-col items-center justify-between gap-8 sm:flex-row sm:items-end">
-            {/* Bottom Left: Brand & Copyright */}
-            <div className="flex flex-col items-center gap-1.5 sm:items-start">
-              <span className="font-google-sans text-base font-black tracking-tight text-white">
-                better
-                <span className="ml-0.5 font-serif-display font-normal text-zinc-400 italic">
-                  space
+        {/* Structural Grid */}
+        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {/* Brand & Status Column */}
+          <div className="flex flex-col justify-between p-6 sm:p-12">
+            <div>
+              <Link href="/" className="flex w-fit items-center gap-2">
+                <SiteLogo className="size-6" />
+                <span className="font-google-sans text-lg font-black tracking-tight text-foreground">
+                  better
+                  <span className="ml-0.5 font-serif-display font-normal text-muted-foreground italic">
+                    space
+                  </span>
                 </span>
-              </span>
-              <span className="font-mono text-[9px] font-bold tracking-[0.1em] text-zinc-500 uppercase">
-                &copy; {year} • Built by whoavidwivedi
-              </span>
+              </Link>
+              <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
+                Real voices, no clutter. We sweat the network details so you can
+                just talk.
+              </p>
             </div>
 
-            {/* Bottom Right: Essential Links */}
-            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:justify-end">
-              <nav aria-label="Product" className="flex items-center gap-6">
-                {productLinks.map((link) => (
+            <div className="mt-12 flex items-center gap-3">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6ee7b7] opacity-75"></span>
+                <span className="relative inline-flex size-2 rounded-full bg-[#34d399]"></span>
+              </span>
+              <span className="font-mono text-[9px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                Systems Operational
+              </span>
+            </div>
+          </div>
+
+          {/* Product Links */}
+          <div className="p-6 sm:p-12">
+            <h3 className="font-mono text-[10px] font-bold tracking-[0.2em] text-foreground uppercase">
+              Product
+            </h3>
+            <ul className="mt-8 space-y-4">
+              {productLinks.map((link) => (
+                <li key={link.label}>
                   <Link
-                    key={link.label}
                     href={link.href}
-                    className="font-mono text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase transition-colors hover:text-white"
+                    className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
                   >
                     {link.label}
                   </Link>
-                ))}
-              </nav>
-              <div
-                className="hidden h-3 w-px bg-zinc-800 sm:block"
-                aria-hidden="true"
-              />
-              <nav aria-label="Socials" className="flex items-center gap-6">
-                {socials.map((link) => (
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Connect Links */}
+          <div className="p-6 sm:p-12">
+            <h3 className="font-mono text-[10px] font-bold tracking-[0.2em] text-foreground uppercase">
+              Connect
+            </h3>
+            <ul className="mt-8 space-y-4">
+              {socials.map((link) => (
+                <li key={link.label}>
                   <a
-                    key={link.label}
                     href={link.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="group flex items-center gap-1 font-mono text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase transition-colors hover:text-white"
+                    className="group flex w-fit items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
                   >
                     {link.label}
                     <ArrowUpRight
-                      size={10}
+                      size={12}
                       className="opacity-40 transition-opacity group-hover:opacity-100"
-                      aria-hidden="true"
                     />
                   </a>
-                ))}
-              </nav>
-            </div>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      </footer>
-    </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-border bg-muted/20 px-6 py-6 sm:px-12">
+          <p className="text-center font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+            &copy; {year} betterspace • Built by whoavidwivedi
+          </p>
+        </div>
+      </div>
+    </footer>
   )
 }
