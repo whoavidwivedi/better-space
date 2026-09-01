@@ -1,3 +1,8 @@
+"use client"
+
+import { useRef, useEffect } from "react"
+import { motion, useMotionValue, useSpring, useMotionTemplate, useInView, useTransform } from "framer-motion"
+
 const UNIQUE_PARTICIPANTS = {
   value: "266",
   spark: [
@@ -40,8 +45,37 @@ const PARTICIPANT_MINUTES = {
   unit: "min",
 }
 
-/* Monochrome segment shades, darkest = largest share */
-const SHADES = [0.95, 0.65, 0.45, 0.3, 0.18]
+const PASTEL_COLORS = [
+  "#c4b5fd", // Violet 300
+  "#93c5fd", // Blue 300
+  "#6ee7b7", // Emerald 300
+  "#f9a8d4", // Pink 300
+  "#fcd34d", // Amber 300
+]
+
+const PASTEL_RGB = [
+  "196, 181, 253", // Violet 300
+  "147, 197, 253", // Blue 300
+  "110, 231, 183", // Emerald 300
+  "249, 168, 212", // Pink 300
+  "252, 211, 77",  // Amber 300
+]
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16, scale: 0.95, filter: "blur(2px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring",
+      stiffness: 350,
+      damping: 25,
+      mass: 0.8,
+    },
+  },
+}
 
 function CardLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -55,25 +89,90 @@ function StatCard({
   label,
   children,
   className = "",
+  glowColor = "150, 150, 150",
 }: {
   label: string
   children: React.ReactNode
   className?: string
+  glowColor?: string
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+
+  // Spring configuration based on Emil's guide (smooth, physical)
+  const springX = useSpring(mouseX, { stiffness: 300, damping: 30 })
+  const springY = useSpring(mouseY, { stiffness: 300, damping: 30 })
+
+  function handleMouseMove({
+    currentTarget,
+    clientX,
+    clientY,
+  }: React.MouseEvent) {
+    const { left, top } = currentTarget.getBoundingClientRect()
+    mouseX.set(clientX - left)
+    mouseY.set(clientY - top)
+  }
+
   return (
-    <div
-      className={`flex flex-col overflow-hidden rounded-2xl border border-border bg-card/50 p-5 transition-colors hover:border-foreground/25 sm:p-6 ${className}`}
+    <motion.div
+      ref={ref}
+      variants={itemVariants}
+      onMouseMove={handleMouseMove}
+      whileTap={{ scale: 0.98 }}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card/50 p-5 transition-colors duration-200 ease-out hover:border-foreground/25 sm:p-6 ${className}`}
     >
-      <CardLabel>{label}</CardLabel>
-      {children}
-    </div>
+      <motion.div
+        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              300px circle at ${springX}px ${springY}px,
+              rgba(${glowColor}, 0.15),
+              transparent 100%
+            )
+          `,
+        }}
+      />
+      <div className="relative z-10 flex h-full flex-col">
+        <CardLabel>{label}</CardLabel>
+        {children}
+      </div>
+    </motion.div>
   )
 }
 
 function BigStat({ value, unit }: { value: string; unit?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null)
+  const isInView = useInView(ref, { once: true, margin: "-50px" })
+  
+  const numValue = parseFloat(value.replace(/,/g, ""))
+  const hasComma = value.includes(",")
+  const hasPercent = value.includes("%")
+  
+  const spring = useSpring(0, { stiffness: 60, damping: 25, mass: 1 })
+  
+  useEffect(() => {
+    if (isInView) {
+      spring.set(numValue)
+    }
+  }, [spring, numValue, isInView])
+
+  const display = useTransform(spring, (current) => {
+    if (hasPercent) {
+      // Small trick to avoid 100.0% if we just want up to 1 decimal
+      const str = current.toFixed(1)
+      return `${str.endsWith(".0") && current > 99 ? Math.round(current) : str}%`
+    }
+    if (hasComma) {
+      return Math.round(current).toLocaleString()
+    }
+    return Math.round(current).toString()
+  })
+
   return (
-    <p className="flex items-baseline gap-1.5 font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
-      {value}
+    <p ref={ref} className="flex items-baseline gap-1.5 font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
+      <motion.span>{display}</motion.span>
       {unit && (
         <span className="text-base font-bold text-muted-foreground sm:text-lg">
           {unit}
@@ -86,40 +185,57 @@ function BigStat({ value, unit }: { value: string; unit?: string }) {
 function Sparkline({
   data,
   gradientId,
+  colorIndex = 0,
 }: {
   data: number[]
   gradientId: string
+  colorIndex?: number
 }) {
   const w = 100
   const h = 36
   const max = Math.max(...data) || 1
   const step = w / Math.max(data.length - 1, 1)
-  const points = data.map(
-    (v, i) =>
-      `${(i * step).toFixed(2)},${(h - 3 - (v / max) * (h - 8)).toFixed(2)}`
-  )
+
+  const pathD = data
+    .map((v, i) => {
+      const x = (i * step).toFixed(2)
+      const y = (h - 3 - (v / max) * (h - 8)).toFixed(2)
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`
+    })
+    .join(" ")
+
+  const polygonD = `${pathD} L ${w} ${h} L 0 ${h} Z`
+  const color = PASTEL_COLORS[colorIndex % PASTEL_COLORS.length]
 
   return (
     <svg
       aria-hidden="true"
       viewBox={`0 0 ${w} ${h}`}
       preserveAspectRatio="none"
-      className="mt-auto h-14 w-full text-foreground"
+      className="mt-auto h-14 w-full"
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon
-        points={`0,${h} ${points.join(" ")} ${w},${h}`}
+      <motion.path
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+        viewport={{ once: true }}
+        d={polygonD}
         fill={`url(#${gradientId})`}
       />
-      <polyline
-        points={points.join(" ")}
+      <motion.path
+        initial={{ pathLength: 0, opacity: 0 }}
+        whileInView={{ pathLength: 1, opacity: 1 }}
+        transition={{ duration: 1.2, ease: [0.32, 0.72, 0, 1] }}
+        viewport={{ once: true }}
+        d={pathD}
         fill="none"
-        stroke="currentColor"
+        stroke={color}
         strokeWidth="1.5"
         vectorEffect="non-scaling-stroke"
         strokeLinejoin="round"
@@ -128,7 +244,13 @@ function Sparkline({
   )
 }
 
-function Donut({ segments }: { segments: { label: string; value: number }[] }) {
+function Donut({
+  segments,
+  colorIndex = 0,
+}: {
+  segments: { label: string; value: number }[]
+  colorIndex?: number
+}) {
   const arcs = segments.map((s, i) => ({
     ...s,
     dashOffset:
@@ -147,49 +269,83 @@ function Donut({ segments }: { segments: { label: string; value: number }[] }) {
         r="15.9155"
         fill="none"
         stroke="currentColor"
-        strokeOpacity="0.12"
+        strokeOpacity="0.08"
         strokeWidth="5.5"
       />
-      {arcs.map((arc, i) => (
-        <circle
-          key={arc.label}
-          cx="21"
-          cy="21"
-          r="15.9155"
-          fill="none"
-          stroke="currentColor"
-          strokeOpacity={SHADES[i]}
-          strokeWidth="5.5"
-          strokeDasharray={`${Math.max(arc.value, 0.5)} ${100 - Math.max(arc.value, 0.5)}`}
-          strokeDashoffset={arc.dashOffset}
-        />
-      ))}
+      {arcs.map((arc, i) => {
+        const dashArray = `${Math.max(arc.value, 0.5)} ${100 - Math.max(arc.value, 0.5)}`
+        const color = PASTEL_COLORS[(colorIndex + i) % PASTEL_COLORS.length]
+        return (
+          <motion.circle
+            key={arc.label}
+            cx="21"
+            cy="21"
+            r="15.9155"
+            fill="none"
+            stroke={color}
+            strokeWidth="5.5"
+            strokeDasharray={dashArray}
+            strokeDashoffset={arc.dashOffset}
+            initial={{ opacity: 0, scale: 0.9, originX: "50%", originY: "50%" }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.8,
+              delay: 0.2 + i * 0.1,
+              ease: [0.32, 0.72, 0, 1], // iOS drawer curve
+            }}
+            viewport={{ once: true }}
+          />
+        )
+      })}
     </svg>
   )
 }
 
 function DonutLegend({
   segments,
+  colorIndex = 0,
 }: {
   segments: { label: string; value: number }[]
+  colorIndex?: number
 }) {
   return (
     <ul className="space-y-1.5 font-mono text-xs">
-      {segments.map((s, i) => (
-        <li key={s.label} className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="size-2 shrink-0 rounded-[2px] bg-foreground"
-            style={{ opacity: SHADES[i] }}
-          />
-          <span className="text-muted-foreground">{s.label}</span>
-          <span className="ml-auto text-foreground tabular-nums">
-            {s.value}%
-          </span>
-        </li>
-      ))}
+      {segments.map((s, i) => {
+        const color = PASTEL_COLORS[(colorIndex + i) % PASTEL_COLORS.length]
+        return (
+          <motion.li
+            key={s.label}
+            initial={{ opacity: 0, x: -5 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 + i * 0.05, ease: "easeOut" }}
+            viewport={{ once: true }}
+            className="flex items-center gap-2"
+          >
+            <span
+              aria-hidden="true"
+              className="size-2 shrink-0 rounded-[2px]"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-muted-foreground">{s.label}</span>
+            <span className="ml-auto text-foreground tabular-nums">
+              {s.value}%
+            </span>
+          </motion.li>
+        )
+      })}
     </ul>
   )
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
 }
 
 export function SpaceStats() {
@@ -198,9 +354,15 @@ export function SpaceStats() {
       {/* Subtle grid backdrop, same treatment as hero */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_60%,transparent_100%)] bg-[size:4rem_4rem] opacity-30" />
 
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-50px" }}
+        className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"
+      >
         {/* Section header */}
-        <div className="mb-10 max-w-2xl sm:mb-14">
+        <motion.div variants={itemVariants} className="mb-10 max-w-2xl sm:mb-14">
           <p className="font-mono text-[10px] font-bold tracking-[0.22em] text-muted-foreground uppercase">
             Telemetry // Past 60 days
           </p>
@@ -214,59 +376,61 @@ export function SpaceStats() {
             Aggregated straight from our LiveKit infrastructure — every room,
             listener, and reconnection since launch.
           </p>
-        </div>
+        </motion.div>
 
         {/* Sessions */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <StatCard label="Unique Participants">
+          <StatCard label="Unique Participants" glowColor={PASTEL_RGB[0]}>
             <div className="flex flex-1 items-center justify-center py-6">
               <BigStat value={UNIQUE_PARTICIPANTS.value} />
             </div>
             <Sparkline
               data={UNIQUE_PARTICIPANTS.spark}
               gradientId="spark-participants"
+              colorIndex={0}
             />
           </StatCard>
 
-          <StatCard label="Total Rooms">
+          <StatCard label="Total Rooms" glowColor={PASTEL_RGB[1]}>
             <div className="flex flex-1 items-center justify-center py-6">
               <BigStat value={TOTAL_ROOMS.value} />
             </div>
-            <Sparkline data={TOTAL_ROOMS.spark} gradientId="spark-rooms" />
+            <Sparkline data={TOTAL_ROOMS.spark} gradientId="spark-rooms" colorIndex={1} />
           </StatCard>
         </div>
 
         {/* Connection quality */}
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Connection Success">
+          <StatCard label="Connection Success" glowColor={PASTEL_RGB[2]}>
             <div className="flex flex-1 items-center justify-center py-6">
               <BigStat value={CONNECTION_SUCCESS.value} />
             </div>
             <Sparkline
               data={[...CONNECTION_SUCCESS.past, ...CONNECTION_SUCCESS.recent]}
               gradientId="spark-success"
+              colorIndex={2}
             />
           </StatCard>
 
-          <StatCard label="Platforms">
+          <StatCard label="Platforms" glowColor={PASTEL_RGB[3]}>
             <div className="flex flex-1 items-center justify-center py-6">
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-                <Donut segments={PLATFORMS} />
-                <DonutLegend segments={PLATFORMS} />
+                <Donut segments={PLATFORMS} colorIndex={3} />
+                <DonutLegend segments={PLATFORMS} colorIndex={3} />
               </div>
             </div>
           </StatCard>
 
-          <StatCard label="Connection Type">
+          <StatCard label="Connection Type" glowColor={PASTEL_RGB[4]}>
             <div className="flex flex-1 items-center justify-center py-6">
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-                <Donut segments={CONNECTION_TYPES} />
-                <DonutLegend segments={CONNECTION_TYPES} />
+                <Donut segments={CONNECTION_TYPES} colorIndex={4} />
+                <DonutLegend segments={CONNECTION_TYPES} colorIndex={4} />
               </div>
             </div>
           </StatCard>
 
-          <StatCard label="Top Countries">
+          <StatCard label="Top Countries" glowColor={PASTEL_RGB[0]}>
             <div className="flex flex-1 items-center py-6">
               <div className="w-full overflow-hidden rounded-lg border border-border/60">
                 <div className="grid grid-cols-[1.75rem_1fr_auto] gap-2 bg-muted/40 px-3 py-2 font-mono text-[9px] font-bold tracking-[0.18em] text-muted-foreground uppercase">
@@ -274,9 +438,13 @@ export function SpaceStats() {
                   <span>Name</span>
                   <span>Count</span>
                 </div>
-                {TOP_COUNTRIES.map((c) => (
-                  <div
+                {TOP_COUNTRIES.map((c, i) => (
+                  <motion.div
                     key={c.rank}
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + i * 0.05, ease: "easeOut" }}
+                    viewport={{ once: true }}
                     className="grid grid-cols-[1.75rem_1fr_auto] gap-2 border-t border-border/40 px-3 py-2.5 text-sm"
                   >
                     <span className="font-mono text-xs text-muted-foreground">
@@ -286,7 +454,7 @@ export function SpaceStats() {
                     <span className="font-mono text-xs text-muted-foreground tabular-nums">
                       {c.count}
                     </span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -295,7 +463,7 @@ export function SpaceStats() {
 
         {/* Participant minutes */}
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <StatCard label="WebRTC Participant Minutes">
+          <StatCard label="WebRTC Participant Minutes" glowColor={PASTEL_RGB[1]}>
             <div className="flex flex-1 items-center justify-center py-8">
               <BigStat
                 value={PARTICIPANT_MINUTES.value}
@@ -304,23 +472,30 @@ export function SpaceStats() {
             </div>
           </StatCard>
 
-          <StatCard label="Participant Minutes by Kind">
+          <StatCard label="Participant Minutes by Kind" glowColor={PASTEL_RGB[2]}>
             <div className="flex flex-1 flex-wrap items-center justify-center gap-x-5 gap-y-3 py-8">
-              <Donut segments={[{ label: "WebRTC", value: 100 }]} />
-              <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs">
+              <Donut segments={[{ label: "WebRTC", value: 100 }]} colorIndex={2} />
+              <motion.p
+                initial={{ opacity: 0, x: -5 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.4, ease: "easeOut" }}
+                viewport={{ once: true }}
+                className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs"
+              >
                 <span
                   aria-hidden="true"
-                  className="size-2 shrink-0 rounded-[2px] bg-foreground"
+                  className="size-2 shrink-0 rounded-[2px]"
+                  style={{ backgroundColor: PASTEL_COLORS[2] }}
                 />
                 <span className="text-muted-foreground">
                   WebRTC participant minutes
                 </span>
                 <span className="text-foreground tabular-nums">5,118 min</span>
-              </p>
+              </motion.p>
             </div>
           </StatCard>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }
