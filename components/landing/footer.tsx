@@ -6,8 +6,10 @@ import { ArrowUpRight } from "lucide-react"
 import { SiteLogo } from "@/components/common/site-logo"
 
 const socials = [
-  { label: "X", href: "https://x.com/whoavidwivedi" },
+  { label: "Website", href: "https://whoavidwivedi.work" },
   { label: "GitHub", href: "https://github.com/whoavidwivedi" },
+  { label: "X", href: "https://x.com/whoavidwivedi" },
+  { label: "LinkedIn", href: "https://linkedin.com/in/whoavidwivedi" },
 ]
 
 const productLinks = [
