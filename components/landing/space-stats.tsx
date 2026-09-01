@@ -1,7 +1,14 @@
 "use client"
 
 import { useRef, useEffect } from "react"
-import { motion, useMotionValue, useSpring, useMotionTemplate, useInView, useTransform } from "framer-motion"
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useMotionTemplate,
+  useInView,
+  useTransform,
+} from "framer-motion"
 
 const UNIQUE_PARTICIPANTS = {
   value: "266",
@@ -58,7 +65,7 @@ const PASTEL_RGB = [
   "147, 197, 253", // Blue 300
   "110, 231, 183", // Emerald 300
   "249, 168, 212", // Pink 300
-  "252, 211, 77",  // Amber 300
+  "252, 211, 77", // Amber 300
 ]
 
 const itemVariants = {
@@ -69,7 +76,7 @@ const itemVariants = {
     scale: 1,
     filter: "blur(0px)",
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 350,
       damping: 25,
       mass: 0.8,
@@ -145,13 +152,13 @@ function StatCard({
 function BigStat({ value, unit }: { value: string; unit?: string }) {
   const ref = useRef<HTMLParagraphElement>(null)
   const isInView = useInView(ref, { once: true, margin: "-50px" })
-  
+
   const numValue = parseFloat(value.replace(/,/g, ""))
   const hasComma = value.includes(",")
   const hasPercent = value.includes("%")
-  
+
   const spring = useSpring(0, { stiffness: 60, damping: 25, mass: 1 })
-  
+
   useEffect(() => {
     if (isInView) {
       spring.set(numValue)
@@ -171,7 +178,10 @@ function BigStat({ value, unit }: { value: string; unit?: string }) {
   })
 
   return (
-    <p ref={ref} className="flex items-baseline gap-1.5 font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
+    <p
+      ref={ref}
+      className="flex items-baseline gap-1.5 font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl"
+    >
       <motion.span>{display}</motion.span>
       {unit && (
         <span className="text-base font-bold text-muted-foreground sm:text-lg">
@@ -317,7 +327,11 @@ function DonutLegend({
             key={s.label}
             initial={{ opacity: 0, x: -5 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 + i * 0.05, ease: "easeOut" }}
+            transition={{
+              duration: 0.4,
+              delay: 0.3 + i * 0.05,
+              ease: "easeOut",
+            }}
             viewport={{ once: true }}
             className="flex items-center gap-2"
           >
@@ -362,7 +376,10 @@ export function SpaceStats() {
         className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"
       >
         {/* Section header */}
-        <motion.div variants={itemVariants} className="mb-10 max-w-2xl sm:mb-14">
+        <motion.div
+          variants={itemVariants}
+          className="mb-10 max-w-2xl sm:mb-14"
+        >
           <p className="font-mono text-[10px] font-bold tracking-[0.22em] text-muted-foreground uppercase">
             Telemetry // Past 60 days
           </p>
@@ -395,7 +412,11 @@ export function SpaceStats() {
             <div className="flex flex-1 items-center justify-center py-6">
               <BigStat value={TOTAL_ROOMS.value} />
             </div>
-            <Sparkline data={TOTAL_ROOMS.spark} gradientId="spark-rooms" colorIndex={1} />
+            <Sparkline
+              data={TOTAL_ROOMS.spark}
+              gradientId="spark-rooms"
+              colorIndex={1}
+            />
           </StatCard>
         </div>
 
@@ -443,7 +464,11 @@ export function SpaceStats() {
                     key={c.rank}
                     initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: 0.3 + i * 0.05, ease: "easeOut" }}
+                    transition={{
+                      duration: 0.4,
+                      delay: 0.3 + i * 0.05,
+                      ease: "easeOut",
+                    }}
                     viewport={{ once: true }}
                     className="grid grid-cols-[1.75rem_1fr_auto] gap-2 border-t border-border/40 px-3 py-2.5 text-sm"
                   >
@@ -463,7 +488,10 @@ export function SpaceStats() {
 
         {/* Participant minutes */}
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <StatCard label="WebRTC Participant Minutes" glowColor={PASTEL_RGB[1]}>
+          <StatCard
+            label="WebRTC Participant Minutes"
+            glowColor={PASTEL_RGB[1]}
+          >
             <div className="flex flex-1 items-center justify-center py-8">
               <BigStat
                 value={PARTICIPANT_MINUTES.value}
@@ -472,9 +500,15 @@ export function SpaceStats() {
             </div>
           </StatCard>
 
-          <StatCard label="Participant Minutes by Kind" glowColor={PASTEL_RGB[2]}>
+          <StatCard
+            label="Participant Minutes by Kind"
+            glowColor={PASTEL_RGB[2]}
+          >
             <div className="flex flex-1 flex-wrap items-center justify-center gap-x-5 gap-y-3 py-8">
-              <Donut segments={[{ label: "WebRTC", value: 100 }]} colorIndex={2} />
+              <Donut
+                segments={[{ label: "WebRTC", value: 100 }]}
+                colorIndex={2}
+              />
               <motion.p
                 initial={{ opacity: 0, x: -5 }}
                 whileInView={{ opacity: 1, x: 0 }}
