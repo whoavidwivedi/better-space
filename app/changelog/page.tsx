@@ -14,6 +14,18 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v1.4.0",
+    date: "2026-09-01",
+    label: "Telemetry UI polish & micro-interactions",
+    summary:
+      "The landing page's stats section got a massive upgrade with hardware-accelerated spring animations, interactive spotlights, and a vibrant pastel palette.",
+    highlights: [
+      "Replaced monochrome charts with a cohesive pastel color system.",
+      "Added fluid, physics-based spring hover spotlights that track mouse position.",
+      "Numbers and sparklines now animate smoothly into view dynamically as you scroll.",
+    ],
+  },
+  {
     version: "v1.3.8",
     date: "2026-08-21",
     label: "Cleaner emoji reactions",
