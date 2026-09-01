@@ -1,5 +1,9 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { SiteLogo } from "@/components/common/site-logo"
 
@@ -24,11 +28,66 @@ function ColumnHeading({ children }: { children: React.ReactNode }) {
   )
 }
 
-const footerLinkClass =
-  "text-sm text-muted-foreground transition-colors hover:text-foreground"
+function HoverLink({
+  label,
+  href,
+  isExternal,
+  hovered,
+  setHovered,
+}: {
+  label: string
+  href: string
+  isExternal?: boolean
+  hovered: string | null
+  setHovered: (v: string | null) => void
+}) {
+  const isHovered = hovered === label
+
+  return (
+    <div
+      className="relative flex items-center"
+      onMouseEnter={() => setHovered(label)}
+      onMouseLeave={() => setHovered(null)}
+    >
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            layoutId="footer-hover-pill"
+            className="absolute -inset-x-3 -inset-y-1.5 rounded-md bg-muted/60"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          />
+        )}
+      </AnimatePresence>
+
+      {isExternal ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="relative z-10 flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {label}
+          <ArrowUpRight size={12} aria-hidden="true" />
+        </a>
+      ) : (
+        <Link
+          href={href}
+          className="relative z-10 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {label}
+        </Link>
+      )}
+    </div>
+  )
+}
 
 export function Footer() {
   const year = new Date().getFullYear()
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null)
+
   return (
     <footer className="relative w-full overflow-hidden border-t border-border bg-card/30">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -61,12 +120,15 @@ export function Footer() {
           >
             <div>
               <ColumnHeading>Product</ColumnHeading>
-              <ul className="mt-4 space-y-2.5">
+              <ul className="mt-5 space-y-4">
                 {productLinks.map(({ label, href }) => (
                   <li key={label}>
-                    <Link href={href} className={footerLinkClass}>
-                      {label}
-                    </Link>
+                    <HoverLink
+                      label={label}
+                      href={href}
+                      hovered={hoveredLink}
+                      setHovered={setHoveredLink}
+                    />
                   </li>
                 ))}
               </ul>
@@ -74,18 +136,16 @@ export function Footer() {
 
             <div>
               <ColumnHeading>Connect</ColumnHeading>
-              <ul className="mt-4 space-y-2.5">
+              <ul className="mt-5 space-y-4">
                 {socials.map(({ label, href }) => (
                   <li key={label}>
-                    <a
+                    <HoverLink
+                      label={label}
                       href={href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`inline-flex items-center gap-1 ${footerLinkClass}`}
-                    >
-                      {label}
-                      <ArrowUpRight size={12} aria-hidden="true" />
-                    </a>
+                      isExternal
+                      hovered={hoveredLink}
+                      setHovered={setHoveredLink}
+                    />
                   </li>
                 ))}
               </ul>
@@ -94,7 +154,7 @@ export function Footer() {
         </div>
 
         {/* Meta bar */}
-        <div className="flex flex-col gap-3 border-t border-border/40 py-5 font-mono text-[10px] tracking-wider text-muted-foreground/80 uppercase sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-border/40 py-6 font-mono text-[10px] tracking-wider text-muted-foreground/80 uppercase sm:flex-row sm:items-center sm:justify-between">
           <span>&copy; {year} betterspace</span>
           <span className="text-muted-foreground/60">
             Built by{" "}
@@ -110,18 +170,38 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Oversized brand statement */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none relative -mt-2 select-none"
-      >
-        <p className="flex animate-pulse flex-wrap items-baseline justify-center gap-x-[0.18em] px-2 font-display [font-size:clamp(3rem,14vw,13rem)] leading-[0.82] font-black tracking-tighter whitespace-nowrap text-foreground/90 [animation-duration:5s] motion-reduce:animate-none">
-          BETTER
-          <span className="font-serif-display font-normal tracking-normal text-muted-foreground normal-case italic">
-            space
-          </span>
-        </p>
-        <div className="absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-background via-background/60 to-transparent" />
+      {/* Network Status & Soundwave Deck */}
+      <div className="border-t border-border/60 bg-muted/20">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6ee7b7] opacity-75"></span>
+              <span className="relative inline-flex size-2 rounded-full bg-[#34d399]"></span>
+            </span>
+            <span className="font-mono text-[9px] font-bold tracking-[0.2em] text-muted-foreground uppercase">
+              Systems Operational • Latency &lt; 50ms
+            </span>
+          </div>
+
+          <div
+            className="flex h-4 items-center gap-1 opacity-50 transition-opacity hover:opacity-100"
+            aria-hidden="true"
+          >
+            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <motion.div
+                key={i}
+                className="w-1 rounded-full bg-[#93c5fd]"
+                animate={{ height: ["4px", "16px", "4px"] }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.15,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </footer>
   )
