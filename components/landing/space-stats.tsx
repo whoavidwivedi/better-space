@@ -1,13 +1,12 @@
 "use client"
 
-import { useRef, useEffect } from "react"
+import { useRef } from "react"
 import {
   motion,
   useMotionValue,
   useSpring,
   useMotionTemplate,
   useInView,
-  useTransform,
 } from "framer-motion"
 
 const UNIQUE_PARTICIPANTS = {
@@ -149,40 +148,63 @@ function StatCard({
   )
 }
 
+const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
 function BigStat({ value, unit }: { value: string; unit?: string }) {
   const ref = useRef<HTMLParagraphElement>(null)
   const isInView = useInView(ref, { once: true, margin: "-50px" })
 
-  const numValue = parseFloat(value.replace(/,/g, ""))
-  const hasComma = value.includes(",")
-  const hasPercent = value.includes("%")
-
-  const spring = useSpring(0, { stiffness: 60, damping: 25, mass: 1 })
-
-  useEffect(() => {
-    if (isInView) {
-      spring.set(numValue)
-    }
-  }, [spring, numValue, isInView])
-
-  const display = useTransform(spring, (current) => {
-    if (hasPercent) {
-      // Small trick to avoid 100.0% if we just want up to 1 decimal
-      const str = current.toFixed(1)
-      return `${str.endsWith(".0") && current > 99 ? Math.round(current) : str}%`
-    }
-    if (hasComma) {
-      return Math.round(current).toLocaleString()
-    }
-    return Math.round(current).toString()
-  })
+  const chars = value.split("")
 
   return (
     <p
       ref={ref}
       className="flex items-baseline gap-1.5 font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl"
     >
-      <motion.span>{display}</motion.span>
+      <span className="inline-flex items-baseline tabular-nums">
+        {chars.map((char, i) => {
+          const isDigit = !isNaN(parseInt(char))
+
+          if (!isDigit) {
+            return (
+              <span key={`${i}-${char}`} className="inline-block">
+                {char}
+              </span>
+            )
+          }
+
+          const numValue = parseInt(char)
+          // Add 10 to ensure it does at least one full rotation
+          const targetIndex = 10 + numValue
+
+          return (
+            <span
+              key={`${i}-${char}`}
+              className="relative inline-flex h-[1em] overflow-hidden leading-[1em]"
+            >
+              <span className="invisible">0</span>
+              <motion.span
+                initial={{ y: 0 }}
+                animate={isInView ? { y: `-${targetIndex}em` } : { y: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 150,
+                  damping: 22,
+                  mass: 1,
+                  delay: 0.1 + i * 0.08,
+                }}
+                className="absolute inset-x-0 top-0 flex flex-col items-center"
+              >
+                {NUMBERS.map((num, idx) => (
+                  <span key={idx} className="h-[1em] leading-[1em]">
+                    {num}
+                  </span>
+                ))}
+              </motion.span>
+            </span>
+          )
+        })}
+      </span>
       {unit && (
         <span className="text-base font-bold text-muted-foreground sm:text-lg">
           {unit}
