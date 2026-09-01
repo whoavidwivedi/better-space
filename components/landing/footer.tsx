@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
@@ -11,117 +13,120 @@ const socials = [
 ]
 
 const productLinks = [
-  { label: "Launch a space", href: "/" },
   { label: "Lobby", href: "/lobby" },
   { label: "Changelog", href: "/changelog" },
 ]
 
-function ColumnHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="font-mono text-[10px] font-bold tracking-[0.22em] text-muted-foreground uppercase">
-      {children}
-    </p>
-  )
-}
-
-const footerLinkClass =
-  "text-sm text-muted-foreground transition-colors hover:text-foreground"
-
 export function Footer() {
   const year = new Date().getFullYear()
+
   return (
-    <footer className="relative w-full overflow-hidden border-t border-border bg-card/30">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Top: brand blurb + link columns */}
-        <div className="grid gap-10 pt-12 pb-10 sm:pb-12 md:grid-cols-[1fr_auto] md:gap-20">
-          <div>
-            <Link
-              href="/"
-              className="group flex w-fit items-center gap-2.5 outline-none"
-            >
-              <SiteLogo className="size-8 transition-transform duration-300 group-hover:scale-110" />
-              <span className="font-google-sans text-base font-black tracking-tight text-foreground">
-                better
-                <span className="ml-0.5 font-serif-display font-normal text-muted-foreground italic">
-                  space
-                </span>
+    <footer className="w-full border-t border-border bg-background">
+      <div className="mx-auto max-w-7xl">
+        {/* Top Massive CTA */}
+        <div className="flex flex-col items-center justify-between gap-8 border-b border-border px-6 py-16 sm:flex-row sm:px-12 sm:py-24">
+          <div className="text-center sm:text-left">
+            <h2 className="font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
+              Ready to{" "}
+              <span className="font-serif-display font-normal text-muted-foreground italic">
+                broadcast?
               </span>
-            </Link>
-            <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
-              Low-latency audio rooms you can host in seconds —{" "}
-              <span className="font-serif-display italic">
-                real voices, no clutter.
-              </span>
+            </h2>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Low-latency audio rooms you can spin up in seconds.
             </p>
           </div>
-
-          <nav
-            aria-label="Footer"
-            className="grid grid-cols-2 gap-10 sm:gap-20"
+          <Link
+            href="/"
+            className="group relative inline-flex h-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground px-8 font-mono text-[10px] font-bold tracking-[0.2em] text-background uppercase transition-transform active:scale-95"
           >
-            <div>
-              <ColumnHeading>Product</ColumnHeading>
-              <ul className="mt-4 space-y-2.5">
-                {productLinks.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link href={href} className={footerLinkClass}>
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <ColumnHeading>Connect</ColumnHeading>
-              <ul className="mt-4 space-y-2.5">
-                {socials.map(({ label, href }) => (
-                  <li key={label}>
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`inline-flex items-center gap-1 ${footerLinkClass}`}
-                    >
-                      {label}
-                      <ArrowUpRight size={12} aria-hidden="true" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </nav>
+            <span className="relative z-10">Launch a Space</span>
+            <div className="absolute inset-0 z-0 bg-gradient-to-r from-[#93c5fd] to-[#c4b5fd] opacity-0 transition-opacity duration-300 group-hover:opacity-20" />
+          </Link>
         </div>
 
-        {/* Meta bar */}
-        <div className="flex flex-col gap-3 border-t border-border/40 py-5 font-mono text-[10px] tracking-wider text-muted-foreground/80 uppercase sm:flex-row sm:items-center sm:justify-between">
-          <span>&copy; {year} betterspace</span>
-          <span className="text-muted-foreground/60">
-            Built by{" "}
-            <a
-              href="https://whoavidwivedi.work"
-              target="_blank"
-              rel="noreferrer"
-              className="text-muted-foreground/80 transition-colors hover:text-foreground"
-            >
-              whoavidwivedi
-            </a>
-          </span>
-        </div>
-      </div>
+        {/* Structural Grid */}
+        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {/* Brand & Status Column */}
+          <div className="flex flex-col justify-between p-6 sm:p-12">
+            <div>
+              <Link href="/" className="flex w-fit items-center gap-2">
+                <SiteLogo className="size-6" />
+                <span className="font-google-sans text-lg font-black tracking-tight text-foreground">
+                  better
+                  <span className="ml-0.5 font-serif-display font-normal text-muted-foreground italic">
+                    space
+                  </span>
+                </span>
+              </Link>
+              <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
+                Real voices, no clutter. We sweat the network details so you can
+                just talk.
+              </p>
+            </div>
 
-      {/* Oversized brand statement */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none relative -mt-2 select-none"
-      >
-        <p className="flex animate-pulse flex-wrap items-baseline justify-center gap-x-[0.18em] px-2 font-display [font-size:clamp(3rem,14vw,13rem)] leading-[0.82] font-black tracking-tighter whitespace-nowrap text-foreground/90 [animation-duration:5s] motion-reduce:animate-none">
-          BETTER
-          <span className="font-serif-display font-normal tracking-normal text-muted-foreground normal-case italic">
-            space
-          </span>
-        </p>
-        <div className="absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-background via-background/60 to-transparent" />
+            <div className="mt-12 flex items-center gap-3">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6ee7b7] opacity-75"></span>
+                <span className="relative inline-flex size-2 rounded-full bg-[#34d399]"></span>
+              </span>
+              <span className="font-mono text-[9px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                Systems Operational
+              </span>
+            </div>
+          </div>
+
+          {/* Product Links */}
+          <div className="p-6 sm:p-12">
+            <h3 className="font-mono text-[10px] font-bold tracking-[0.2em] text-foreground uppercase">
+              Product
+            </h3>
+            <ul className="mt-8 space-y-4">
+              {productLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Connect Links */}
+          <div className="p-6 sm:p-12">
+            <h3 className="font-mono text-[10px] font-bold tracking-[0.2em] text-foreground uppercase">
+              Connect
+            </h3>
+            <ul className="mt-8 space-y-4">
+              {socials.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex w-fit items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                    <ArrowUpRight
+                      size={12}
+                      className="opacity-40 transition-opacity group-hover:opacity-100"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-border bg-muted/20 px-6 py-6 sm:px-12">
+          <p className="text-center font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+            &copy; {year} betterspace • Built by whoavidwivedi
+          </p>
+        </div>
       </div>
     </footer>
   )
