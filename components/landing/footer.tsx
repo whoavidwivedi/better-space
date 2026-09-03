@@ -23,28 +23,6 @@ export function Footer() {
   return (
     <footer className="w-full border-t border-border bg-background">
       <div className="mx-auto max-w-7xl">
-        {/* Top Massive CTA */}
-        <div className="flex flex-col items-center justify-between gap-8 border-b border-border px-6 py-16 sm:flex-row sm:px-12 sm:py-24">
-          <div className="text-center sm:text-left">
-            <h2 className="font-display text-4xl leading-none font-black tracking-tight text-foreground sm:text-5xl">
-              Ready to{" "}
-              <span className="font-serif-display font-normal text-muted-foreground italic">
-                broadcast?
-              </span>
-            </h2>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Low-latency audio rooms you can spin up in seconds.
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="group relative inline-flex h-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground px-8 font-mono text-[10px] font-bold tracking-[0.2em] text-background uppercase transition-transform active:scale-95"
-          >
-            <span className="relative z-10">Launch a Space</span>
-            <div className="absolute inset-0 z-0 bg-gradient-to-r from-[#93c5fd] to-[#c4b5fd] opacity-0 transition-opacity duration-300 group-hover:opacity-20" />
-          </Link>
-        </div>
-
         {/* Structural Grid */}
         <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {/* Brand & Status Column */}
