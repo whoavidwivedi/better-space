@@ -2,7 +2,14 @@
 
 import * as React from "react"
 import { useChat, useLocalParticipant } from "@livekit/components-react"
-import { Message, MessageAvatar, MessageContent, MessageGroup, MessageHeader, MessageFooter } from "@/components/ui/message"
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+  MessageGroup,
+  MessageHeader,
+  MessageFooter,
+} from "@/components/ui/message"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -43,10 +50,12 @@ export function ChatPanel() {
   }, [chatMessages])
 
   return (
-    <div className="flex h-full flex-col bg-card/95 backdrop-blur-md border-l border-border">
+    <div className="flex h-full flex-col border-l border-border bg-card/95 backdrop-blur-md">
       <div className="border-b border-border p-4 sm:p-5">
-        <h2 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-foreground">Room Chat</h2>
-        <p className="mt-1 text-[10px] text-muted-foreground leading-tight">
+        <h2 className="font-mono text-xs font-bold tracking-wider text-foreground uppercase sm:text-sm">
+          Room Chat
+        </h2>
+        <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
           In the next update, chat will be perfectly optimized for iPhone Duo.
         </p>
       </div>
@@ -54,7 +63,9 @@ export function ChatPanel() {
         <div className="flex flex-col gap-4">
           {groupedMessages.length === 0 && (
             <div className="flex h-full items-center justify-center pt-10">
-              <span className="text-xs text-muted-foreground font-mono">No messages yet.</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                No messages yet.
+              </span>
             </div>
           )}
           {groupedMessages.map((group, groupIdx) => {
@@ -66,28 +77,45 @@ export function ChatPanel() {
                   const isLast = msgIdx === group.messages.length - 1
                   const isFirst = msgIdx === 0
                   return (
-                    <Message key={msg.id || msgIdx} align={isMe ? "end" : "start"} className="w-full">
+                    <Message
+                      key={msg.id || msgIdx}
+                      align={isMe ? "end" : "start"}
+                      className="w-full"
+                    >
                       <MessageAvatar>
                         {isLast ? (
                           <Avatar className="size-7 sm:size-8">
-                            <AvatarImage src={userpicUrl(avatarSeed)} alt={group.sender} className="object-cover" />
-                            <AvatarFallback className="text-xs font-bold">{group.sender.charAt(0).toUpperCase()}</AvatarFallback>
+                            <AvatarImage
+                              src={userpicUrl(avatarSeed)}
+                              alt={group.sender}
+                              className="object-cover"
+                            />
+                            <AvatarFallback className="text-xs font-bold">
+                              {group.sender.charAt(0).toUpperCase()}
+                            </AvatarFallback>
                           </Avatar>
                         ) : null}
                       </MessageAvatar>
                       <MessageContent>
                         {isFirst && !isMe && (
                           <MessageHeader>
-                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground">{group.sender}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground sm:text-xs">
+                              {group.sender}
+                            </span>
                           </MessageHeader>
                         )}
                         <Bubble variant={isMe ? "default" : "muted"}>
-                          <BubbleContent className="text-xs sm:text-sm">{msg.message}</BubbleContent>
+                          <BubbleContent className="text-xs sm:text-sm">
+                            {msg.message}
+                          </BubbleContent>
                         </Bubble>
                         {isLast && (
                           <MessageFooter>
-                            <span className="text-[9px] sm:text-[10px] text-muted-foreground">
-                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <span className="text-[9px] text-muted-foreground sm:text-[10px]">
+                              {new Date(msg.timestamp).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
                           </MessageFooter>
                         )}
@@ -101,15 +129,23 @@ export function ChatPanel() {
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
-      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3 sm:p-4 bg-background/50">
+      <form
+        onSubmit={handleSend}
+        className="flex items-center gap-2 border-t border-border bg-background/50 p-3 sm:p-4"
+      >
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 rounded-xl bg-muted/50 border-border/50 text-xs sm:text-sm"
+          className="flex-1 rounded-xl border-border/50 bg-muted/50 text-xs sm:text-sm"
           disabled={isSending}
         />
-        <Button type="submit" size="icon" disabled={!inputValue.trim() || isSending} className="rounded-xl size-9 sm:size-10 shrink-0">
+        <Button
+          type="submit"
+          size="icon"
+          disabled={!inputValue.trim() || isSending}
+          className="size-9 shrink-0 rounded-xl sm:size-10"
+        >
           <SendIcon className="size-4" />
         </Button>
       </form>

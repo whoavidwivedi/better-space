@@ -1417,7 +1417,10 @@ function RoomUI({
                 />
                 <TooltipContent>Chat</TooltipContent>
               </Tooltip>
-              <SheetContent side="right" className="w-[85vw] p-0 sm:max-w-md border-l border-border bg-card/95 backdrop-blur-md">
+              <SheetContent
+                side="right"
+                className="w-[85vw] border-l border-border bg-card/95 p-0 backdrop-blur-md sm:max-w-md"
+              >
                 <ChatPanel />
               </SheetContent>
             </Sheet>
