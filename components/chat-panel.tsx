@@ -46,6 +46,9 @@ export function ChatPanel() {
     <div className="flex h-full flex-col bg-card/95 backdrop-blur-md border-l border-border">
       <div className="border-b border-border p-4 sm:p-5">
         <h2 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-foreground">Room Chat</h2>
+        <p className="mt-1 text-[10px] text-muted-foreground leading-tight">
+          In the next update, chat will be perfectly optimized for iPhone Duo.
+        </p>
       </div>
       <ScrollArea className="flex-1 p-3 sm:p-4">
         <div className="flex flex-col gap-4">
