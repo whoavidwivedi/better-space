@@ -29,8 +29,6 @@ import {
   AudioLines as VoiceIcon,
   AlertTriangle as Alert01Icon,
 } from "lucide-react"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { ChatPanel } from "@/components/chat-panel"
 import { EmojiClickData, Theme } from "emoji-picker-react"
 import EmojiPicker from "emoji-picker-react"
 import { useTheme } from "next-themes"
@@ -1396,16 +1394,6 @@ function RoomUI({
                 </PopoverContent>
               </Popover>
             )}
-
-            {/* Chat Drawer */}
-            <Sheet>
-              <SheetContent
-                side="right"
-                className="w-[85vw] border-l border-border bg-card/95 p-0 backdrop-blur-md sm:max-w-md"
-              >
-                <ChatPanel />
-              </SheetContent>
-            </Sheet>
 
             {/* Mute & Deafen Controls */}
             {canPublish ? (
