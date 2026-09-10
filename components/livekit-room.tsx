@@ -1401,6 +1401,35 @@ function RoomUI({
               </Popover>
             )}
 
+            {/* Chat Drawer */}
+            <Sheet>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <SheetTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Open chat"
+                          className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                        >
+                          <HugeiconsIcon icon={ChatIcon} size={17} />
+                        </Button>
+                      }
+                    />
+                  }
+                />
+                <TooltipContent>Chat</TooltipContent>
+              </Tooltip>
+              <SheetContent
+                side="right"
+                className="w-[85vw] border-l border-border bg-card/95 p-0 backdrop-blur-md sm:max-w-md"
+              >
+                <ChatPanel />
+              </SheetContent>
+            </Sheet>
+
             {/* Mute & Deafen Controls */}
             {canPublish ? (
               <>
