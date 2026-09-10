@@ -1001,9 +1001,6 @@ function RoomUI({
               </div>
             </section>
           </main>
-          <aside className="z-10 order-last mt-2 flex shrink-0 flex-col self-center sm:mt-auto sm:self-end">
-            <ChatPanel isHost={isHost} />
-          </aside>
         </div>
 
         {hostDisconnectTime !== null && (
