@@ -1399,8 +1399,6 @@ function RoomUI({
               </Popover>
             )}
 
-
-
             {/* Mute & Deafen Controls */}
             {canPublish ? (
               <>
