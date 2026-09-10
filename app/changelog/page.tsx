@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const releases = [
   {
-    version: "v1.4.0",
+    version: "v1.5.0",
     date: "2026-09-11",
     label: "Live Chat and Data Synchronization",
     summary:
