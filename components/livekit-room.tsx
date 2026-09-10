@@ -957,8 +957,9 @@ function RoomUI({
 
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-          <section
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col sm:flex-row flex-1 gap-4 overflow-hidden p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+          <main className="flex-1 overflow-y-auto">
+            <section
             aria-labelledby="participants-heading"
             className="space-y-3 sm:space-y-6"
           >
@@ -1000,8 +1001,12 @@ function RoomUI({
             </div>
           </section>
         </main>
+        <aside className="flex shrink-0 flex-col order-last self-center mt-2 sm:self-end sm:mt-auto z-10">
+          <ChatPanel isHost={isHost} />
+        </aside>
+      </div>
 
-        {hostDisconnectTime !== null && (
+      {hostDisconnectTime !== null && (
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
             <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive px-5 py-2.5 font-mono text-xs font-bold text-destructive-foreground shadow-xl">
               <HugeiconsIcon
@@ -1395,35 +1400,6 @@ function RoomUI({
                 </PopoverContent>
               </Popover>
             )}
-
-            {/* Chat Drawer */}
-            <Sheet>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <SheetTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          aria-label="Open chat"
-                          className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
-                        >
-                          <HugeiconsIcon icon={ChatIcon} size={17} />
-                        </Button>
-                      }
-                    />
-                  }
-                />
-                <TooltipContent>Chat</TooltipContent>
-              </Tooltip>
-              <SheetContent
-                side="right"
-                className="w-[85vw] border-l border-border bg-card/95 p-0 backdrop-blur-md sm:max-w-md"
-              >
-                <ChatPanel />
-              </SheetContent>
-            </Sheet>
 
             {/* Mute & Deafen Controls */}
             {canPublish ? (

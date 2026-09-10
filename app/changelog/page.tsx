@@ -15,6 +15,18 @@ export const metadata: Metadata = {
 const releases = [
   {
     version: "v1.4.0",
+    date: "2026-09-11",
+    label: "Live Chat and Data Synchronization",
+    summary:
+      "Added real-time messaging, smart typing indicators, and peer-to-peer chat history synchronization powered by LiveKit Data Channels.",
+    highlights: [
+      "Added live chat functionality with responsive message layouts.",
+      "Added smart typing indicators and interactive mobile chat badges with fluid iOS-style CSS animations.",
+      "Implemented seamless peer-to-peer chat history synchronization from host to new participants.",
+    ],
+  },
+  {
+    version: "v1.3.3",
     date: "2026-09-01",
     label: "Telemetry UI polish & micro-interactions",
     summary:
