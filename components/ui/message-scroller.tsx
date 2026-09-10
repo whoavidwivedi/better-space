@@ -42,7 +42,7 @@ function MessageScrollerViewport({
     <MessageScrollerPrimitive.Viewport
       data-slot="message-scroller-viewport"
       className={cn(
-        "size-full min-h-0 min-w-0 overflow-y-auto overscroll-contain contain-content data-pending-scroll:invisible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [mask-image:linear-gradient(to_bottom,transparent,black_20px,black_calc(100%-20px),transparent)]",
+        "size-full min-h-0 min-w-0 [scrollbar-width:none] overflow-y-auto overscroll-contain [mask-image:linear-gradient(to_bottom,transparent,black_20px,black_calc(100%-20px),transparent)] contain-content [-ms-overflow-style:none] data-pending-scroll:invisible [&::-webkit-scrollbar]:hidden",
         className
       )}
       {...props}
@@ -72,10 +72,7 @@ function MessageScrollerItem({
     <MessageScrollerPrimitive.Item
       data-slot="message-scroller-item"
       scrollAnchor={scrollAnchor}
-      className={cn(
-        "min-w-0 shrink-0",
-        className
-      )}
+      className={cn("min-w-0 shrink-0", className)}
       {...props}
     />
   )

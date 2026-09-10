@@ -957,56 +957,56 @@ function RoomUI({
 
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col sm:flex-row flex-1 gap-4 overflow-hidden p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 overflow-hidden p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:flex-row sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
           <main className="flex-1 overflow-y-auto">
             <section
-            aria-labelledby="participants-heading"
-            className="space-y-3 sm:space-y-6"
-          >
-            <div className="flex items-center justify-between">
-              <h2
-                id="participants-heading"
-                className="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase sm:gap-2 sm:text-xs"
-              >
-                <HugeiconsIcon
-                  icon={GroupIcon}
-                  className="size-3.5 sm:size-4"
-                  aria-hidden="true"
-                />
-                Stage ({participants.length})
-              </h2>
-            </div>
+              aria-labelledby="participants-heading"
+              className="space-y-3 sm:space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <h2
+                  id="participants-heading"
+                  className="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase sm:gap-2 sm:text-xs"
+                >
+                  <HugeiconsIcon
+                    icon={GroupIcon}
+                    className="size-3.5 sm:size-4"
+                    aria-hidden="true"
+                  />
+                  Stage ({participants.length})
+                </h2>
+              </div>
 
-            <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {sortedParticipants.map((participant) => (
-                <ParticipantTile
-                  key={participant.sid || participant.identity}
-                  participant={participant}
-                  reaction={reactions[participant.identity]}
-                  isHost={isHost}
-                  isHostOrCohost={isHostOrCohost}
-                  roomCohosts={roomCohosts}
-                  roomHost={roomHost}
-                  roomName={roomName}
-                  localUserName={userName}
-                  token={token}
-                  hasRequestedMic={micRequests.includes(participant.identity)}
-                  onClearRequest={() =>
-                    setMicRequests((prev) =>
-                      prev.filter((id) => id !== participant.identity)
-                    )
-                  }
-                />
-              ))}
-            </div>
-          </section>
-        </main>
-        <aside className="flex shrink-0 flex-col order-last self-center mt-2 sm:self-end sm:mt-auto z-10">
-          <ChatPanel isHost={isHost} />
-        </aside>
-      </div>
+              <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {sortedParticipants.map((participant) => (
+                  <ParticipantTile
+                    key={participant.sid || participant.identity}
+                    participant={participant}
+                    reaction={reactions[participant.identity]}
+                    isHost={isHost}
+                    isHostOrCohost={isHostOrCohost}
+                    roomCohosts={roomCohosts}
+                    roomHost={roomHost}
+                    roomName={roomName}
+                    localUserName={userName}
+                    token={token}
+                    hasRequestedMic={micRequests.includes(participant.identity)}
+                    onClearRequest={() =>
+                      setMicRequests((prev) =>
+                        prev.filter((id) => id !== participant.identity)
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          </main>
+          <aside className="z-10 order-last mt-2 flex shrink-0 flex-col self-center sm:mt-auto sm:self-end">
+            <ChatPanel isHost={isHost} />
+          </aside>
+        </div>
 
-      {hostDisconnectTime !== null && (
+        {hostDisconnectTime !== null && (
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
             <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive px-5 py-2.5 font-mono text-xs font-bold text-destructive-foreground shadow-xl">
               <HugeiconsIcon
