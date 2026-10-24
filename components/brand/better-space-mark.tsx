@@ -25,7 +25,9 @@ export function BetterSpaceMark({
         cy="20"
         r="9"
         className={
-          animated ? "animate-[mark-wave_3s_ease-out_infinite]" : undefined
+          animated
+            ? "origin-center animate-[mark-wave_3s_ease-out_infinite] [transform-box:fill-box]"
+            : undefined
         }
       />
       <circle
@@ -33,7 +35,9 @@ export function BetterSpaceMark({
         cy="20"
         r="15"
         className={
-          animated ? "animate-[mark-wave_3s_ease-out_0.8s_infinite]" : undefined
+          animated
+            ? "origin-center animate-[mark-wave_3s_ease-out_0.8s_infinite] [transform-box:fill-box]"
+            : undefined
         }
       />
     </svg>

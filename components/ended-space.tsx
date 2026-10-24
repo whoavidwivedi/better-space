@@ -141,7 +141,7 @@ export function SpaceEnded({ space }: { space: EndedSpace }) {
 
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           <Button
-            className="h-11 flex-1 gap-1.5 rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase hover:bg-foreground/90"
+            className="h-11 flex-1 gap-1.5 rounded-xl font-mono text-xs font-bold tracking-wider uppercase"
             render={<Link href="/lobby" />}
             nativeButton={false}
           >
@@ -150,7 +150,7 @@ export function SpaceEnded({ space }: { space: EndedSpace }) {
           </Button>
           <Button
             variant="outline"
-            className="h-11 flex-1 rounded-xl border-border font-mono text-xs font-bold tracking-wider uppercase hover:bg-muted"
+            className="h-11 flex-1 rounded-xl font-mono text-xs font-bold tracking-wider uppercase"
             render={<Link href="/" />}
             nativeButton={false}
           >
