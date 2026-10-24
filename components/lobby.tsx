@@ -317,7 +317,7 @@ export function Lobby() {
               trigger={
                 <Button
                   variant="outline"
-                  className="h-10 rounded-xl pr-3.5 pl-2 font-mono text-xs font-bold tracking-wider text-foreground uppercase shadow-xs"
+                  className="h-10 rounded-xl pr-3.5 pl-2 font-mono text-xs font-bold tracking-wider text-foreground uppercase"
                   title="Change avatar persona"
                 >
                   <div className="relative">
@@ -342,7 +342,7 @@ export function Lobby() {
             <Popover open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <PopoverTrigger
                 render={
-                  <Button className="h-10 gap-2 rounded-xl bg-foreground px-4 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90">
+                  <Button className="h-10 gap-2 rounded-xl px-4 font-mono text-xs font-bold tracking-wider uppercase">
                     <span>Launch Space</span>
                     <RiArrowRightLine size={15} />
                   </Button>
@@ -437,7 +437,7 @@ export function Lobby() {
                           variant="outline"
                           size="xs"
                           onClick={() => setNewSpaceName(preset.name)}
-                          className="h-6 rounded-lg font-mono text-[9px] font-bold tracking-wider text-foreground uppercase hover:bg-muted"
+                          className="h-6 rounded-lg font-mono text-[9px] font-bold tracking-wider text-foreground uppercase"
                         >
                           {preset.name}
                         </Button>
@@ -476,7 +476,7 @@ export function Lobby() {
                     )}
                     <Button
                       type="submit"
-                      className="h-10 shrink-0 rounded-xl bg-foreground px-5 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90 focus-visible:ring-2 focus-visible:ring-foreground/25"
+                      className="h-10 shrink-0 rounded-xl px-5 font-mono text-xs font-bold tracking-wider uppercase focus-visible:ring-2 focus-visible:ring-foreground/25"
                       disabled={
                         !newSpaceName.trim() ||
                         !createUserName.trim() ||
@@ -801,7 +801,7 @@ export function Lobby() {
             <div className="pt-2">
               <Button
                 type="submit"
-                className="h-11 w-full rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase"
+                className="h-11 w-full rounded-xl font-mono text-xs font-bold tracking-wider uppercase"
                 disabled={!joinUserName.trim() || isJoining}
               >
                 {isJoining ? <Spinner className="mr-2" /> : null}

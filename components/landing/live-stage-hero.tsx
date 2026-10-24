@@ -63,7 +63,7 @@ export function LiveStageHero() {
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <Button
                 variant="outline"
-                className="h-8 gap-1.5 rounded-xl font-mono text-[10px] font-bold tracking-wider text-foreground uppercase shadow-xs hover:bg-muted"
+                className="h-8 gap-1.5 rounded-xl font-mono text-[10px] font-bold tracking-wider text-foreground uppercase"
                 render={<Link href="/lobby" />}
                 nativeButton={false}
               >
@@ -111,7 +111,7 @@ export function LiveStageHero() {
         {/* Lobby Action */}
         <div className="mt-6 flex justify-center sm:mt-8">
           <Button
-            className="h-11 gap-2 rounded-xl bg-foreground px-7 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90"
+            className="h-11 gap-2 rounded-xl px-7 font-mono text-xs font-bold tracking-wider uppercase"
             render={<Link href="/lobby" />}
             nativeButton={false}
           >

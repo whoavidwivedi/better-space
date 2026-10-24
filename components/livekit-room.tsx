@@ -1425,7 +1425,7 @@ function RoomUI({
                   aria-pressed={isMuted}
                   variant={isMuted ? "destructive" : "default"}
                   size="lg"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
                 >
                   {isMuted ? (
                     <>
@@ -1434,11 +1434,7 @@ function RoomUI({
                     </>
                   ) : (
                     <>
-                      <HugeiconsIcon
-                        icon={Mic01Icon}
-                        size={16}
-                        className="text-primary-foreground"
-                      />
+                      <HugeiconsIcon icon={Mic01Icon} size={16} />
                       <span>MIC LIVE</span>
                     </>
                   )}
@@ -1454,7 +1450,7 @@ function RoomUI({
                     : "Request microphone"
                 }
                 size="lg"
-                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold shadow-xs sm:h-10 sm:gap-2 sm:px-5"
+                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
               >
                 <HugeiconsIcon icon={Mic01Icon} size={16} />
                 <span>

@@ -367,7 +367,7 @@ export function SpaceJoin() {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="h-11 w-full gap-2 rounded-xl bg-foreground font-mono font-bold tracking-wider text-background uppercase transition-all hover:bg-foreground/90"
+            className="h-11 w-full gap-2 rounded-xl font-mono font-bold tracking-wider uppercase"
             disabled={!userName.trim() || !spaceName.trim() || isJoining}
           >
             {isJoining ? (

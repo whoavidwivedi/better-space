@@ -178,7 +178,7 @@ export function HeroTypographyStage() {
 
           <div className="flex items-center gap-4">
             <Button
-              className="h-11 gap-2 rounded-xl bg-foreground px-7 font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90"
+              className="h-11 gap-2 rounded-xl px-7 font-mono text-xs font-bold tracking-wider uppercase"
               render={<Link href="/lobby" />}
               nativeButton={false}
             >
@@ -364,7 +364,7 @@ export function HeroTypographyStage() {
 
             {/* Enter Stage Button */}
             <Button
-              className="h-11 w-full gap-2 rounded-xl bg-foreground font-mono text-xs font-bold tracking-wider text-background uppercase shadow-sm hover:bg-foreground/90"
+              className="h-11 w-full gap-2 rounded-xl font-mono text-xs font-bold tracking-wider uppercase"
               render={<Link href="/lobby" />}
               nativeButton={false}
             >
