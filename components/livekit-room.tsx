@@ -813,7 +813,7 @@ function RoomUI({
           <div
             role="status"
             aria-label={`Connection status: ${connectionLabel}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-2 py-1 font-mono text-[9px] font-bold tracking-wide text-muted-foreground uppercase"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-2 py-1 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase"
           >
             <span className={`size-1.5 rounded-full ${connectionTone}`} />
             <span className="hidden sm:inline">{connectionLabel}</span>
@@ -1309,7 +1309,7 @@ function RoomUI({
                           >
                             <HugeiconsIcon icon={VoiceIcon} size={17} />
                             {micRequests.length > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
+                              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[10px] font-bold text-destructive-foreground tabular-nums shadow-xs sm:h-5 sm:min-w-5 sm:text-[10px]">
                                 {micRequests.length}
                               </span>
                             )}
@@ -1572,12 +1572,12 @@ function ParticipantTile({
     <div className="group/avatar relative inline-block cursor-pointer">
       {/* Top Left Role Badge */}
       {isThisParticipantHost && (
-        <span className="absolute -top-1.5 -left-1.5 z-20 rounded-full border border-background bg-foreground px-1.5 py-0.5 font-mono text-[9px] leading-none font-black text-background shadow-xs">
+        <span className="absolute -top-1.5 -left-1.5 z-20 rounded-full border border-background bg-foreground px-1.5 py-0.5 font-mono text-[10px] leading-none font-extrabold text-background shadow-xs">
           HOST
         </span>
       )}
       {isThisParticipantCohost && !isThisParticipantHost && (
-        <span className="absolute -top-1.5 -left-1.5 z-20 rounded-full border border-background bg-blue-600 px-1.5 py-0.5 font-mono text-[9px] leading-none font-bold text-white shadow-xs">
+        <span className="absolute -top-1.5 -left-1.5 z-20 rounded-full border border-background bg-blue-600 px-1.5 py-0.5 font-mono text-[10px] leading-none font-bold text-white shadow-xs">
           CO-HOST
         </span>
       )}
@@ -1721,7 +1721,7 @@ function ParticipantTile({
         )}
 
         {hasRequestedMic && isHostOrCohost && (
-          <div className="absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-amber-500 px-2.5 py-0.5 font-mono text-[9px] font-bold whitespace-nowrap text-black shadow-xs">
+          <div className="absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-amber-500 px-2.5 py-0.5 font-mono text-[10px] font-bold whitespace-nowrap text-black shadow-xs">
             Requested Mic
           </div>
         )}

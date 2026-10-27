@@ -76,7 +76,7 @@ export function SignalManifesto() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-2 font-handwritten text-xl text-muted-foreground">
+        <div className="font-handwritten flex items-center gap-2 text-xl text-muted-foreground">
           <span>Sub-35ms Edge Latency</span>
           <DoodleAsterisk className="size-5 text-foreground/60" />
         </div>
@@ -123,7 +123,7 @@ export function SignalManifesto() {
           <span className="font-mono text-xs font-bold tracking-widest text-muted-foreground uppercase">
             INTERACTIVE ACOUSTIC TESTBED
           </span>
-          <h4 className="mt-1 font-syne text-2xl font-bold text-foreground uppercase">
+          <h4 className="font-syne mt-1 text-2xl font-bold text-foreground uppercase">
             Test Audio Frequency Response
           </h4>
           <p className="mt-0.5 text-sm text-muted-foreground">

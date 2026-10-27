@@ -5,6 +5,8 @@ import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowRight as RiArrowRightLine, Plus as RiAddLine } from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   STARTER_TEMPLATES,
   findTemplate,
@@ -80,7 +82,7 @@ export function LiveSpacesRadar() {
         {/* Section Header */}
         <div className="mb-8 flex flex-col justify-between gap-4 sm:mb-10 sm:flex-row sm:items-end">
           <div>
-            <div className="mb-1.5 inline-flex items-center gap-2 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase sm:mb-2 sm:text-xs">
+            <div className="mb-1.5 inline-flex items-center gap-2 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase sm:mb-2 sm:text-xs">
               <span>EXPLORE ACTIVE SPACES</span>
             </div>
             <h2 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
@@ -111,12 +113,12 @@ export function LiveSpacesRadar() {
               <div>
                 <div className="mb-3.5 flex items-center justify-between gap-3 sm:mb-4">
                   {room.isLive ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wide text-background uppercase sm:px-3 sm:py-1 sm:text-[11px]">
-                      <span className="size-1.5 rounded-full bg-background" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-background uppercase sm:px-3 sm:py-1 sm:text-[11px]">
+                      <span className="size-1.5 shrink-0 rounded-full bg-background whitespace-nowrap" />
                       LIVE NOW
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/80 px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase sm:px-3 sm:py-1 sm:text-[11px]">
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-muted/80 px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wide whitespace-nowrap text-muted-foreground uppercase sm:px-3 sm:py-1 sm:text-[11px]">
                       STARTER TEMPLATE
                     </span>
                   )}
@@ -125,7 +127,7 @@ export function LiveSpacesRadar() {
                     {room.isLive ? (
                       <span>{room.listenersCount} tuning in</span>
                     ) : (
-                      <span className="text-[10px] sm:text-[11px]">
+                      <span className="text-[11px] sm:text-[11px]">
                         Available to launch
                       </span>
                     )}
@@ -155,7 +157,7 @@ export function LiveSpacesRadar() {
                       </div>
                     ))}
                   </div>
-                  <span className="truncate font-mono text-[10px] text-muted-foreground sm:text-xs">
+                  <span className="truncate font-mono text-[11px] text-muted-foreground sm:text-xs">
                     {room.isLive
                       ? `${room.speakers.length} on mic`
                       : "Preset line-up"}
@@ -164,14 +166,24 @@ export function LiveSpacesRadar() {
 
                 {/* Enter / Start Button */}
                 {room.isLive ? (
-                  <div className="ml-auto inline-flex h-8 shrink-0 items-center gap-1 rounded-xl bg-foreground px-3 font-mono text-[10px] font-bold tracking-wider text-background uppercase transition-transform group-hover:bg-foreground/90 group-active:scale-95 sm:ml-0 sm:px-3.5">
-                    <span>Join Space</span>
+                  <div
+                    className={cn(
+                      buttonVariants(),
+                      "pointer-events-none ml-auto shrink-0 sm:ml-0"
+                    )}
+                  >
+                    <span>Join space</span>
                     <RiArrowRightLine size={13} />
                   </div>
                 ) : (
-                  <div className="ml-auto inline-flex h-8 shrink-0 items-center gap-1 rounded-xl border border-border bg-background px-3 font-mono text-[10px] font-bold tracking-wider text-foreground uppercase transition-transform group-hover:border-foreground/60 group-active:scale-95 hover:bg-muted sm:ml-0 sm:px-3.5">
+                  <div
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "pointer-events-none ml-auto shrink-0 sm:ml-0"
+                    )}
+                  >
                     <RiAddLine size={13} />
-                    <span>Start Space</span>
+                    <span>Start space</span>
                   </div>
                 )}
               </div>
@@ -198,9 +210,11 @@ export function LiveSpacesRadar() {
               Host your own room on any topic with instant ephemeral audio.
             </p>
 
-            <div className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-foreground px-4 font-mono text-xs font-bold tracking-wider text-background uppercase transition-transform group-hover:bg-foreground/90 group-active:scale-95">
+            <div
+              className={cn(buttonVariants(), "pointer-events-none h-9 px-4")}
+            >
               <RiAddLine size={14} />
-              <span>Create New Space</span>
+              <span>Create new space</span>
             </div>
           </Link>
         </div>

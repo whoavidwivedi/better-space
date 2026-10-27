@@ -291,7 +291,7 @@ export function Lobby() {
         {/* Header Hero Card */}
         <div className="mb-5 flex flex-col justify-between gap-4 rounded-2xl border border-border bg-card/80 p-4 shadow-xs sm:mb-8 sm:gap-5 sm:rounded-3xl sm:p-6 md:flex-row md:items-center md:p-8">
           <div className="min-w-0">
-            <div className="mb-1.5 inline-flex items-center gap-2 font-mono text-[10px] font-bold text-muted-foreground uppercase sm:mb-2 sm:text-[11px]">
+            <div className="mb-1.5 inline-flex items-center gap-2 font-mono text-[11px] font-bold text-muted-foreground uppercase sm:mb-2 sm:text-[11px]">
               <span className="size-1.5 rounded-full bg-foreground" />
               <span>LIVE AUDIO LOUNGE</span>
             </div>
@@ -379,7 +379,7 @@ export function Lobby() {
                       <RiCloseLine size={16} aria-hidden="true" />
                     </Button>
                   </div>
-                  <PopoverDescription className="mt-1 font-mono text-[10px] leading-normal text-muted-foreground">
+                  <PopoverDescription className="mt-1 font-mono text-[11px] leading-normal text-muted-foreground">
                     Name your room and set your display identity.
                   </PopoverDescription>
                 </PopoverHeader>
@@ -395,12 +395,12 @@ export function Lobby() {
                     <div className="flex items-baseline justify-between">
                       <FieldLabel
                         htmlFor="create-space-name"
-                        className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase"
+                        className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase"
                       >
                         Space Name
                       </FieldLabel>
                       <span
-                        className="font-mono text-[9px] text-muted-foreground/60 tabular-nums"
+                        className="font-mono text-[11px] text-muted-foreground/60 tabular-nums"
                         aria-hidden="true"
                       >
                         {newSpaceName.length}/30
@@ -427,7 +427,7 @@ export function Lobby() {
                     />
                     {/* Quick template suggestions */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      <span className="mr-0.5 font-mono text-[9px] text-muted-foreground/70">
+                      <span className="mr-0.5 font-mono text-[11px] text-muted-foreground/70">
                         Templates:
                       </span>
                       {STARTER_PRESETS.map((preset) => (
@@ -437,7 +437,7 @@ export function Lobby() {
                           variant="outline"
                           size="xs"
                           onClick={() => setNewSpaceName(preset.name)}
-                          className="h-6 rounded-lg font-mono text-[9px] font-bold tracking-wider text-foreground uppercase"
+                          className="h-6 rounded-lg font-mono text-[11px] font-bold tracking-wider text-foreground uppercase"
                         >
                           {preset.name}
                         </Button>
@@ -448,7 +448,7 @@ export function Lobby() {
                   <Field className="space-y-1.5">
                     <FieldLabel
                       htmlFor="create-user-name"
-                      className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase"
+                      className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase"
                     >
                       Your Display Name
                     </FieldLabel>
@@ -466,11 +466,11 @@ export function Lobby() {
                   <div className="mt-1.5 flex items-center justify-between gap-4 border-t border-border/40 pt-4">
                     {createUserName.trim() &&
                     rooms.some((r) => r.host === createUserName.trim()) ? (
-                      <span className="font-mono text-[9px] font-semibold text-destructive">
+                      <span className="font-mono text-[11px] font-semibold text-destructive">
                         Already hosting a space.
                       </span>
                     ) : (
-                      <span className="font-mono text-[9px] text-muted-foreground">
+                      <span className="font-mono text-[11px] text-muted-foreground">
                         Instant WebRTC &middot; no account
                       </span>
                     )}
@@ -550,7 +550,7 @@ export function Lobby() {
                     className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 text-left shadow-xs hover:border-foreground/40 hover:bg-card/90 sm:p-5"
                   >
                     <div>
-                      <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground uppercase">
+                      <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-muted-foreground uppercase">
                         Template
                       </span>
                       <h4 className="font-display text-base font-bold text-foreground group-hover:text-foreground">
@@ -595,7 +595,7 @@ export function Lobby() {
                   className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-5 text-left shadow-xs transition-all duration-200 hover:border-foreground/40 hover:bg-muted/10 sm:rounded-3xl sm:p-6"
                 >
                   {timeLeft > 0 && (
-                    <div className="absolute top-0 right-0 left-0 bg-foreground py-1 text-center font-mono text-[10px] font-bold text-background">
+                    <div className="absolute top-0 right-0 left-0 bg-foreground py-1 text-center font-mono text-[11px] font-bold text-background">
                       Host disconnected. Rejoin in {timeLeft}s!
                     </div>
                   )}
@@ -603,7 +603,7 @@ export function Lobby() {
                   <div className={`w-full ${timeLeft > 0 ? "mt-4" : ""}`}>
                     {/* Top Row: Live badge & Equalizer */}
                     <div className="mb-4 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 rounded-md border border-foreground/15 bg-muted/65 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-foreground uppercase">
+                      <div className="flex items-center gap-1.5 rounded-md border border-foreground/15 bg-muted/65 px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider text-foreground uppercase">
                         <span className="relative flex size-1.5">
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground/25 opacity-75"></span>
                           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-foreground"></span>
@@ -647,7 +647,7 @@ export function Lobby() {
                             className="size-full object-cover"
                           />
                         </div>
-                        <span className="font-mono text-[9px] font-semibold text-muted-foreground">
+                        <span className="font-mono text-[11px] font-semibold text-muted-foreground">
                           host:{" "}
                           <span className="font-bold text-foreground">
                             {room.host}
@@ -682,7 +682,7 @@ export function Lobby() {
                       ))}
                       {room.participants.length > 4 && (
                         <div
-                          className="flex size-7.5 items-center justify-center rounded-full border-2 border-card bg-muted font-mono text-[9px] font-bold text-foreground shadow-xs"
+                          className="flex size-7.5 items-center justify-center rounded-full border-2 border-card bg-muted font-mono text-[11px] font-bold text-foreground shadow-xs"
                           style={{ zIndex: 0 }}
                         >
                           +{room.participants.length - 4}
@@ -691,7 +691,7 @@ export function Lobby() {
                     </div>
 
                     {/* CTA Join Button */}
-                    <div className="flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-1.5 font-mono text-[10px] font-bold tracking-wider text-background uppercase shadow-sm transition-all group-hover:bg-foreground/90">
+                    <div className="flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-1.5 font-mono text-[11px] font-bold tracking-wider text-background uppercase shadow-sm transition-all group-hover:bg-foreground/90">
                       <span>
                         {room.numParticipants}{" "}
                         {room.numParticipants === 1 ? "speaker" : "speakers"}
@@ -756,7 +756,7 @@ export function Lobby() {
                           <AvatarFallback />
                         </Avatar>
                         <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/50 opacity-0 transition-opacity group-hover:opacity-100">
-                          <span className="rounded-full border border-border bg-card px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-foreground uppercase">
+                          <span className="rounded-full border border-border bg-card px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider text-foreground uppercase">
                             Change
                           </span>
                         </div>

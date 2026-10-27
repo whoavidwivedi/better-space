@@ -44,7 +44,7 @@ function Section({
 }) {
   return (
     <div>
-      <h2 className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <h2 className="mb-1.5 flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
         {icon}
         {label}
       </h2>

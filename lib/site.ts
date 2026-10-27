@@ -5,6 +5,7 @@ export const site = {
     "Drop into live voice rooms directly in your browser. Crisp WebRTC spatial audio with zero logins, passwords, or tracking.",
   tagline: "Real-time voice. Zero accounts.",
   creator: {
+    name: "Avi Dwivedi",
     handle: "whoavidwivedi",
     website: "https://whoavidwivedi.work",
     social: {

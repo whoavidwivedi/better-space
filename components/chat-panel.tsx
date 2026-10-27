@@ -355,7 +355,7 @@ export function ChatPanel({
                                   <MessageContent>
                                     {isFirst && (
                                       <MessageHeader>
-                                        <span className="text-[10px] font-bold text-muted-foreground sm:text-xs">
+                                        <span className="text-[11px] font-bold text-muted-foreground sm:text-xs">
                                           {isMe ? "You" : senderName}
                                         </span>
                                       </MessageHeader>
@@ -363,19 +363,13 @@ export function ChatPanel({
                                     <Bubble
                                       variant={isMe ? "default" : "muted"}
                                     >
-                                      <BubbleContent
-                                        className="text-xs sm:text-sm"
-                                        style={{
-                                          fontFamily:
-                                            '"Google Sans Flex", "Google Sans", sans-serif',
-                                        }}
-                                      >
+                                      <BubbleContent className="text-xs sm:text-sm">
                                         {msg.message}
                                       </BubbleContent>
                                     </Bubble>
                                     {isLast && (
                                       <MessageFooter>
-                                        <span className="text-[9px] text-muted-foreground sm:text-[10px]">
+                                        <span className="text-[11px] text-muted-foreground sm:text-[11px]">
                                           {new Date(
                                             msg.timestamp
                                           ).toLocaleTimeString([], {
@@ -422,7 +416,7 @@ export function ChatPanel({
                                 key={`typing-${identity}`}
                                 messageId={`typing-${identity}`}
                               >
-                                <div className="flex animate-in items-center gap-1.5 px-2 py-1 text-[10px] text-muted-foreground fade-in slide-in-from-bottom-2 sm:text-xs">
+                                <div className="flex animate-in items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground fade-in slide-in-from-bottom-2 sm:text-xs">
                                   <span className="font-medium">
                                     {senderName} is typing
                                   </span>

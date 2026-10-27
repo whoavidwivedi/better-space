@@ -77,7 +77,7 @@ export function VoiceSignalSpecimen() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-2 font-handwritten text-lg text-muted-foreground">
+        <div className="font-handwritten flex items-center gap-2 text-lg text-muted-foreground">
           <span>Sub-35ms Edge WebRTC</span>
           <DoodleAsterisk className="size-4 text-foreground/60" />
         </div>
