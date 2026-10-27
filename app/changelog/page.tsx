@@ -14,6 +14,18 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v1.6.0",
+    date: "2026-10-27",
+    label: "iPhone Duo support",
+    summary:
+      "Better Space now supports iPhone Duo, and the landing page shows a live room on Apple's own device frames, with a Duo you can fold and unfold.",
+    highlights: [
+      "Rooms adapt to iPhone Duo: on the cover screen and unfolded, the controls stand as a column of round buttons at the bottom right, and unfolded the room splits at the hinge, the space on the left and chat on the right.",
+      "The landing page shows the room on a MacBook Pro M5 and an iPhone 18 Pro in Apple's frames, plus an iPhone Duo that folds and unfolds by drag, tap or slider, its screens blurring as the cover turns.",
+      "The hero's room-name field sits on one row with Go live on phones, as it does on desktop, and the device previews use the room's real chat bubbles and message box.",
+    ],
+  },
+  {
     version: "v1.5.0",
     date: "2026-09-11",
     label: "Live Chat and Data Synchronization",

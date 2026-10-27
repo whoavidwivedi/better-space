@@ -3,6 +3,13 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* Short landscape screens (an unfolded iPhone Duo, a phone on its side) and
+   squat portrait ones wider than any slab phone (the Duo's 466pt cover
+   screen): the room's controls stand as a column of round buttons at the bottom right. */
+@custom-variant dock (@media ((orientation: landscape) and (min-width: 40rem) and (max-width: 63.99rem) and (max-height: 48rem)) or ((orientation: portrait) and (min-width: 28rem) and (max-width: 39.99rem) and (max-height: 48rem)));
+/* The unfolded Duo (the landscape half of `dock`): the room splits at the
+   hinge, the space on the left and chat centred on the right. */
+@custom-variant spread (@media (orientation: landscape) and (min-width: 40rem) and (max-width: 63.99rem) and (max-height: 48rem));
 
 @theme inline {
   --color-background: var(--background);
