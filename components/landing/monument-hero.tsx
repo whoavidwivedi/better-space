@@ -133,7 +133,7 @@ export function MonumentHero() {
       {/* 2. MONUMENTAL TYPOGRAPHY HERO TITLE */}
       <div className="relative mb-16">
         {/* Handwritten margin note */}
-        <div className="absolute -top-7 left-1 hidden items-center gap-2 font-handwritten text-lg text-muted-foreground sm:flex">
+        <div className="font-handwritten absolute -top-7 left-1 hidden items-center gap-2 text-lg text-muted-foreground sm:flex">
           <span>(100% ephemeral voice rooms)</span>
           <DoodleArrow className="size-5 rotate-45 text-foreground/50" />
         </div>
