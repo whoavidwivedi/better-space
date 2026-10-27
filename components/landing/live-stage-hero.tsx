@@ -5,13 +5,19 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ArrowRight as RiArrowRightLine,
+  ChevronLeft,
+  ChevronRight,
   Copy,
+  Ellipsis,
   Headphones,
   Keyboard,
   Mic,
   MessageSquare,
   MicOff,
+  PanelLeft,
+  Plus,
   Settings,
+  Share,
   Smile,
   Users,
   VolumeX,
@@ -46,12 +52,12 @@ import {
   FoldableStage,
 } from "@/components/foldable"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { getDisplayRoomTitle, toSlug } from "@/lib/presets"
+import { getDisplayRoomTitle, ROOM_NAME_MAX, toSlug } from "@/lib/presets"
 import { userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
 
-// Start a real room from the hero: name it, press Go live, and you land on the
-// join screen for that room.
+// Start a real room from the hero: name it, press Go live, and the lobby opens
+// with its Launch panel filled in (or the room's Join panel, if it is live).
 function RoomStarter() {
   const router = useRouter()
   const [name, setName] = useState("")
@@ -60,7 +66,7 @@ function RoomStarter() {
   const start = (e: React.FormEvent) => {
     e.preventDefault()
     if (!slug) return
-    router.push(`/space/${encodeURIComponent(slug)}`)
+    router.push(`/lobby?space=${encodeURIComponent(slug)}`)
   }
 
   return (
@@ -81,7 +87,7 @@ function RoomStarter() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="name-your-room"
-            maxLength={40}
+            maxLength={ROOM_NAME_MAX}
             autoComplete="off"
             spellCheck={false}
             className="h-full min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
@@ -120,14 +126,14 @@ function RoomStarter() {
 // A pill that leads with a tag drawn as the site's primary button, as the hero
 // badge and the iPhone Duo badge show "New" or "Live".
 const PILL =
-  "inline-flex max-w-full items-center gap-2.5 rounded-full border border-border bg-card/80 p-1 pr-3.5 text-[13px] font-medium text-foreground shadow-xs backdrop-blur-sm"
+  "inline-flex max-w-full items-center gap-2.5 rounded-xl border border-border bg-card/80 p-1 pr-3.5 text-[13px] font-medium text-foreground shadow-xs backdrop-blur-sm"
 
 function PillTag({ children }: { children: React.ReactNode }) {
   return (
     <span
       className={cn(
         buttonVariants({ size: "xs" }),
-        "pointer-events-none shrink-0 rounded-full px-2.5 font-semibold"
+        "pointer-events-none shrink-0 rounded-lg px-2.5 font-semibold"
       )}
     >
       {children}
@@ -149,7 +155,6 @@ function HeroBadge({ live }: { live: Live | null }) {
       <PillTag>
         {live ? (
           <span className="relative flex size-1.5" aria-hidden="true">
-            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none" />
             <span className="relative size-1.5 rounded-full bg-emerald-400" />
           </span>
         ) : null}
@@ -863,6 +868,87 @@ function DuoStatusGlyph() {
   )
 }
 
+// Safari's chrome, drawn after Apple's current Safari (iOS and iPadOS 26 and
+// later): glass controls on the page, the address in a pill.
+const SAFARI_ADDRESS = "space.whoavidwivedi.work"
+const GLASS =
+  "border border-foreground/10 bg-foreground/[0.07] text-foreground shadow-sm backdrop-blur-xl"
+
+// iPhone: the compact bar at the bottom, back, the address, and more.
+function SafariBottomBar() {
+  return (
+    <div
+      aria-hidden="true"
+      className="flex h-[68px] shrink-0 items-center gap-2.5 bg-background px-4 pb-1.5"
+    >
+      <span
+        className={cn(
+          "flex size-12 shrink-0 items-center justify-center rounded-full",
+          GLASS
+        )}
+      >
+        <ChevronLeft className="size-[22px]" />
+      </span>
+      <span
+        className={cn(
+          "flex h-12 min-w-0 flex-1 items-center justify-center rounded-full px-4 text-[15px] font-medium",
+          GLASS
+        )}
+      >
+        <span className="truncate">{SAFARI_ADDRESS}</span>
+      </span>
+      <span
+        className={cn(
+          "flex size-12 shrink-0 items-center justify-center rounded-full",
+          GLASS
+        )}
+      >
+        <Ellipsis className="size-[22px]" />
+      </span>
+    </div>
+  )
+}
+
+// A wide screen (the Duo unfolded, as on iPad): the toolbar along the top,
+// sidebar and history on the left, the address centred, share, new tab and
+// tabs on the right.
+function SafariToolbar() {
+  const icon = "flex size-9 shrink-0 items-center justify-center rounded-full"
+  return (
+    <div
+      aria-hidden="true"
+      className="flex h-[52px] items-center gap-0.5 border-b border-border/60 bg-background px-3 text-foreground"
+    >
+      <span className={icon}>
+        <PanelLeft className="size-[19px]" />
+      </span>
+      <span className={icon}>
+        <ChevronLeft className="size-[21px]" />
+      </span>
+      <span className={cn(icon, "text-muted-foreground/60")}>
+        <ChevronRight className="size-[21px]" />
+      </span>
+      <span
+        className={cn(
+          "mx-auto flex h-9 w-[46%] min-w-0 items-center justify-center rounded-full px-4 text-[14px] font-medium",
+          GLASS
+        )}
+      >
+        <span className="truncate">{SAFARI_ADDRESS}</span>
+      </span>
+      <span className={icon}>
+        <Share className="size-[18px]" />
+      </span>
+      <span className={icon}>
+        <Plus className="size-[20px]" />
+      </span>
+      <span className={icon}>
+        <Copy className="size-[18px]" />
+      </span>
+    </div>
+  )
+}
+
 // How the Duo's screens lay out, after Apple's iOS 27 Duo template: no top
 // status bar; a strip down the right edge holds status at its top (the time
 // over the glyph, under the camera on the cover) and the room's docked
@@ -890,11 +976,18 @@ function PhoneScreen({
 }) {
   if (duo) {
     const { rail, status, top } = DUO_RAIL[duo]
+    // Better Space open in Safari: the toolbar along the top of the wide inner
+    // screen, beside the status strip; the compact bar at the cover's foot.
     return (
       <div
         className="relative flex size-full flex-col bg-background"
         style={{ paddingTop: top }}
       >
+        {duo === "inner" && (
+          <div style={{ paddingRight: rail }}>
+            <SafariToolbar />
+          </div>
+        )}
         <div className="min-h-0 flex-1">
           <RoomPreview
             live={live}
@@ -904,6 +997,7 @@ function PhoneScreen({
             rail={rail}
           />
         </div>
+        {duo === "cover" && <SafariBottomBar />}
         <div
           aria-hidden="true"
           className={cn(
