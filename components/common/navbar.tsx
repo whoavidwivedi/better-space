@@ -42,7 +42,7 @@ export function Navbar() {
                 className="size-full animate-in object-cover duration-300 zoom-in-95 fade-in"
               />
             </div>
-            <span className="font-display text-xl font-black tracking-tight text-foreground sm:text-2xl">
+            <span className="font-display text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
               better
               <span className="ml-0.5 font-serif-display font-normal text-muted-foreground italic">
                 space

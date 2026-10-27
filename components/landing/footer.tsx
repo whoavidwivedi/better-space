@@ -1,109 +1,133 @@
-"use client"
-
 import Link from "next/link"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowRight, ArrowUpRight } from "lucide-react"
 
 import { SiteLogo } from "@/components/common/site-logo"
+import { Button } from "@/components/ui/button"
+import { STARTER_TEMPLATES } from "@/lib/presets"
+import { site } from "@/lib/site"
 
-const socials = [
-  { label: "Website", href: "https://whoavidwivedi.work" },
-  { label: "GitHub", href: "https://github.com/whoavidwivedi" },
-  { label: "X", href: "https://x.com/whoavidwivedi" },
-  { label: "LinkedIn", href: "https://linkedin.com/in/whoavidwivedi" },
-]
-
-const productLinks = [
-  { label: "Lobby", href: "/lobby" },
-  { label: "Changelog", href: "/changelog" },
+const columns = [
+  {
+    title: "Product",
+    links: [
+      { label: "Lobby", href: "/lobby" },
+      { label: "Changelog", href: "/changelog" },
+    ],
+  },
+  {
+    title: "Rooms",
+    links: STARTER_TEMPLATES.map((t) => ({
+      label: t.topic,
+      href: `/space/${t.name}`,
+    })),
+  },
+  {
+    title: "Connect",
+    links: [
+      { label: "GitHub", href: site.creator.social.github, external: true },
+      { label: "X", href: site.creator.social.x, external: true },
+      { label: "LinkedIn", href: site.creator.social.linkedin, external: true },
+    ],
+  },
 ]
 
 export function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="w-full border-t border-border bg-background">
-      <div className="mx-auto max-w-7xl">
-        {/* Structural Grid */}
-        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          {/* Brand & Status Column */}
-          <div className="flex flex-col justify-between p-6 sm:p-12">
-            <div>
-              <Link href="/" className="flex w-fit items-center gap-2">
-                <SiteLogo className="size-6" />
-                <span className="font-google-sans text-lg font-black tracking-tight text-foreground">
-                  better
-                  <span className="ml-0.5 font-serif-display font-normal text-muted-foreground italic">
-                    space
-                  </span>
+    <footer className="w-full bg-background px-4 pt-16 pb-6 sm:px-6 sm:pt-24">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-border bg-card">
+        <div className="grid gap-12 p-6 sm:p-10 md:grid-cols-[1.2fr_1fr] md:gap-16 lg:p-12">
+          {/* Brand and the two actions */}
+          <div>
+            <Link href="/" className="flex w-fit items-center gap-2.5">
+              <SiteLogo className="size-8" />
+              <span className="font-display text-xl text-foreground">
+                better
+                <span className="ml-0.5 font-serif-display text-muted-foreground">
+                  space
                 </span>
-              </Link>
-              <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
-                Real voices, no clutter. We sweat the network details so you can
-                just talk.
-              </p>
-            </div>
-
-            <div className="mt-12 flex items-center gap-3">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6ee7b7] opacity-75"></span>
-                <span className="relative inline-flex size-2 rounded-full bg-[#34d399]"></span>
               </span>
-              <span className="font-mono text-[9px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
-                Systems Operational
-              </span>
+            </Link>
+            <p className="mt-5 max-w-sm font-display text-2xl leading-snug text-foreground sm:text-3xl">
+              Pull up a chair. Rooms open in one click.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button
+                size="lg"
+                render={<Link href="/lobby" />}
+                nativeButton={false}
+              >
+                Start a room
+                <ArrowRight data-icon="inline-end" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                render={<Link href="/lobby" />}
+                nativeButton={false}
+              >
+                Browse rooms
+              </Button>
             </div>
           </div>
 
-          {/* Product Links */}
-          <div className="p-6 sm:p-12">
-            <h3 className="font-mono text-[10px] font-bold tracking-[0.2em] text-foreground uppercase">
-              Product
-            </h3>
-            <ul className="mt-8 space-y-4">
-              {productLinks.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Connect Links */}
-          <div className="p-6 sm:p-12">
-            <h3 className="font-mono text-[10px] font-bold tracking-[0.2em] text-foreground uppercase">
-              Connect
-            </h3>
-            <ul className="mt-8 space-y-4">
-              {socials.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex w-fit items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
-                  >
-                    {link.label}
-                    <ArrowUpRight
-                      size={12}
-                      className="opacity-40 transition-opacity group-hover:opacity-100"
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
+          {/* Links */}
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            {columns.map((col) => (
+              <nav key={col.title} aria-label={col.title}>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {col.title}
+                </h3>
+                <ul className="mt-4 space-y-2.5">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      {"external" in link && link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-border bg-muted/20 px-6 py-6 sm:px-12">
-          <p className="text-center font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-            &copy; {year} betterspace • Built by whoavidwivedi
-          </p>
+        {/* Credit line */}
+        <div className="flex flex-col gap-2 border-t border-border px-6 py-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-10 lg:px-12">
+          <span>
+            &copy; {year} {site.name}
+          </span>
+          <span>
+            Designed &amp; built by{" "}
+            <a
+              href={site.creator.website}
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex items-center gap-0.5 font-medium text-foreground underline decoration-foreground/25 underline-offset-4 transition-colors hover:decoration-foreground"
+            >
+              {site.creator.name}
+              <ArrowUpRight
+                size={14}
+                aria-hidden="true"
+                className="transition-transform duration-(--duration-quick) ease-(--ease-out) group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </a>
+          </span>
         </div>
       </div>
     </footer>

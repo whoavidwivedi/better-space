@@ -55,6 +55,8 @@ export async function GET() {
         name: r.name,
         numParticipants: r.numParticipants,
         host,
+        // Seconds since the epoch, from LiveKit.
+        createdAt: Number(r.creationTime),
         participants: participants
           .map((p) => {
             let avatar = p.identity
@@ -64,9 +66,13 @@ export async function GET() {
                 if (meta.avatar) avatar = meta.avatar
               }
             } catch {}
-            return { identity: p.identity, avatar }
+            return {
+              identity: p.identity,
+              avatar,
+              onMic: Boolean(p.permission?.canPublish),
+            }
           })
-          .slice(0, 3),
+          .slice(0, 8),
       }
     })
   )

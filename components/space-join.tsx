@@ -272,7 +272,7 @@ export function SpaceJoin() {
             </span>
           ) : null}
           {matchingPreset && (
-            <span className="mt-2 rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+            <span className="mt-2 rounded-full bg-muted px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
               Template
             </span>
           )}
@@ -384,7 +384,7 @@ export function SpaceJoin() {
             </span>
           </Button>
 
-          <p className="font-google-sans text-center text-[12px] text-muted-foreground">
+          <p className="text-center text-[13px] text-muted-foreground">
             No account. No mic until you want it.
           </p>
         </form>

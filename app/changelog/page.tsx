@@ -26,7 +26,7 @@ const releases = [
     ],
   },
   {
-    version: "v1.3.3",
+    version: "v1.4.0",
     date: "2026-09-01",
     label: "Telemetry UI polish & micro-interactions",
     summary:
@@ -168,10 +168,10 @@ export default function ChangelogPage() {
       <main>
         <header className="border-b border-border">
           <div className="mx-auto max-w-3xl px-4 pt-16 pb-12 sm:px-6 sm:pt-24 sm:pb-16">
-            <p className="font-mono text-[10px] font-bold tracking-[0.22em] text-muted-foreground uppercase">
+            <p className="font-mono text-[11px] font-bold tracking-[0.22em] text-muted-foreground uppercase">
               Changelog
             </p>
-            <h1 className="mt-4 font-display text-4xl leading-[1.02] font-black tracking-[-0.04em] sm:text-6xl">
+            <h1 className="mt-4 font-display text-4xl leading-[1.02] font-extrabold tracking-[-0.04em] sm:text-6xl">
               What shipped,
               <span className="block font-serif-display font-normal text-muted-foreground italic">
                 and when.
@@ -208,7 +208,7 @@ export default function ChangelogPage() {
                     {release.label}
                   </h2>
                   {index === 0 && (
-                    <span className="shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[9px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                    <span className="shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
                       Latest
                     </span>
                   )}
@@ -233,7 +233,7 @@ export default function ChangelogPage() {
                   href={`https://github.com/whoavidwivedi/better-space/releases/tag/${release.version}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
+                  className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
                 >
                   {release.version} on GitHub
                   <ArrowUpRight size={12} aria-hidden="true" />
@@ -250,7 +250,7 @@ export default function ChangelogPage() {
             </p>
             <Link
               href="/lobby"
-              className="inline-flex w-fit items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 font-mono text-[10px] font-bold tracking-wider text-background uppercase transition-colors hover:bg-foreground/90"
+              className="inline-flex w-fit items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 font-mono text-[11px] font-bold tracking-wider text-background uppercase transition-colors hover:bg-foreground/90"
             >
               Open the lobby
               <ArrowUpRight size={13} aria-hidden="true" />

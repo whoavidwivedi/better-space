@@ -3,17 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { site } from "@/lib/site"
 import { cn } from "@/lib/utils"
 import { Providers } from "@/app/providers"
-import {
-  inter,
-  dmSans,
-  jetbrainsMono,
-  bricolageGrotesque,
-  instrumentSerif,
-  googleSansFlex,
-  kalam,
-  syne,
-  playfairDisplay,
-} from "@/lib/fonts"
+import { geist, geistMono } from "@/lib/fonts"
 
 import "@/app/globals.css"
 
@@ -78,15 +68,8 @@ export default function RootLayout({
   return (
     <html
       className={cn(
-        dmSans.variable,
-        jetbrainsMono.variable,
-        bricolageGrotesque.variable,
-        instrumentSerif.variable,
-        googleSansFlex.variable,
-        kalam.variable,
-        syne.variable,
-        playfairDisplay.variable,
-        inter.variable,
+        geist.variable,
+        geistMono.variable,
         "font-sans antialiased"
       )}
       lang="en"
