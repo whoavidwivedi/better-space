@@ -955,8 +955,8 @@ function RoomUI({
 
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 overflow-hidden p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:flex-row sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))]">
-          <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 overflow-hidden p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:flex-row sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))] dock:pr-[calc(4.5rem+env(safe-area-inset-right))] dock:pb-[max(1rem,env(safe-area-inset-bottom))] spread:grid spread:grid-cols-2 spread:gap-0 spread:p-0">
+          <main className="flex-1 overflow-y-auto spread:p-6">
             <section
               aria-labelledby="participants-heading"
               className="space-y-3 sm:space-y-6"
@@ -999,7 +999,7 @@ function RoomUI({
               </div>
             </section>
           </main>
-          <aside className="z-10 order-last mt-2 flex shrink-0 flex-col self-center sm:mt-auto sm:self-end">
+          <aside className="z-10 order-last mt-2 flex shrink-0 flex-col self-center sm:mt-auto sm:self-end spread:mt-0 spread:items-center spread:justify-center spread:self-auto spread:p-6 spread:pr-[calc(4.5rem+env(safe-area-inset-right))]">
             <ChatPanel isHost={isHost} />
           </aside>
         </div>
@@ -1021,9 +1021,9 @@ function RoomUI({
         <div
           role="toolbar"
           aria-label="Space controls"
-          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-x-auto rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2"
+          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-x-auto rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2 dock:right-[max(0.5rem,env(safe-area-inset-right))] dock:left-auto dock:translate-x-0 dock:rounded-full dock:p-1.5"
         >
-          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 dock:flex-col dock:gap-1.5">
             {/* Audio Settings Popover */}
             <Popover
               onOpenChange={(open) => {
@@ -1052,7 +1052,7 @@ function RoomUI({
                         <Button
                           variant="outline"
                           size="icon"
-                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10 dock:size-11 dock:rounded-full"
                           aria-label="Audio settings"
                         >
                           <HugeiconsIcon icon={Settings01Icon} size={17} />
@@ -1244,7 +1244,7 @@ function RoomUI({
                           variant="outline"
                           size="icon"
                           aria-label="Open emoji reactions"
-                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                          className="size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10 dock:size-11 dock:rounded-full"
                         >
                           <HugeiconsIcon icon={Happy01Icon} size={17} />
                         </Button>
@@ -1305,7 +1305,7 @@ function RoomUI({
                             variant="outline"
                             size="icon"
                             aria-label={`Open microphone requests${micRequests.length ? ` (${micRequests.length} pending)` : ""}`}
-                            className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10"
+                            className="relative size-9 shrink-0 rounded-xl text-muted-foreground sm:size-10 dock:size-11 dock:rounded-full"
                           >
                             <HugeiconsIcon icon={VoiceIcon} size={17} />
                             {micRequests.length > 0 && (
@@ -1408,14 +1408,14 @@ function RoomUI({
                   aria-pressed={isDeafened}
                   variant={isDeafened ? "destructive" : "secondary"}
                   size="lg"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-4 dock:size-11 dock:rounded-full dock:px-0"
                 >
                   {isDeafened ? (
                     <HugeiconsIcon icon={VolumeMute01Icon} size={16} />
                   ) : (
                     <HugeiconsIcon icon={HeadphonesIcon} size={16} />
                   )}
-                  <span className="hidden sm:inline">Deafen</span>
+                  <span className="hidden sm:inline dock:hidden">Deafen</span>
                 </Button>
 
                 <Button
@@ -1425,17 +1425,17 @@ function RoomUI({
                   aria-pressed={isMuted}
                   variant={isMuted ? "destructive" : "default"}
                   size="lg"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5 dock:size-11 dock:rounded-full dock:px-0"
                 >
                   {isMuted ? (
                     <>
                       <HugeiconsIcon icon={MicOff01Icon} size={16} />
-                      <span>MIC MUTED</span>
+                      <span className="dock:hidden">MIC MUTED</span>
                     </>
                   ) : (
                     <>
                       <HugeiconsIcon icon={Mic01Icon} size={16} />
-                      <span>MIC LIVE</span>
+                      <span className="dock:hidden">MIC LIVE</span>
                     </>
                   )}
                 </Button>
@@ -1450,10 +1450,10 @@ function RoomUI({
                     : "Request microphone"
                 }
                 size="lg"
-                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5"
+                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5 dock:size-11 dock:px-0"
               >
                 <HugeiconsIcon icon={Mic01Icon} size={16} />
-                <span>
+                <span className="dock:hidden">
                   {hasRequestedMicLocal ? "Requested" : "Request Mic"}
                 </span>
               </Button>
