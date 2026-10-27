@@ -3,6 +3,8 @@ import {
   decryptCohostSecrets,
   encryptCohostSecrets,
   hasCohostAccess,
+  hasHostAccess,
+  hashHostSecret,
 } from "./space-auth"
 
 process.env.LIVEKIT_API_SECRET = "test-secret"
@@ -41,5 +43,34 @@ describe("cohost secret encryption", () => {
 
   test("rejects tampered encrypted data", () => {
     expect(decryptCohostSecrets("invalid.payload.value")).toEqual({})
+  })
+})
+
+describe("host secret", () => {
+  const meta = { host: "Ada", hostSecretHash: hashHostSecret("secret-123") }
+
+  test("keeps only a hash, never the secret", () => {
+    expect(meta.hostSecretHash).not.toContain("secret-123")
+  })
+
+  test("accepts the host with their secret", () => {
+    expect(hasHostAccess(meta, "Ada", "secret-123")).toBe(true)
+  })
+
+  test("rejects a wrong secret, another name, or the hash itself", () => {
+    expect(hasHostAccess(meta, "Ada", "wrong-secret")).toBe(false)
+    expect(hasHostAccess(meta, "Grace", "secret-123")).toBe(false)
+    expect(hasHostAccess(meta, "Ada", meta.hostSecretHash)).toBe(false)
+    expect(hasHostAccess(meta, "Ada", "")).toBe(false)
+  })
+
+  test("rejects a room that only has the old plain secret", () => {
+    expect(
+      hasHostAccess(
+        { host: "Ada", hostSecret: "secret-123" } as never,
+        "Ada",
+        "secret-123"
+      )
+    ).toBe(false)
   })
 })

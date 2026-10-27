@@ -2,7 +2,13 @@ import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
-import { hasCohostAccess, roleCookieName } from "@/lib/space-auth"
+import {
+  hasCohostAccess,
+  hasHostAccess,
+  hashHostSecret,
+  hostSecretMatches,
+  roleCookieName,
+} from "@/lib/space-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -124,13 +130,23 @@ export async function GET(req: NextRequest) {
           )
         }
         if (meta.host === username) {
-          if (meta.hostSecret && suppliedHostSecret === meta.hostSecret) {
+          if (hasHostAccess(meta, username, suppliedHostSecret)) {
             isHost = true
-            activeHostSecret = meta.hostSecret
-          } else if (!meta.hostSecret) {
+            activeHostSecret = suppliedHostSecret
+          } else if (
+            !meta.hostSecretHash &&
+            (!meta.hostSecret ||
+              hostSecretMatches(
+                hashHostSecret(String(meta.hostSecret)),
+                suppliedHostSecret
+              ))
+          ) {
+            // A room from before hashing kept the secret in plain view, so
+            // its host gets a new one and only the hash is kept.
             isHost = true
-            activeHostSecret = suppliedHostSecret || crypto.randomUUID()
-            meta.hostSecret = activeHostSecret
+            activeHostSecret = crypto.randomUUID()
+            delete meta.hostSecret
+            meta.hostSecretHash = hashHostSecret(activeHostSecret)
             await roomService.updateRoomMetadata(
               cleanRoom,
               JSON.stringify(meta)
@@ -146,7 +162,8 @@ export async function GET(req: NextRequest) {
           isHost = true
           activeHostSecret = hostSecret || crypto.randomUUID()
           meta.host = username
-          meta.hostSecret = activeHostSecret
+          delete meta.hostSecret
+          meta.hostSecretHash = hashHostSecret(activeHostSecret)
           await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
         }
 
@@ -168,7 +185,7 @@ export async function GET(req: NextRequest) {
       try {
         const meta = {
           host: username,
-          hostSecret: activeHostSecret,
+          hostSecretHash: hashHostSecret(activeHostSecret),
           banned: [],
           cohosts: [],
         }
@@ -183,7 +200,7 @@ export async function GET(req: NextRequest) {
     try {
       const meta = {
         host: username,
-        hostSecret: activeHostSecret,
+        hostSecretHash: hashHostSecret(activeHostSecret),
         banned: [],
         cohosts: [],
       }

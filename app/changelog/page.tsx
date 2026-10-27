@@ -14,6 +14,17 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v1.7.1",
+    date: "2026-10-28",
+    label: "Host security fix",
+    summary:
+      "A listener could read a space's host key and take over as host. The key is no longer visible to anyone in the room.",
+    highlights: [
+      "Spaces keep only a keyed hash of the host key, checked on the server, so listeners can no longer read it and act as host.",
+      "Spaces live during the update get a new host key the next time their host joins.",
+    ],
+  },
+  {
     version: "v1.7.0",
     date: "2026-10-27",
     label: "A new lobby",

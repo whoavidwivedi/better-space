@@ -2,7 +2,9 @@ import {
   createCipheriv,
   createDecipheriv,
   createHash,
+  createHmac,
   randomBytes,
+  timingSafeEqual,
 } from "node:crypto"
 
 type CohostMetadata = {
@@ -52,6 +54,32 @@ export function decryptCohostSecrets(value: unknown): Record<string, string> {
   } catch {
     return {}
   }
+}
+
+// Room metadata reaches every participant, so it holds only this keyed hash
+// of the host secret, never the secret itself.
+export function hashHostSecret(secret: string): string {
+  return createHmac("sha256", encryptionKey())
+    .update(secret)
+    .digest("base64url")
+}
+
+// Whether `secret` is the one hashed as `hash`, compared in constant time.
+export function hostSecretMatches(hash: unknown, secret: string): boolean {
+  if (typeof hash !== "string" || !secret) return false
+  const expected = Buffer.from(hash)
+  const actual = Buffer.from(hashHostSecret(secret))
+  return expected.length === actual.length && timingSafeEqual(expected, actual)
+}
+
+export function hasHostAccess(
+  meta: { host?: unknown; hostSecretHash?: unknown },
+  identity: string,
+  secret: string
+): boolean {
+  return (
+    meta.host === identity && hostSecretMatches(meta.hostSecretHash, secret)
+  )
 }
 
 export function hasCohostAccess(

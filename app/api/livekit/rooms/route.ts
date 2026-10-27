@@ -2,7 +2,7 @@ import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { isSpaceEnded } from "@/lib/ended-spaces"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
-import { roleCookieName } from "@/lib/space-auth"
+import { hashHostSecret, roleCookieName } from "@/lib/space-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
     maxParticipants: 50,
     metadata: JSON.stringify({
       host: cleanHost,
-      hostSecret,
+      hostSecretHash: hashHostSecret(hostSecret),
       banned: [],
       cohosts: [],
     }),

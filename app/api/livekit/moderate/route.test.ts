@@ -3,6 +3,7 @@ import { NextRequest } from "next/server"
 import {
   decryptCohostSecrets,
   encryptCohostSecrets,
+  hashHostSecret,
   roleCookieName,
 } from "@/lib/space-auth"
 
@@ -11,12 +12,8 @@ const host = "host"
 const cohost = "cohost"
 const hostSecret = "host-secret"
 
-let metadata = JSON.stringify({
-  host,
-  hostSecret,
-  cohosts: [],
-  banned: [],
-})
+// Set in the test, once LIVEKIT_API_SECRET (the hash key) is.
+let metadata = ""
 let deleted = false
 let tombstoneCreated = false
 let sentCredentials = ""
@@ -122,7 +119,12 @@ describe("moderation room flow", () => {
     process.env.LIVEKIT_API_SECRET = "test-secret"
     process.env.NEXT_PUBLIC_LIVEKIT_URL = "wss://test.livekit.invalid"
 
-    metadata = JSON.stringify({ host, hostSecret, cohosts: [], banned: [] })
+    metadata = JSON.stringify({
+      host,
+      hostSecretHash: hashHostSecret(hostSecret),
+      cohosts: [],
+      banned: [],
+    })
     deleted = false
     tombstoneCreated = false
     sentCredentials = ""
@@ -153,7 +155,7 @@ describe("moderation room flow", () => {
 
     metadata = JSON.stringify({
       host,
-      hostSecret,
+      hostSecretHash: hashHostSecret(hostSecret),
       cohosts: [cohost],
       cohostSecretsEncrypted: encryptCohostSecrets({ [cohost]: cohostSecret }),
     })
@@ -175,7 +177,7 @@ describe("moderation room flow", () => {
   test("keeps cohost management host-only", async () => {
     metadata = JSON.stringify({
       host,
-      hostSecret,
+      hostSecretHash: hashHostSecret(hostSecret),
       cohosts: [cohost],
       cohostSecretsEncrypted: encryptCohostSecrets({
         [cohost]: "cohost-secret",

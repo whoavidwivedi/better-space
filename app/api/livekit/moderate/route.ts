@@ -10,6 +10,7 @@ import {
   decryptCohostSecrets,
   encryptCohostSecrets,
   hasCohostAccess,
+  hasHostAccess,
   roleCookieName,
 } from "@/lib/space-auth"
 import { canPerformModerationAction } from "@/lib/moderation-auth"
@@ -118,9 +119,7 @@ export async function POST(req: NextRequest) {
     targetRoom = rooms.length > 0 ? rooms[0] : null
     if (targetRoom && targetRoom.metadata) {
       meta = JSON.parse(targetRoom.metadata)
-      if (meta.host === identity && meta.hostSecret === roleSecret) {
-        isHost = true
-      }
+      isHost = hasHostAccess(meta, identity, roleSecret)
       isCohost = hasCohostAccess(meta, identity, roleSecret)
     }
   } catch {}
