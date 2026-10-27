@@ -142,7 +142,7 @@ export function CharacterPicker({
                       type="button"
                       onClick={() => setSelectedCol(col.id)}
                       className={cn(
-                        "shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold whitespace-nowrap transition-all active:scale-95 sm:text-[11px]",
+                        "shrink-0 rounded-md border px-2 py-0.5 font-mono text-[10px] font-bold whitespace-nowrap transition-all active:scale-95 sm:text-[11px]",
                         isActive
                           ? "border-foreground bg-foreground text-background"
                           : "border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -232,7 +232,7 @@ export function CharacterPicker({
             <button
               type="button"
               onClick={handleRandomize}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-foreground px-2.5 py-1.5 font-mono text-[10px] font-bold text-background transition-all hover:opacity-90 active:scale-95 sm:text-[11px]"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-foreground px-2.5 py-1.5 font-mono text-[10px] font-bold text-background transition-all hover:opacity-90 active:scale-95 sm:text-[11px]"
               title="Pick a random persona"
             >
               <RiShuffleLine size={12} />

@@ -91,7 +91,7 @@ function JoinIdentity() {
       className="w-full max-w-xs space-y-4 text-left"
       onSubmit={(e) => {
         e.preventDefault()
-        if (slug) router.push(`/space/${encodeURIComponent(slug)}`)
+        if (slug) router.push(`/lobby?space=${encodeURIComponent(slug)}`)
       }}
     >
       <div className="space-y-2">

@@ -106,7 +106,13 @@ export function LiveSpacesRadar() {
           {rooms.slice(0, 3).map((room) => (
             <Link
               key={room.name}
-              href={`/space/${encodeURIComponent(room.name)}`}
+              // Both open the lobby: a live room in its Join panel, a template
+              // in Launch, filled in.
+              href={
+                room.isLive
+                  ? `/lobby?space=${encodeURIComponent(room.name)}`
+                  : `/lobby?template=${room.name}`
+              }
               className="group relative flex min-h-[200px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card/70 p-4 shadow-sm transition-all duration-200 hover:border-foreground/40 hover:bg-card/95 hover:shadow-md active:scale-[0.99] sm:min-h-[220px] sm:rounded-3xl sm:p-6"
             >
               {/* Card Top */}

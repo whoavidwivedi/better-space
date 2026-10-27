@@ -5,6 +5,7 @@ import {
 } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { markSpaceEnded, type EndedSpaceParticipant } from "@/lib/ended-spaces"
+import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   decryptCohostSecrets,
   encryptCohostSecrets,
@@ -67,7 +68,13 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const cleanRoom = roomName.trim().substring(0, 30)
+  const cleanRoom = typeof roomName === "string" ? roomName.trim() : ""
+  if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
+    return NextResponse.json(
+      { error: { message: "Invalid room name" } },
+      { status: 400 }
+    )
+  }
   const roleSecret = req.cookies.get(roleCookieName(cleanRoom))?.value ?? ""
 
   let identity = ""

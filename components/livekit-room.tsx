@@ -1450,7 +1450,7 @@ function RoomUI({
                     : "Request microphone"
                 }
                 size="lg"
-                className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5 dock:size-11 dock:px-0"
+                className="h-9 shrink-0 gap-1.5 rounded-xl px-3.5 font-mono text-xs font-bold sm:h-10 sm:gap-2 sm:px-5 dock:size-11 dock:rounded-full dock:px-0"
               >
                 <HugeiconsIcon icon={Mic01Icon} size={16} />
                 <span className="dock:hidden">

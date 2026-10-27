@@ -14,6 +14,18 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v1.7.0",
+    date: "2026-10-27",
+    label: "A new lobby",
+    summary:
+      "The lobby is redesigned to match the landing page, and launching or joining a space happens in one panel that shows your room's card as you type.",
+    highlights: [
+      "Launch space and Join open the same panel: the form beside a live preview of the room's card, a centred panel on desktop and a bottom sheet on phones.",
+      "Templates, the hero's Go live and shared room links all open that panel, filled in. A template fills its exact name, and any edit makes it a room of your own.",
+      "The separate join page is gone, buttons are rounded rectangles instead of pills, and the iPhone Duo on the landing page shows Better Space open in Safari.",
+    ],
+  },
+  {
     version: "v1.6.0",
     date: "2026-10-27",
     label: "iPhone Duo support",

@@ -18,7 +18,8 @@ const columns = [
     title: "Rooms",
     links: STARTER_TEMPLATES.map((t) => ({
       label: t.topic,
-      href: `/space/${t.name}`,
+      // Opens the lobby's Launch panel with this template filled in.
+      href: `/lobby?template=${t.name}`,
     })),
   },
   {

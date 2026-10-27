@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { isSpaceEnded } from "@/lib/ended-spaces"
+import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import { roleCookieName } from "@/lib/space-auth"
 
 function getRoomService() {
@@ -91,8 +92,22 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const cleanRoom = roomName.trim().substring(0, 30)
+  if (typeof roomName !== "string" || typeof hostName !== "string") {
+    return NextResponse.json(
+      { error: { message: "Invalid roomName or hostName" } },
+      { status: 400 }
+    )
+  }
+
+  const cleanRoom = roomName.trim()
   const cleanHost = hostName.trim().substring(0, 30)
+
+  if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
+    return NextResponse.json(
+      { error: { message: "Invalid room name" } },
+      { status: 400 }
+    )
+  }
 
   if (isSpaceEnded(cleanRoom)) {
     return NextResponse.json(

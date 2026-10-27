@@ -1,6 +1,5 @@
 export type StarterTemplate = {
   name: string
-  aliases?: string[]
   title: string
   desc: string
   topic: string
@@ -10,12 +9,6 @@ export type StarterTemplate = {
 export const STARTER_TEMPLATES: StarterTemplate[] = [
   {
     name: "techbetterspace-india-devs-startups-craft",
-    aliases: [
-      "techbetterspace-india",
-      "techbetterspace",
-      "techtwitter-india",
-      "techtwitter",
-    ],
     title: "#TechBetterSpace India: Devs, Startups & Craft",
     desc: "Devs, founders, startups & craft discussions",
     topic: "#TechBetterSpace India",
@@ -23,7 +16,6 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "design-systems-motion-craft",
-    aliases: ["design-systems", "design"],
     title: "Design Systems, Motion & Craft",
     desc: "UI craft, design tokens & interactions",
     topic: "Design & UX",
@@ -31,7 +23,6 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "building-shipping-using-zerostarter",
-    aliases: ["indie-founders", "zerostarter"],
     title: "Building & Shipping using ZeroStarter",
     desc: "Solo founders, indie hacking & shipping products",
     topic: "Startups & Build",
@@ -40,6 +31,15 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
 ]
 
 export const ROOM_CODE_PATTERN = /-[a-z0-9]{6}$/i
+
+// The longest name a person types; launching adds a 7-character room code.
+export const ROOM_NAME_MAX = 48
+
+// A room's full name as the API accepts it: name plus code, nothing else.
+export const ROOM_SLUG_PATTERN = new RegExp(
+  `^[a-z0-9_-]{1,${ROOM_NAME_MAX + 7}}$`,
+  "i"
+)
 
 const CODE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
 
@@ -73,20 +73,18 @@ export function stripRoomCode(roomName: string): string {
   return cleaned.replace(ROOM_CODE_PATTERN, "") || cleaned
 }
 
+// The template a live room was launched from: its name (the slug of its
+// title) exactly, with or without the room code, or its title. Anything else,
+// even a template name with a word changed, is a room of its own. A name
+// still being typed has no code, so compare it to `t.name` directly.
 export function findTemplate(
   nameOrSlugOrTitle?: string | null
 ): StarterTemplate | undefined {
   if (!nameOrSlugOrTitle) return undefined
-  const decoded = decodeURIComponent(nameOrSlugOrTitle).trim().toLowerCase()
+  const raw = nameOrSlugOrTitle.trim().toLowerCase()
+  const base = stripRoomCode(raw)
   return STARTER_TEMPLATES.find(
-    (t) =>
-      t.name.toLowerCase() === decoded ||
-      t.title.toLowerCase() === decoded ||
-      t.name.replace(/[-_]/g, " ").toLowerCase() === decoded ||
-      (t.aliases && t.aliases.some((a) => a.toLowerCase() === decoded)) ||
-      decoded.includes(t.name.toLowerCase()) ||
-      t.title.toLowerCase().includes(decoded) ||
-      (t.aliases && t.aliases.some((a) => decoded.includes(a.toLowerCase())))
+    (t) => t.name === raw || t.name === base || t.title.toLowerCase() === raw
   )
 }
 
