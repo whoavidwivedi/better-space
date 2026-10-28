@@ -11,52 +11,61 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 }
 
+const title = `${site.name}: ${site.tagline}`
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://space.whoavidwivedi.work"
-  ),
+  metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} - ${site.tagline}`,
+    default: title,
     template: `%s | ${site.name}`,
   },
   description: site.description,
+  applicationName: site.name,
+  keywords: [...site.keywords],
+  authors: [{ name: site.creator.name, url: site.creator.website }],
+  creator: site.creator.name,
+  publisher: site.creator.name,
+  category: "communication",
   alternates: {
     canonical: "/",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  appleWebApp: {
+    capable: true,
+    title: site.name,
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: { telephone: false },
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: site.name,
-    title: `${site.name} - ${site.tagline}`,
+    title,
     description: site.description,
     url: "/",
-    images: [
-      {
-        url: "/og-image.png",
-        secureUrl: "/og-image.png",
-        width: 1200,
-        height: 630,
-        type: "image/png",
-        alt: `${site.name} - ${site.tagline}`,
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     site: `@${site.creator.handle}`,
     creator: `@${site.creator.handle}`,
-    title: `${site.name} - ${site.tagline}`,
+    title,
     description: site.description,
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: `${site.name} - ${site.tagline}`,
-      },
-    ],
   },
 }
 
