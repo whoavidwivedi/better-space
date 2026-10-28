@@ -4,13 +4,14 @@ import { ArrowUpRight } from "lucide-react"
 
 import { Navbar } from "@/components/common/navbar"
 import { Footer } from "@/components/landing/footer"
+import { pageMetadata } from "@/lib/site"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Changelog",
   description:
     "A public record of Better Space features, improvements, and fixes.",
-  alternates: { canonical: "/changelog" },
-}
+  path: "/changelog",
+})
 
 const releases = [
   {
