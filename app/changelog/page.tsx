@@ -15,6 +15,18 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.2",
+    date: "2026-11-01",
+    label: "3D receding dot grid & opaque cards",
+    summary:
+      "The landing bento dot grids now feel truly 3D with larger, brighter dots in the centre that recede towards faded edges, and cards floating above them are fully opaque.",
+    highlights: [
+      "A mathematically scaled SVG dot grid gives feature cards authentic 3D depth, with larger, brighter dots at the centre that smoothly shrink and fade towards the borders.",
+      "Fixed transparency on the first pillar (Persona & name identity form) and moderation panel by wrapping them in solid card containers so background dots do not show through.",
+      "Removed translucency from stats cells and crowd avatars for clean contrast against the receding dot backdrop.",
+    ],
+  },
+  {
     version: "v1.7.1",
     date: "2026-10-28",
     label: "Host security fix",

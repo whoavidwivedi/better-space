@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import {
   ArrowRight as RiArrowRightLine,
   ChevronLeft,
-  ChevronRight,
   Copy,
   Ellipsis,
   Headphones,
@@ -14,10 +13,7 @@ import {
   Mic,
   MessageSquare,
   MicOff,
-  PanelLeft,
-  Plus,
   Settings,
-  Share,
   Smile,
   Users,
   VolumeX,
@@ -843,38 +839,13 @@ function StatusIcons({ className }: { className?: string }) {
   )
 }
 
-// The iPhone Duo's status glyph (iOS 27): Wi-Fi inside a ring of dots that
-// counts down the battery, drawn at its size in points.
-function DuoStatusGlyph() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="currentColor">
-      <g transform="translate(6.6 6.2) scale(0.75)">
-        <path d="M8.5 2.3c2.3 0 4.4.9 6 2.4.1.1.3.1.4 0l1.2-1.2c.1-.1.1-.3 0-.4A10.6 10.6 0 0 0 8.5 0 10.6 10.6 0 0 0 .9 3.1c-.1.1-.1.3 0 .4l1.2 1.2c.1.1.3.1.4 0a8.6 8.6 0 0 1 6-2.4Z" />
-        <path d="M8.5 6c1.3 0 2.5.5 3.4 1.3.1.1.3.1.4 0l1.2-1.2c.1-.1.1-.3 0-.4a7 7 0 0 0-10 0c-.1.1-.1.3 0 .4l1.2 1.2c.1.1.3.1.4 0C6 6.5 7.2 6 8.5 6Z" />
-        <path d="m10.8 9.1-2.1 2.2a.3.3 0 0 1-.4 0L6.2 9.1c-.1-.1-.1-.3 0-.4a3.3 3.3 0 0 1 4.6 0c.1.1.1.3 0 .4Z" />
-      </g>
-      {Array.from({ length: 7 }, (_, i) => {
-        const a = ((25 + (i * 130) / 6) * Math.PI) / 180
-        return (
-          <circle
-            key={i}
-            cx={13 + 11 * Math.cos(a)}
-            cy={13 + 11 * Math.sin(a)}
-            r="1.15"
-          />
-        )
-      })}
-    </svg>
-  )
-}
-
 // Safari's chrome, drawn after Apple's current Safari (iOS and iPadOS 26 and
 // later): glass controls on the page, the address in a pill.
 const SAFARI_ADDRESS = "space.whoavidwivedi.work"
 const GLASS =
   "border border-foreground/10 bg-foreground/[0.07] text-foreground shadow-sm backdrop-blur-xl"
 
-// iPhone: the compact bar at the bottom, back, the address, and more.
+// Safari's compact bar: back, the address, and more.
 function SafariBottomBar() {
   return (
     <div
@@ -909,55 +880,14 @@ function SafariBottomBar() {
   )
 }
 
-// A wide screen (the Duo unfolded, as on iPad): the toolbar along the top,
-// sidebar and history on the left, the address centred, share, new tab and
-// tabs on the right.
-function SafariToolbar() {
-  const icon = "flex size-9 shrink-0 items-center justify-center rounded-full"
-  return (
-    <div
-      aria-hidden="true"
-      className="flex h-[52px] items-center gap-0.5 border-b border-border/60 bg-background px-3 text-foreground"
-    >
-      <span className={icon}>
-        <PanelLeft className="size-[19px]" />
-      </span>
-      <span className={icon}>
-        <ChevronLeft className="size-[21px]" />
-      </span>
-      <span className={cn(icon, "text-muted-foreground/60")}>
-        <ChevronRight className="size-[21px]" />
-      </span>
-      <span
-        className={cn(
-          "mx-auto flex h-9 w-[46%] min-w-0 items-center justify-center rounded-full px-4 text-[14px] font-medium",
-          GLASS
-        )}
-      >
-        <span className="truncate">{SAFARI_ADDRESS}</span>
-      </span>
-      <span className={icon}>
-        <Share className="size-[18px]" />
-      </span>
-      <span className={icon}>
-        <Plus className="size-[20px]" />
-      </span>
-      <span className={icon}>
-        <Copy className="size-[18px]" />
-      </span>
-    </div>
-  )
-}
-
 // How the Duo's screens lay out, after Apple's iOS 27 Duo template: no top
-// status bar; a strip down the right edge holds status at its top (the time
-// over the glyph, under the camera on the cover) and the room's docked
-// controls, and the room fills the full height beside it. Strip widths are in
-// points: the cover's is centred on its camera (x ≈ 411, y 30–66pt), and its
-// room starts below the camera, at `top`.
+// status bar; a strip down the right edge holds the time at its top (under the
+// camera on the cover) and the room's docked controls, and the room fills the
+// full height beside it. Strip widths are in points: the cover's is centred on
+// its camera (x ≈ 411, y 30–66pt).
 const DUO_RAIL = {
-  cover: { rail: 94, status: "top-[74px]", top: 72 },
-  inner: { rail: 79, status: "top-[14px]", top: 0 },
+  cover: { rail: 94, status: "top-[74px]" },
+  inner: { rail: 79, status: "top-[14px]" },
 }
 
 // A phone's screen. The iPhone 18 Pro's: an iOS status bar beside the Dynamic
@@ -975,19 +905,10 @@ function PhoneScreen({
   duo?: keyof typeof DUO_RAIL
 }) {
   if (duo) {
-    const { rail, status, top } = DUO_RAIL[duo]
-    // Better Space open in Safari: the toolbar along the top of the wide inner
-    // screen, beside the status strip; the compact bar at the cover's foot.
+    const { rail, status } = DUO_RAIL[duo]
+    // Better Space open in Safari: the room, then the compact bar at the foot.
     return (
-      <div
-        className="relative flex size-full flex-col bg-background"
-        style={{ paddingTop: top }}
-      >
-        {duo === "inner" && (
-          <div style={{ paddingRight: rail }}>
-            <SafariToolbar />
-          </div>
-        )}
+      <div className="relative flex size-full flex-col bg-background">
         <div className="min-h-0 flex-1">
           <RoomPreview
             live={live}
@@ -997,11 +918,11 @@ function PhoneScreen({
             rail={rail}
           />
         </div>
-        {duo === "cover" && <SafariBottomBar />}
+        <SafariBottomBar />
         <div
           aria-hidden="true"
           className={cn(
-            "absolute right-0 flex flex-col items-center gap-1.5 text-foreground",
+            "absolute right-0 flex flex-col items-center text-foreground",
             status
           )}
           style={{ width: rail }}
@@ -1009,7 +930,6 @@ function PhoneScreen({
           <span className="text-[15px] leading-none font-semibold tracking-tight">
             9:41
           </span>
-          <DuoStatusGlyph />
         </div>
       </div>
     )
