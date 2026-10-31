@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 
 // A 3D receding dot grid: large, bright dots in the centre that smoothly
 // scale down and fade out toward the edges and far corners.
-const SPACING = 20
+const SPACING = 26
 const HALF_W = 370
 const HALF_H = 170
 
@@ -29,6 +29,7 @@ export function DotGrid({ className }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
+      style={{ contain: "strict" }}
       className={cn(
         "pointer-events-none absolute inset-0 overflow-hidden",
         className
@@ -38,6 +39,7 @@ export function DotGrid({ className }: { className?: string }) {
       <svg
         viewBox="-370 -170 740 340"
         preserveAspectRatio="xMidYMid slice"
+        shapeRendering="optimizeSpeed"
         className="size-full text-foreground/80 dark:text-foreground"
       >
         {DOTS.map((dot) => (

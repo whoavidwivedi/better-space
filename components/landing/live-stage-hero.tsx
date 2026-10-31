@@ -66,7 +66,61 @@ function RoomStarter() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="relative mx-auto max-w-xl">
+      {/* Animated twisted scribble guide */}
+      <div
+        aria-hidden="true"
+        className="group mx-auto mb-2 flex max-w-lg items-center justify-between px-3 text-xs select-none sm:mb-2.5 sm:px-4 sm:text-sm"
+      >
+        <span
+          className={cn(
+            "font-serif-display tracking-tight italic transition-colors duration-200",
+            slug ? "text-muted-foreground/60" : "font-medium text-foreground"
+          )}
+        >
+          enter a name,
+        </span>
+        <div className="relative mx-2.5 h-6 min-w-24 flex-1 sm:mx-3.5 sm:h-7">
+          <svg
+            viewBox="0 0 230 32"
+            fill="none"
+            className={cn(
+              "size-full overflow-visible transition-colors duration-200",
+              slug
+                ? "text-primary"
+                : "text-muted-foreground/75 dark:text-muted-foreground/80"
+            )}
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M 8 16 C 32 13, 62 10, 84 11 C 100 12, 118 21, 114 27 C 108 33, 96 24, 98 14 C 100 5, 116 5, 132 9 C 156 15, 188 23, 218 16"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              pathLength="100"
+              className="scribble-line"
+            />
+            <path
+              d="M 209 10 L 219 16 L 209 22"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="scribble-head"
+            />
+          </svg>
+        </div>
+        <span
+          className={cn(
+            "font-serif-display tracking-tight italic transition-colors duration-200",
+            slug ? "font-medium text-primary" : "text-muted-foreground/80"
+          )}
+        >
+          go live
+        </span>
+      </div>
+
       <form
         onSubmit={start}
         className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-lg"
@@ -671,22 +725,23 @@ function Screen({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const ro = new ResizeObserver(() => setScale(el.clientWidth / width))
+    const updateScale = () => {
+      const rect = el.getBoundingClientRect()
+      setScale(Math.max(rect.width / width, rect.height / height))
+    }
+    updateScale()
+    const ro = new ResizeObserver(updateScale)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [width])
+  }, [width, height])
 
   return (
-    <div
-      ref={ref}
-      className="relative w-full overflow-hidden"
-      style={{ aspectRatio: `${width} / ${height}` }}
-    >
+    <div ref={ref} className="relative size-full overflow-hidden bg-[#0c0a09]">
       <div
         className="absolute top-0 left-0 origin-top-left"
         style={{
-          width,
-          height,
+          width: width + 2,
+          height: height + 2,
           transform: `scale(${scale})`,
           visibility: scale ? "visible" : "hidden",
         }}
@@ -734,13 +789,24 @@ function Bezel({
   const [x, y, sw, sh] = art.screen
   return (
     <div className="relative w-full" style={{ aspectRatio: `${w} / ${h}` }}>
+      {/* Opaque dark backing behind screen cutout so page background never leaks */}
       <div
-        className="absolute overflow-hidden bg-background"
+        aria-hidden="true"
+        className="pointer-events-none absolute bg-[#0c0a09]"
         style={{
-          left: `${(x / w) * 100}%`,
-          top: `${(y / h) * 100}%`,
-          width: `${(sw / w) * 100}%`,
-          height: `${(sh / h) * 100}%`,
+          left: `${((x - 12) / w) * 100}%`,
+          top: `${((y - 12) / h) * 100}%`,
+          width: `${((sw + 24) / w) * 100}%`,
+          height: `${((sh + 24) / h) * 100}%`,
+        }}
+      />
+      <div
+        className="absolute overflow-hidden bg-[#0c0a09]"
+        style={{
+          left: `${((x - 6) / w) * 100}%`,
+          top: `${((y - 6) / h) * 100}%`,
+          width: `${((sw + 12) / w) * 100}%`,
+          height: `${((sh + 12) / h) * 100}%`,
         }}
       >
         <Screen width={art.points[0]} height={art.points[1]}>
@@ -763,36 +829,56 @@ function Bezel({
 function MacBook({ live }: { live: Live | null }) {
   return (
     <Bezel art={MACBOOK_PRO}>
-      <div className="flex size-full flex-col bg-[linear-gradient(160deg,#c7d2fe,#fbcfe8_45%,#fde68a)] dark:bg-[linear-gradient(160deg,#1e1b4b,#3b0764_45%,#422006)]">
+      <div className="relative flex size-full flex-col overflow-hidden bg-[#0c0a09] select-none">
+        <picture className="pointer-events-none absolute -inset-[4px] block select-none">
+          <source srcSet="/wallpapers/golden-dark.webp" type="image/webp" />
+          <img
+            src="/wallpapers/golden-dark.jpg"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            decoding="async"
+            className="block size-full object-cover object-center"
+          />
+        </picture>
         <div
           aria-hidden="true"
-          className="flex h-[37px] shrink-0 items-center justify-between bg-white/40 px-5 text-[13px] font-medium text-neutral-900 backdrop-blur-xl dark:bg-black/30 dark:text-white"
+          className="relative z-10 flex h-[36px] shrink-0 items-center justify-between bg-black/30 px-5 text-[13px] font-medium text-white/90 backdrop-blur-2xl"
         >
-          <span className="flex gap-5">
-            <span className="font-bold">Safari</span>
+          <span className="flex items-center gap-4">
+            <span className="text-[14px] leading-none opacity-90"></span>
+            <span className="font-semibold text-white">Safari</span>
             <span>File</span>
             <span>Edit</span>
             <span>View</span>
+            <span>History</span>
+            <span>Bookmarks</span>
+            <span>Window</span>
+            <span>Help</span>
           </span>
-          <span>Mon 9:41 AM</span>
+          <span className="flex items-center gap-3 font-medium text-white/80">
+            <span>Mon 9:41 AM</span>
+          </span>
         </div>
-        <div className="mx-5 mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-xl border border-black/10 bg-background shadow-2xl">
-          <div
-            aria-hidden="true"
-            className="flex h-12 shrink-0 items-center gap-4 border-b border-border bg-muted px-4"
-          >
-            <span className="flex gap-2">
-              <span className="size-3 rounded-full bg-[#ff5f57]" />
-              <span className="size-3 rounded-full bg-[#febc2e]" />
-              <span className="size-3 rounded-full bg-[#28c840]" />
-            </span>
-            <span className="mx-auto w-[28rem] truncate rounded-lg bg-background px-3 py-1.5 text-center text-[13px] text-muted-foreground">
-              space.whoavidwivedi.work
-            </span>
-            <span className="w-14" />
-          </div>
-          <div className="min-h-0 flex-1">
-            <RoomPreview live={live} />
+        <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center">
+          <div className="flex h-[84%] w-[84%] flex-col overflow-hidden rounded-2xl border border-black/20 bg-background shadow-[0_24px_70px_rgba(0,0,0,0.55)] dark:border-white/15">
+            <div
+              aria-hidden="true"
+              className="flex h-12 shrink-0 items-center gap-4 border-b border-border bg-muted/90 px-4 backdrop-blur-md"
+            >
+              <span className="flex gap-2">
+                <span className="size-3 rounded-full border border-black/10 bg-[#ff5f57]" />
+                <span className="size-3 rounded-full border border-black/10 bg-[#febc2e]" />
+                <span className="size-3 rounded-full border border-black/10 bg-[#28c840]" />
+              </span>
+              <span className="mx-auto w-[28rem] truncate rounded-lg border border-border/60 bg-background/80 px-3 py-1.5 text-center text-[13px] text-muted-foreground shadow-xs">
+                space.whoavidwivedi.work
+              </span>
+              <span className="w-14" />
+            </div>
+            <div className="min-h-0 flex-1">
+              <RoomPreview live={live} />
+            </div>
           </div>
         </div>
       </div>

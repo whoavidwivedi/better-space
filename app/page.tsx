@@ -63,11 +63,19 @@ export default function HomePage() {
       <Navbar />
       <main className="flex flex-1 flex-col">
         <LiveStageHero />
-        <LiveSpacesRadar />
-        <SpaceStats />
-        <ProductPillars />
+        <div className="[contain-intrinsic-size:1px_500px] [content-visibility:auto]">
+          <LiveSpacesRadar />
+        </div>
+        <div className="[contain-intrinsic-size:1px_600px] [content-visibility:auto]">
+          <SpaceStats />
+        </div>
+        <div className="[contain-intrinsic-size:1px_900px] [content-visibility:auto]">
+          <ProductPillars />
+        </div>
       </main>
-      <Footer />
+      <div className="[contain-intrinsic-size:1px_360px] [content-visibility:auto]">
+        <Footer />
+      </div>
     </div>
   )
 }

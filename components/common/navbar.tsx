@@ -17,10 +17,13 @@ export function Navbar() {
 
   useEffect(() => {
     setAvatar(randomUserpic())
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
     const interval = setInterval(() => {
-      setAvatar(randomUserpic())
-    }, 2800)
+      if (document.visibilityState === "visible") {
+        setAvatar(randomUserpic())
+      }
+    }, 6000)
 
     return () => clearInterval(interval)
   }, [])
