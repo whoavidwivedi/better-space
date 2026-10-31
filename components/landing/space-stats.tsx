@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { Users } from "lucide-react"
 import { AudioVisualizer } from "@/components/audio-visualizer"
-import { DotGrid } from "@/components/landing/dot-grid"
 import { STARTER_TEMPLATES } from "@/lib/presets"
 import { USERPIC_NAMES, userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
@@ -68,37 +67,56 @@ function Cell({
         </p>
       </div>
       <div className="relative flex min-h-52 flex-1 items-center justify-center overflow-hidden p-6 sm:p-8">
-        <DotGrid />
         <div className="relative flex w-full justify-center">{children}</div>
       </div>
     </article>
   )
 }
 
-// The crowd: decorative, so it stays out of the accessibility tree.
+// The crowd: tap anyone to send them a wave. Decorative, so it stays out of
+// the tab order and the accessibility tree.
 function Crowd() {
+  const [waved, setWaved] = useState<Record<number, number>>({})
+
   return (
     <ul
       aria-hidden="true"
-      className="grid w-full max-w-xl grid-cols-8 gap-1.5 sm:grid-cols-10 sm:gap-2"
+      className="grid w-full max-w-xl grid-cols-8 gap-1.5 [mask-image:linear-gradient(to_bottom,#000_60%,transparent)] sm:grid-cols-10 sm:gap-2"
     >
-      {CROWD.map((seed) => (
-        <li key={seed}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={userpicUrl(seed)}
-            alt=""
-            loading="lazy"
-            className="block aspect-square w-full rounded-full border border-border bg-card object-cover"
-          />
+      {CROWD.map((seed, i) => (
+        <li key={seed} className="relative">
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setWaved((w) => ({ ...w, [i]: Date.now() }))}
+            className="block aspect-square w-full rounded-full"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={userpicUrl(seed)}
+              alt=""
+              loading="lazy"
+              className="size-full rounded-full border border-border bg-muted object-cover"
+            />
+          </button>
+          {waved[i] && (
+            <span
+              key={waved[i]}
+              aria-hidden="true"
+              className="pillar-float pointer-events-none absolute bottom-full left-1/2 text-lg"
+            >
+              👋
+            </span>
+          )}
         </li>
       ))}
     </ul>
   )
 }
 
-// Rooms as the lobby shows them: a stack that turns itself, pausing on hover
-// or focus. Tap it to deal the next one.
+// Rooms as the lobby shows them: a 3D circular cylinder stack that turns itself,
+// pausing on hover or focus. Tap it to deal the next one. Both top and bottom cards
+// tilt and recede along a circular arc.
 function RoomStack() {
   const [top, setTop] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -120,40 +138,50 @@ function RoomStack() {
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="relative h-40 w-full max-w-64 rounded-2xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="relative flex h-52 w-full max-w-64 items-center justify-center rounded-2xl [perspective:800px] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       {ROOM_CARDS.map((t, i) => {
         const offset = ((i - top + n + half) % n) - half
         const depth = Math.abs(offset)
+        const y = offset * 26
+        const z = -depth * 16
+        const rotateX = -offset * 10
+        const scale = 1 - depth * 0.05
+        const brightness = 1 - depth * 0.1
+        const opacity = depth === 2 ? 0.75 : depth === 1 ? 0.92 : 1
+
         return (
           <span
             key={t.name}
-            className="absolute inset-x-0 top-0 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[translate,scale,opacity] duration-500 ease-(--ease-out) motion-reduce:transition-none"
+            className="absolute inset-x-0 flex h-[134px] flex-col justify-between rounded-2xl border border-border bg-card p-3.5 text-left shadow-md transition-[transform,filter,opacity] duration-500 ease-(--ease-out) will-change-transform select-none motion-reduce:transition-none"
             style={{
-              translate: `0 ${offset * 14}px`,
-              scale: `${1 - depth * 0.06}`,
-              filter: `brightness(${1 - depth * 0.12})`,
+              transform: `translateY(${y}px) translateZ(${z}px) rotateX(${rotateX}deg)`,
+              scale,
+              filter: `brightness(${brightness})`,
+              opacity,
               zIndex: n - depth,
             }}
           >
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-foreground px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-background uppercase">
-              <span className="size-1.5 rounded-full bg-emerald-400" />
-              Live
-            </span>
-            <span className="line-clamp-2 font-display text-sm text-foreground">
-              {t.title}
-            </span>
-            <span className="flex -space-x-2">
+            <div className="flex flex-col gap-1.5">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold tracking-wide text-background uppercase">
+                <span className="size-1.5 rounded-full bg-emerald-400" />
+                Live
+              </span>
+              <span className="line-clamp-2 font-display text-sm leading-snug text-foreground">
+                {t.title}
+              </span>
+            </div>
+            <div className="flex -space-x-2">
               {t.speakers.map((s) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={s}
                   src={userpicUrl(s)}
                   alt=""
-                  className="size-7 rounded-full border-2 border-card bg-muted object-cover"
+                  className="size-6.5 rounded-full border-2 border-card bg-muted object-cover"
                 />
               ))}
-            </span>
+            </div>
           </span>
         )
       })}
