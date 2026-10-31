@@ -18,6 +18,7 @@ import {
   UserCheck,
   Volume2,
 } from "lucide-react"
+import { DotGrid } from "@/components/landing/dot-grid"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -88,7 +89,7 @@ function JoinIdentity() {
 
   return (
     <form
-      className="w-full max-w-xs space-y-4 text-left"
+      className="w-full max-w-xs space-y-4 rounded-2xl border border-border bg-card p-5 text-left shadow-xl"
       onSubmit={(e) => {
         e.preventDefault()
         if (slug) router.push(`/lobby?space=${encodeURIComponent(slug)}`)
@@ -124,7 +125,7 @@ function JoinIdentity() {
           value={name}
           maxLength={24}
           onChange={(e) => setName(e.target.value)}
-          className="h-10 text-sm"
+          className="h-10 bg-background text-sm"
         />
       </div>
       <Button type="submit" size="lg" className="w-full" disabled={!slug}>
@@ -265,7 +266,7 @@ function HostMenu() {
 
   if (state === "removed") {
     return (
-      <div className="flex flex-col items-center gap-3 text-center">
+      <div className="flex w-full max-w-56 flex-col items-center gap-3 rounded-2xl border border-border bg-card p-5 text-center shadow-xl">
         <p className="text-sm text-muted-foreground">jo was removed.</p>
         <Button
           variant="outline"
@@ -280,7 +281,7 @@ function HostMenu() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex w-full max-w-56 flex-col items-center gap-3 rounded-2xl border border-border bg-card p-5 text-center shadow-xl">
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="Open host menu for jo"
@@ -659,18 +660,38 @@ function Ended() {
           </div>
         </div>
       ) : seconds > 0 ? (
-        <>
-          <div
-            role="status"
-            className="flex items-center rounded-full bg-destructive px-4 py-2 text-sm font-medium text-white tabular-nums shadow-lg"
-          >
-            <AlertCircle className="mr-2 size-4 shrink-0" aria-hidden="true" />
-            Host disconnected. Space ends in {seconds}s
+        <div
+          role="status"
+          className="w-full animate-in rounded-2xl border border-destructive/30 bg-card p-4 text-left duration-300 fade-in slide-in-from-bottom-1"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+              <AlertCircle className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">
+                Host disconnected
+              </p>
+              <p className="font-mono text-[11px] text-muted-foreground">
+                The space ends in
+              </p>
+            </div>
+            <span className="font-display text-2xl text-destructive tabular-nums">
+              {seconds}s
+            </span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setSeconds(0)}>
-            Skip ahead
-          </Button>
-        </>
+          <div className="mt-3 h-1 overflow-hidden rounded-full bg-destructive/15">
+            <div
+              className="h-full rounded-full bg-destructive transition-[width] duration-1000 ease-linear"
+              style={{ width: `${(seconds / 10) * 100}%` }}
+            />
+          </div>
+          <div className="mt-3 flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => setSeconds(0)}>
+              Skip ahead
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="w-full animate-in rounded-2xl border border-border bg-card p-5 text-left duration-300 zoom-in-95 fade-in">
           <div className="flex items-center gap-3">
@@ -904,10 +925,7 @@ export function ProductPillars() {
                 </p>
               </div>
               <div className="relative flex min-h-60 flex-1 items-center justify-center overflow-hidden p-6 sm:p-8">
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_30%,transparent_100%)] bg-size-[16px_16px]"
-                />
+                <DotGrid />
                 <div className="relative flex w-full justify-center">
                   {f.visual}
                 </div>

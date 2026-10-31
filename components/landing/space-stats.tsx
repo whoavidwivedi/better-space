@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Users } from "lucide-react"
 import { AudioVisualizer } from "@/components/audio-visualizer"
+import { DotGrid } from "@/components/landing/dot-grid"
 import { STARTER_TEMPLATES } from "@/lib/presets"
 import { USERPIC_NAMES, userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
@@ -26,6 +27,22 @@ const PLATFORMS = [
 
 // A spread of the characters people actually joined as.
 const CROWD = USERPIC_NAMES.filter((_, i) => i % 2 === 0).slice(0, 40)
+
+// The stack: the lobby's starter rooms and a couple more, so the deck has
+// cards above and below the one in front.
+const ROOM_CARDS = [
+  ...STARTER_TEMPLATES,
+  {
+    name: "late-night-lo-fi",
+    title: "Late Night Lo-fi & Focus",
+    speakers: ["Afterclap-6", "OSLO-2", "Cranks-1"],
+  },
+  {
+    name: "first-100-users",
+    title: "Founder Fireside: First 100 Users",
+    speakers: ["Funny Bunny-4", "Teamwork-2", "Upstream-1"],
+  },
+]
 
 // Same cell anatomy as the feature bento: headline number and a line of
 // context up top, a piece of the product underneath on a fading dot grid.
@@ -51,79 +68,71 @@ function Cell({
         </p>
       </div>
       <div className="relative flex min-h-52 flex-1 items-center justify-center overflow-hidden p-6 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_30%,transparent_100%)] bg-size-[16px_16px]"
-        />
+        <DotGrid />
         <div className="relative flex w-full justify-center">{children}</div>
       </div>
     </article>
   )
 }
 
-// The crowd: tap anyone to send them a wave. Decorative, so it stays out of
-// the tab order and the accessibility tree.
+// The crowd: decorative, so it stays out of the accessibility tree.
 function Crowd() {
-  const [waved, setWaved] = useState<Record<number, number>>({})
-
   return (
     <ul
       aria-hidden="true"
-      className="grid w-full max-w-xl grid-cols-8 gap-1.5 [mask-image:linear-gradient(to_bottom,#000_60%,transparent)] sm:grid-cols-10 sm:gap-2"
+      className="grid w-full max-w-xl grid-cols-8 gap-1.5 sm:grid-cols-10 sm:gap-2"
     >
-      {CROWD.map((seed, i) => (
-        <li key={seed} className="relative">
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => setWaved((w) => ({ ...w, [i]: Date.now() }))}
-            className="block aspect-square w-full rounded-full"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={userpicUrl(seed)}
-              alt=""
-              loading="lazy"
-              className="size-full rounded-full border border-border bg-muted object-cover"
-            />
-          </button>
-          {waved[i] && (
-            <span
-              key={waved[i]}
-              aria-hidden="true"
-              className="pillar-float pointer-events-none absolute bottom-full left-1/2 text-lg"
-            >
-              👋
-            </span>
-          )}
+      {CROWD.map((seed) => (
+        <li key={seed}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={userpicUrl(seed)}
+            alt=""
+            loading="lazy"
+            className="block aspect-square w-full rounded-full border border-border bg-card object-cover"
+          />
         </li>
       ))}
     </ul>
   )
 }
 
-// Rooms as the lobby shows them. Tap the stack to deal the next one.
+// Rooms as the lobby shows them: a stack that turns itself, pausing on hover
+// or focus. Tap it to deal the next one.
 function RoomStack() {
   const [top, setTop] = useState(0)
-  const n = STARTER_TEMPLATES.length
+  const [paused, setPaused] = useState(false)
+  const n = ROOM_CARDS.length
+  const half = Math.floor(n / 2)
+
+  useEffect(() => {
+    if (paused || matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const id = setInterval(() => setTop((t) => (t + 1) % n), 2600)
+    return () => clearInterval(id)
+  }, [n, paused])
 
   return (
     <button
       type="button"
       aria-label="Show next room"
       onClick={() => setTop((t) => (t + 1) % n)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
       className="relative h-40 w-full max-w-64 rounded-2xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
-      {STARTER_TEMPLATES.map((t, i) => {
-        const depth = (i - top + n) % n
+      {ROOM_CARDS.map((t, i) => {
+        const offset = ((i - top + n + half) % n) - half
+        const depth = Math.abs(offset)
         return (
           <span
             key={t.name}
-            className="absolute inset-x-0 top-0 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[translate,scale,opacity] duration-(--duration-medium) ease-(--ease-out) motion-reduce:transition-none"
+            className="absolute inset-x-0 top-0 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[translate,scale,opacity] duration-500 ease-(--ease-out) motion-reduce:transition-none"
             style={{
-              translate: `0 ${depth * 14}px`,
+              translate: `0 ${offset * 14}px`,
               scale: `${1 - depth * 0.06}`,
-              opacity: 1 - depth * 0.3,
+              filter: `brightness(${1 - depth * 0.12})`,
               zIndex: n - depth,
             }}
           >
@@ -177,7 +186,7 @@ function OnAir() {
 function Connection() {
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="flex items-center gap-2 rounded-full border border-border/70 bg-muted/50 px-3.5 py-2 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase">
+      <span className="flex items-center gap-2 rounded-full border border-border/70 bg-card px-3.5 py-2 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase shadow-xs">
         <span className="size-2 rounded-full bg-emerald-500" />
         Connected
       </span>
@@ -248,7 +257,7 @@ export function SpaceStats() {
                   aria-hidden="true"
                 />
                 joined a room, most of them from {COUNTRY.name} (
-                {COUNTRY.sessions} sessions). Tap someone to wave.
+                {COUNTRY.sessions} sessions).
               </>
             }
             className="sm:col-span-2 lg:col-span-4"
@@ -263,8 +272,8 @@ export function SpaceStats() {
             <RoomStack />
           </Cell>
           <Cell
-            stat={`${Math.round(MINUTES / 60)} hours`}
-            label={`on the mic. ${MINUTES.toLocaleString("en-US")} minutes of people talking.`}
+            stat={`${MINUTES.toLocaleString("en-US")} minutes`}
+            label={`on the mic. ${Math.round(MINUTES / 60)} hours of people talking.`}
             className="lg:col-span-2"
           >
             <OnAir />
