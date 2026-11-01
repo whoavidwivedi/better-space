@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import React, { useState, useEffect } from "react"
 
+import dynamic from "next/dynamic"
 import { CharacterPicker } from "@/components/common/character-picker"
 import { Navbar } from "@/components/common/navbar"
 import {
@@ -18,7 +19,17 @@ import {
   TemplateCard,
   type LiveRoom,
 } from "@/components/room-card"
-import { SpaceRoomLiveKit } from "@/components/livekit-room"
+
+const SpaceRoomLiveKit = dynamic(
+  () => import("@/components/livekit-room").then((m) => m.SpaceRoomLiveKit),
+  {
+    loading: () => (
+      <div className="flex h-svh w-screen items-center justify-center bg-background text-foreground">
+        <Spinner className="size-6 text-muted-foreground" />
+      </div>
+    ),
+  }
+)
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"

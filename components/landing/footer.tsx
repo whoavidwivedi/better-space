@@ -32,8 +32,13 @@ const columns = [
   },
 ]
 
-export function Footer() {
-  const year = new Date().getFullYear()
+async function getCurrentYear() {
+  "use cache"
+  return new Date().getFullYear()
+}
+
+export async function Footer() {
+  const year = await getCurrentYear()
 
   return (
     <footer className="w-full bg-background px-4 pt-16 pb-6 sm:px-6 sm:pt-24">
