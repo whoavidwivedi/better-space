@@ -12,7 +12,7 @@ Preload on intent only after measuring its benefit. Idle preloading can waste da
 
 ## Duplicate browser dependency
 
-Verify the shipped browser versions and inspect the package-manager graph (`pnpm why` or `npm ls`). Distinguish duplicate shipped JavaScript from module variants and server/client copies. Prefer compatible direct-range or parent upgrades and dedupe before overrides. If resolving duplicates requires a major-version upgrade, verify API compatibility and behavior for every affected consumer.
+Verify the shipped browser versions and inspect the package-manager graph (`bun pm ls`). Distinguish duplicate shipped JavaScript from module variants and server/client copies. Prefer compatible direct-range or parent upgrades and dedupe before overrides. If resolving duplicates requires a major-version upgrade, verify API compatibility and behavior for every affected consumer.
 
 Check React/singleton peer constraints and hydration behavior. Recheck the resolved dependency graph and shipped browser code to ensure the change reduces duplication rather than introducing more duplicates through dependencies.
 

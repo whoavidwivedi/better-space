@@ -149,13 +149,13 @@ The workflow depends on framework capabilities that ship with current Next.js:
 - **Next.js 16.3+ with `cacheComponents: true`** in `next.config.ts`. Without
   Cache Components there is no static shell to optimize.
 - **`@next/playwright`** on the same release line as the project's `next`; it
-  provides `instant()`. Verify with `npm ls next @next/playwright` (or the
+  provides `instant()`. Verify with `bun pm ls next @next/playwright` (or the
   project's package manager) and align them if they differ. The matching
   testing API is in the `next` runtime, gated by the
   [`experimental.exposeTestingApiInProductionBuild`](https://nextjs.org/docs/app/api-reference/config/next-config-js/exposeTestingApiInProductionBuild)
   config flag (phase A).
 
-If the project does not meet these, upgrade first (`npx @next/codemod upgrade`
+If the project does not meet these, upgrade first (`bunx @next/codemod upgrade`
 automates most of it), then enable Cache Components in `next.config.ts`:
 
 ```ts

@@ -10,7 +10,7 @@ description: >
 
 ## 1. Set the scope
 
-Analyze the whole app by default, covering all routes and shared client dependencies. Narrow the scope only when the user specifies a route, dependency, feature or other subset. Choose **audit** or **fix** mode. Audit is the default: generate analyzer artifacts and report candidates while leaving application source, dependencies and lockfiles unchanged. Fix mode requires an explicit request to change the app. Ask before changing visible behavior, timing, compatibility or a trust boundary. For a route's static App Shell, use [`next-cache-components-optimizer`](https://github.com/vercel/next.js/tree/canary/skills/next-cache-components-optimizer); install it first if unavailable (`npx skills add https://github.com/vercel/next.js/tree/canary/skills/next-cache-components-optimizer`). For navigation prefetch work, use [`next-partial-prefetching-optimizer`](https://github.com/vercel/next.js/tree/canary/skills/next-partial-prefetching-optimizer); install it first if unavailable (`npx skills add https://github.com/vercel/next.js/tree/canary/skills/next-partial-prefetching-optimizer`).
+Analyze the whole app by default, covering all routes and shared client dependencies. Narrow the scope only when the user specifies a route, dependency, feature or other subset. Choose **audit** or **fix** mode. Audit is the default: generate analyzer artifacts and report candidates while leaving application source, dependencies and lockfiles unchanged. Fix mode requires an explicit request to change the app. Ask before changing visible behavior, timing, compatibility or a trust boundary. For a route's static App Shell, use [`next-cache-components-optimizer`](https://github.com/vercel/next.js/tree/canary/skills/next-cache-components-optimizer); install it first if unavailable (`bunx skills add https://github.com/vercel/next.js/tree/canary/skills/next-cache-components-optimizer`). For navigation prefetch work, use [`next-partial-prefetching-optimizer`](https://github.com/vercel/next.js/tree/canary/skills/next-partial-prefetching-optimizer); install it first if unavailable (`bunx skills add https://github.com/vercel/next.js/tree/canary/skills/next-partial-prefetching-optimizer`).
 
 **Done:** the whole-app or user-specified scope, mode and intended behavior are recorded. A request to capture or export data is audit mode, not permission to fix.
 
@@ -25,8 +25,8 @@ Run the pipeline in Bash:
 ```bash
 set -o pipefail
 # Capture only when a new baseline is needed
-pnpm exec next analyze --output --snapshot 'audit-before-unique-1'
-pnpm exec next analyze export --snapshot 'audit-before-unique-1' | gzip > /tmp/analyze-app-before.jsonl.gz
+bun x next analyze --output --snapshot 'audit-before-unique-1'
+bun x next analyze export --snapshot 'audit-before-unique-1' | gzip > /tmp/analyze-app-before.jsonl.gz
 ```
 
 `--output` builds and saves binary/UI artifacts without serving. `next analyze export` reads a saved snapshot without building; stdout is one typed JSON record per line, with errors on stderr. Omit `--route` for whole-app analysis; add it for a user-specified route. The route filter keeps the whole-app module graph, so scope it in the next step.
@@ -40,7 +40,7 @@ For a custom `distDir`, replay with `--dist-dir <configured-directory>` (relativ
 Resolve the schema from the app's **installed Next.js**, using its Node launcher:
 
 ```bash
-pnpm exec node -p "require.resolve('next/analyze/graph-v1.schema.json')"
+bun -e "console.log(require.resolve('next/analyze/graph-v1.schema.json'))"
 ```
 
 Read its descriptions for record meanings, joins, attribution and coverage. Stream decompression with `gzip -dc /tmp/analyze-app-before.jsonl.gz` into a line-oriented analysis script rather than loading the whole dump into context. Use the schema to interpret client/server contributions across every route in scope and choose the metric.
@@ -89,7 +89,7 @@ Use three dispositions: **possible leak** requires server-only ownership evidenc
 
 Classify each proposed edit as a size optimization or boundary remediation before applying it. A request to reduce browser JavaScript authorizes size edits, including in public prompt modules and finding importers. Removing private client state/payloads, relocating policy or adding `server-only` needs separate explicit approval; leave those findings unresolved for the owner even if the UI would stay unchanged.
 
-Make one small, cohesive change. Capture/export an after snapshot with a new name and compare the **same analysis scope, output class and metric** with the baseline. For whole-app analysis, account for changes across all routes, including shared dependencies. Run relevant behavior tests and type-check; use [`next-dev-loop`](https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop) when verifying the edit in the running app, and install it first if unavailable (`npx skills add https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop`).
+Make one small, cohesive change. Capture/export an after snapshot with a new name and compare the **same analysis scope, output class and metric** with the baseline. For whole-app analysis, account for changes across all routes, including shared dependencies. Run relevant behavior tests and type-check; use [`next-dev-loop`](https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop) when verifying the edit in the running app, and install it first if unavailable (`bunx skills add https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop`).
 
 If no relevant tests exist, create and run focused smoke tests. Test production imports or rendered UI, not copied implementations. Exercise interactive flows through a browser or executable component tests, including input handling, timing and deferred actions. For debounced search, check case-insensitive results and the existing delay; for editable lazy features, trigger loading and edit the result. Record commands/actions and observed results. Source inspection, type-checking and successful builds alone do not verify behavior.
 

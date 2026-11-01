@@ -78,11 +78,11 @@ server lifecycle. Ensure its command serves the production build with
 test commands without starting another server manually:
 
 ```bash filename="Terminal"
-EXPOSE_TESTING_API=1 pnpm build
-BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-preservation.spec.ts
+EXPOSE_TESTING_API=1 bun run build
+BASE_URL=http://localhost:3000 bun x playwright test tests/prefetch-preservation.spec.ts
 ```
 
-If the rig does not use `webServer`, start `pnpm start --port 3000` in a
+If the rig does not use `webServer`, start `bun run start --port 3000` in a
 separate terminal after the build, keep it running during the test command,
 and stop it afterward. Use only one server lifecycle for the measured app.
 
