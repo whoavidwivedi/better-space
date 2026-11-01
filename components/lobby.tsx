@@ -55,8 +55,6 @@ export function Lobby() {
   const [joinUserName, setJoinUserName] = useState("")
   const [activeUserName, setActiveUserName] = useState("")
 
-  const [, setTick] = useState(0)
-
   const [createAvatarSeed, setCreateAvatarSeed] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("better_space_active_avatar")
@@ -142,14 +140,6 @@ export function Lobby() {
       clearInterval(interval)
       document.removeEventListener("visibilitychange", handleVisibility)
     }
-  }, [])
-
-  // Timer ticker to update rejoin countdown every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTick((t) => t + 1)
-    }, 1000)
-    return () => clearInterval(timer)
   }, [])
 
   const handleJoin = async (roomName: string) => {

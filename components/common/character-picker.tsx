@@ -192,6 +192,8 @@ export function CharacterPicker({
                         <img
                           src={userpicUrl(name)}
                           alt={name}
+                          loading="lazy"
+                          decoding="async"
                           className={cn(
                             "size-full rounded-full border-2 bg-muted object-cover",
                             isSelected

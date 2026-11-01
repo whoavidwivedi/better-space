@@ -113,7 +113,7 @@ export function LiveSpacesRadar() {
                   ? `/lobby?space=${encodeURIComponent(room.name)}`
                   : `/lobby?template=${room.name}`
               }
-              className="group relative flex min-h-[200px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card/70 p-4 shadow-sm transition-all duration-200 hover:border-foreground/40 hover:bg-card/95 hover:shadow-md active:scale-[0.99] sm:min-h-[220px] sm:rounded-3xl sm:p-6"
+              className="group relative flex min-h-[200px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card/70 p-4 shadow-sm transition-[transform,border-color,background-color,box-shadow] duration-200 hover:border-foreground/40 hover:bg-card/95 hover:shadow-md active:scale-[0.99] sm:min-h-[220px] sm:rounded-3xl sm:p-6"
             >
               {/* Card Top */}
               <div>
@@ -199,7 +199,7 @@ export function LiveSpacesRadar() {
           {/* 4th Card: Dotted Blank Start Space Card */}
           <Link
             href="/lobby"
-            className="group relative flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/90 bg-card/30 p-5 text-center transition-all duration-200 hover:border-foreground/60 hover:bg-card/70 active:scale-[0.99] sm:min-h-[220px] sm:rounded-3xl sm:p-8"
+            className="group relative flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/90 bg-card/30 p-5 text-center transition-[transform,border-color,background-color] duration-200 hover:border-foreground/60 hover:bg-card/70 active:scale-[0.99] sm:min-h-[220px] sm:rounded-3xl sm:p-8"
           >
             <div className="mb-3 flex size-12 items-center justify-center rounded-full border border-dashed border-border bg-muted/50 transition-colors group-hover:border-foreground/60 group-hover:bg-muted sm:size-14">
               <RiAddLine

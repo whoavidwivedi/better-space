@@ -801,7 +801,7 @@ function RoomUI({
       <div className="bg-studio-grid pointer-events-none absolute inset-0 opacity-40" />
 
       {/* Header Bar */}
-      <header className="sticky top-0 z-40 flex h-12 items-center justify-between gap-2 border-b border-border bg-card/80 px-2.5 backdrop-blur-md sm:h-14 sm:gap-3 sm:px-4 md:px-6">
+      <header className="sticky top-0 z-40 flex h-12 transform-gpu items-center justify-between gap-2 border-b border-border bg-card/80 px-2.5 backdrop-blur-md sm:h-14 sm:gap-3 sm:px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <BetterSpaceMark
             className="size-3.5 shrink-0 text-foreground sm:size-4"
@@ -956,7 +956,7 @@ function RoomUI({
       {/* Main Stage Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 overflow-hidden p-2.5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:flex-row sm:p-4 md:p-6 md:pb-[calc(9rem+env(safe-area-inset-bottom))] dock:pr-[calc(4.5rem+env(safe-area-inset-right))] dock:pb-[max(1rem,env(safe-area-inset-bottom))] spread:grid spread:grid-cols-2 spread:gap-0 spread:p-0">
-          <main className="flex-1 overflow-y-auto spread:p-6">
+          <main className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] spread:p-6">
             <section
               aria-labelledby="participants-heading"
               className="space-y-3 sm:space-y-6"
@@ -1021,7 +1021,7 @@ function RoomUI({
         <div
           role="toolbar"
           aria-label="Space controls"
-          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-x-auto rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md sm:rounded-2xl sm:p-1.5 md:p-2 dock:right-[max(0.5rem,env(safe-area-inset-right))] dock:left-auto dock:translate-x-0 dock:rounded-full dock:p-1.5"
+          className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 transform-gpu overflow-x-auto rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-md will-change-transform sm:rounded-2xl sm:p-1.5 md:p-2 dock:right-[max(0.5rem,env(safe-area-inset-right))] dock:left-auto dock:translate-x-0 dock:rounded-full dock:p-1.5"
         >
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 dock:flex-col dock:gap-1.5">
             {/* Audio Settings Popover */}

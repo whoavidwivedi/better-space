@@ -215,7 +215,7 @@ function AudioRouting() {
           <span>Input level</span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="pillar-level h-full rounded-full bg-foreground" />
+          <div className="pillar-level h-full w-full rounded-full bg-foreground" />
         </div>
       </div>
       <div className="space-y-1.5 border-t border-border/60 pt-3">
@@ -500,8 +500,8 @@ function ChatAndReactions() {
     <div className="relative w-full max-w-[20rem] space-y-3 text-left">
       <div className="flex h-80 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="relative flex-1 overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 [mask-image:linear-gradient(to_bottom,black,transparent)] backdrop-blur-[2px]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 [mask-image:linear-gradient(to_top,black,transparent)] backdrop-blur-[2px]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-card to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-card to-transparent" />
           <div
             ref={list}
             aria-live="polite"

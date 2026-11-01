@@ -15,6 +15,20 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.3",
+    date: "2026-11-01",
+    label: "Mobile performance & fluid 60/120fps motion",
+    summary:
+      "A comprehensive performance overhaul for mobile devices: zero scroll jitter, 100% GPU-composited animations, instant touch responsiveness, and elimination of background layout churn.",
+    highlights: [
+      "Eliminated scroll jitter and sudden height shifts on mobile by removing mismatched content-visibility containers across dynamic landing sections.",
+      "Switched infinite audio level meters and reactive visualizers to GPU-composited scale transforms, eliminating continuous CPU layout reflows.",
+      "Optimized 3D foldable iPhone Duo: eliminated 120fps React re-renders during drag/spring physics, hid off-turn blur passes, and enabled hardware compositor layer promotion.",
+      "Removed background interval timers: paused off-screen 3D room deck and navbar logo ticks, and deleted an unused 1-second interval in the lobby.",
+      "Instant touch responsiveness: added touch-action manipulation to eliminate the 300ms mobile tap delay, removed tap highlight flicker, and enabled async image decoding.",
+    ],
+  },
+  {
     version: "v1.7.2",
     date: "2026-11-01",
     label: "3D receding dot grid & opaque cards",
