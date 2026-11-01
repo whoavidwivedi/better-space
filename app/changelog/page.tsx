@@ -15,6 +15,17 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.6",
+    date: "2026-11-01",
+    label: "iPhone frame corner clipping & iOS gesture bar",
+    summary:
+      "Fixed background backing bleed outside iPhone 18 Pro curved corners, and added authentic iOS Home Indicator gesture bars across phone previews.",
+    highlights: [
+      "Eliminated rectangular background bleed outside the iPhone 18 Pro bezel art by matching the display corner radius squircle clipping and removing oversized backing margins.",
+      "Added the signature iOS Home Indicator gesture bar to iPhone 18 Pro and iPhone Duo Safari previews with authentic safe-area spacing.",
+    ],
+  },
+  {
     version: "v1.7.5",
     date: "2026-11-01",
     label: "Live space duration & mechanical animated counters",

@@ -789,6 +789,7 @@ type BezelArt = {
   size: [number, number]
   screen: [x: number, y: number, w: number, h: number]
   points: [number, number]
+  radius?: string
 }
 
 // MacBook Pro 14" M5: 3024×1964 panel, 1512×982 points.
@@ -799,11 +800,13 @@ const MACBOOK_PRO: BezelArt = {
   points: [1512, 982],
 }
 // iPhone 18 Pro: 1206×2622 at 3x, 402×874 points.
+// Display corner radius is 55pt on a 402×874 screen: (55/402 ≈ 13.68%, 55/874 ≈ 6.29%).
 const IPHONE_18_PRO: BezelArt = {
   src: "/devices/iphone-18-pro.webp",
   size: [1350, 2760],
   screen: [72, 69, 1206, 2622],
   points: [402, 874],
+  radius: "13.68% / 6.29%",
 }
 
 function Bezel({
@@ -817,26 +820,19 @@ function Bezel({
 }) {
   const [w, h] = art.size
   const [x, y, sw, sh] = art.screen
+  const radius = art.radius
+
   return (
     <div className="relative w-full" style={{ aspectRatio: `${w} / ${h}` }}>
-      {/* Opaque dark backing behind screen cutout so page background never leaks */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bg-[#0c0a09]"
-        style={{
-          left: `${((x - 12) / w) * 100}%`,
-          top: `${((y - 12) / h) * 100}%`,
-          width: `${((sw + 24) / w) * 100}%`,
-          height: `${((sh + 24) / h) * 100}%`,
-        }}
-      />
+      {/* Screen container: clipped cleanly to display cutout and corner radius */}
       <div
         className="absolute overflow-hidden bg-[#0c0a09]"
         style={{
-          left: `${((x - 6) / w) * 100}%`,
-          top: `${((y - 6) / h) * 100}%`,
-          width: `${((sw + 12) / w) * 100}%`,
-          height: `${((sh + 12) / h) * 100}%`,
+          left: `${(x / w) * 100}%`,
+          top: `${(y / h) * 100}%`,
+          width: `${(sw / w) * 100}%`,
+          height: `${(sh / h) * 100}%`,
+          borderRadius: radius,
         }}
       >
         <Screen
@@ -967,37 +963,41 @@ const SAFARI_ADDRESS = "space.whoavidwivedi.work"
 const GLASS =
   "border border-foreground/10 bg-foreground/[0.07] text-foreground shadow-sm backdrop-blur-xl"
 
-// Safari's compact bar: back, the address, and more.
+// Safari's compact bar: back, the address, and more, plus the iOS gesture bar.
 function SafariBottomBar() {
   return (
     <div
       aria-hidden="true"
-      className="flex h-[68px] shrink-0 items-center gap-2.5 bg-background px-4 pb-1.5"
+      className="flex flex-col items-center bg-background px-4 pt-1 pb-2"
     >
-      <span
-        className={cn(
-          "flex size-12 shrink-0 items-center justify-center rounded-full",
-          GLASS
-        )}
-      >
-        <ChevronLeft className="size-[22px]" />
-      </span>
-      <span
-        className={cn(
-          "flex h-12 min-w-0 flex-1 items-center justify-center rounded-full px-4 text-[15px] font-medium",
-          GLASS
-        )}
-      >
-        <span className="truncate">{SAFARI_ADDRESS}</span>
-      </span>
-      <span
-        className={cn(
-          "flex size-12 shrink-0 items-center justify-center rounded-full",
-          GLASS
-        )}
-      >
-        <Ellipsis className="size-[22px]" />
-      </span>
+      <div className="flex h-12 w-full shrink-0 items-center gap-2.5">
+        <span
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-full",
+            GLASS
+          )}
+        >
+          <ChevronLeft className="size-[22px]" />
+        </span>
+        <span
+          className={cn(
+            "flex h-12 min-w-0 flex-1 items-center justify-center rounded-full px-4 text-[15px] font-medium",
+            GLASS
+          )}
+        >
+          <span className="truncate">{SAFARI_ADDRESS}</span>
+        </span>
+        <span
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-full",
+            GLASS
+          )}
+        >
+          <Ellipsis className="size-[22px]" />
+        </span>
+      </div>
+      {/* iOS Gesture Bar / Home Indicator */}
+      <div className="mt-2 h-[5px] w-[138px] rounded-full bg-foreground/60 shadow-xs" />
     </div>
   )
 }
@@ -1057,7 +1057,7 @@ function PhoneScreen({
     )
   }
   return (
-    <div className="flex size-full flex-col bg-background">
+    <div className="relative flex size-full flex-col bg-background">
       <div aria-hidden="true" className="relative h-[54px] shrink-0">
         <span className="absolute top-[29px] left-[52px] -translate-y-1/2 text-[17px] leading-none font-semibold tracking-tight text-foreground">
           9:41
@@ -1066,6 +1066,13 @@ function PhoneScreen({
       </div>
       <div className="min-h-0 flex-1">
         <RoomPreview live={live} still={still} />
+      </div>
+      {/* iOS Gesture Bar / Home Indicator */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none relative flex h-7 shrink-0 items-center justify-center pb-2"
+      >
+        <div className="h-[5px] w-[138px] rounded-full bg-foreground/60 shadow-xs" />
       </div>
     </div>
   )
