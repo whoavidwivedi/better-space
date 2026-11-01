@@ -54,6 +54,7 @@ export function Lobby() {
   const [createUserName, setCreateUserName] = useState("")
   const [joinUserName, setJoinUserName] = useState("")
   const [activeUserName, setActiveUserName] = useState("")
+  const [, setRejoinTick] = useState(0)
 
   const [createAvatarSeed, setCreateAvatarSeed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -141,6 +142,36 @@ export function Lobby() {
       document.removeEventListener("visibilitychange", handleVisibility)
     }
   }, [])
+
+  // Rejoin countdown ticker: only runs every second while the host has an active disconnected room (< 60s)
+  useEffect(() => {
+    const hasActiveDisconnect = () => {
+      if (typeof window === "undefined" || !activeUserName) return false
+      return rooms.some((room) => {
+        if (room.host !== activeUserName) return false
+        const disconnectTimeStr = localStorage.getItem(
+          `space_host_disconnected_${room.name}`
+        )
+        if (!disconnectTimeStr) return false
+        const elapsed = Date.now() - parseInt(disconnectTimeStr, 10)
+        if (elapsed >= 60000) {
+          localStorage.removeItem(`space_host_disconnected_${room.name}`)
+          return false
+        }
+        return true
+      })
+    }
+
+    if (!hasActiveDisconnect()) return
+
+    const timer = setInterval(() => {
+      if (hasActiveDisconnect()) {
+        setRejoinTick((t) => t + 1)
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [rooms, activeUserName])
 
   const handleJoin = async (roomName: string) => {
     const uName = joinUserName.trim()
@@ -360,6 +391,10 @@ export function Lobby() {
                   const elapsed = Date.now() - parseInt(disconnectTimeStr, 10)
                   if (elapsed < 60000) {
                     timeLeft = Math.ceil((60000 - elapsed) / 1000)
+                  } else {
+                    localStorage.removeItem(
+                      `space_host_disconnected_${room.name}`
+                    )
                   }
                 }
                 return (
