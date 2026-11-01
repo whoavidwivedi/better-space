@@ -100,6 +100,15 @@ export async function GET(req: NextRequest) {
     if (targetRoom.metadata) {
       try {
         const meta = JSON.parse(targetRoom.metadata)
+        if (!meta.createdAt && targetRoom.creationTime) {
+          meta.createdAt = Number(targetRoom.creationTime) * 1000
+          try {
+            await roomService.updateRoomMetadata(
+              cleanRoom,
+              JSON.stringify(meta)
+            )
+          } catch {}
+        }
         if (meta.ended) {
           const endedData = {
             name: cleanRoom,
@@ -188,6 +197,7 @@ export async function GET(req: NextRequest) {
           hostSecretHash: hashHostSecret(activeHostSecret),
           banned: [],
           cohosts: [],
+          createdAt: Date.now(),
         }
         await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
       } catch {}
@@ -203,6 +213,7 @@ export async function GET(req: NextRequest) {
         hostSecretHash: hashHostSecret(activeHostSecret),
         banned: [],
         cohosts: [],
+        createdAt: Date.now(),
       }
       await roomService.createRoom({
         name: cleanRoom,
