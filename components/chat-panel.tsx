@@ -220,7 +220,7 @@ export function ChatPanel({
     <>
       <div
         className={cn(
-          "relative origin-bottom overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] sm:origin-bottom-right",
+          "relative origin-bottom overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-[width,height,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-[width,height] sm:origin-bottom-right",
           isCollapsed
             ? "h-[40px] w-[220px] sm:h-[280px] sm:w-[280px] md:h-[320px] md:w-[320px] xl:h-[380px] xl:w-[380px]"
             : "h-[260px] w-[260px] sm:h-[280px] sm:w-[280px] md:h-[320px] md:w-[320px] xl:h-[380px] xl:w-[380px]",
@@ -286,11 +286,6 @@ export function ChatPanel({
 
           <MessageScrollerProvider autoScroll defaultScrollPosition="end">
             <div className="relative flex-1 overflow-hidden">
-              {/* Progressive blur top */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 [mask-image:linear-gradient(to_bottom,black,transparent)] backdrop-blur-[2px]" />
-              {/* Progressive blur bottom */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 [mask-image:linear-gradient(to_top,black,transparent)] backdrop-blur-[2px]" />
-
               <MessageScroller className="size-full overflow-hidden">
                 <MessageScrollerViewport className="relative p-3 sm:p-4">
                   <MessageScrollerContent className="flex flex-col gap-4">

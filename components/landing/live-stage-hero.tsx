@@ -278,7 +278,12 @@ function RoomPreview({
   const reactionTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
-    if (still || matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    if (
+      still ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      matchMedia("(max-width: 768px)").matches
+    )
+      return
     const id = setInterval(
       () => setSpeaker((i) => (i + 1 + Math.floor(Math.random() * 2)) % 3),
       2400
@@ -499,7 +504,7 @@ function ChatPeek({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "relative mt-2 shrink-0 self-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] @[40rem]:mt-auto @[40rem]:h-[280px] @[40rem]:w-[280px] @[40rem]:self-end @[48rem]:h-[320px] @[48rem]:w-[320px] @[80rem]:h-[380px] @[80rem]:w-[380px]",
+        "relative mt-2 shrink-0 self-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-[width,height,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-[width,height] @[40rem]:mt-auto @[40rem]:h-[280px] @[40rem]:w-[280px] @[40rem]:self-end @[48rem]:h-[320px] @[48rem]:w-[320px] @[80rem]:h-[380px] @[80rem]:w-[380px]",
         open ? "h-[260px] w-[260px]" : "h-[40px] w-[220px]",
         className
       )}
@@ -820,6 +825,7 @@ function Bezel({
         aria-hidden="true"
         draggable={false}
         decoding="async"
+        loading="lazy"
         className="pointer-events-none absolute inset-0 size-full drop-shadow-2xl select-none"
       />
     </div>
@@ -838,6 +844,7 @@ function MacBook({ live }: { live: Live | null }) {
             aria-hidden="true"
             draggable={false}
             decoding="async"
+            loading="lazy"
             className="block size-full object-cover object-center"
           />
         </picture>

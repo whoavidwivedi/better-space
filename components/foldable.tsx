@@ -492,7 +492,7 @@ export function FoldableStage({
           <div className="pointer-events-none absolute inset-0">{under}</div>
         )}
         <motion.div
-          className="absolute inset-0 origin-left transform-3d"
+          className="absolute inset-0 origin-left transform-3d will-change-transform"
           style={{ rotateY, z: under ? 1 : 0 }}
         >
           {front || back ? (
@@ -756,6 +756,11 @@ function PrintCopy({
 }) {
   const { progress } = useFoldable()
   const step = PRINT_LEVELS[index]
+  const visibility = useTransform(progress, (p) => {
+    if (index === 0) return "visible"
+    const reach = getLevelReach(focus, p, step.level)
+    return reach === BEYOND ? "hidden" : "visible"
+  })
   const maskImage = useTransform(progress, (p) => {
     const reach = (i: number) => getLevelReach(focus, p, PRINT_LEVELS[i].level)
     if (index > 0 && reach(index) === BEYOND) return MASK_NONE
@@ -785,7 +790,7 @@ function PrintCopy({
         step.blur,
         step.mask
       )}
-      style={{ maskImage }}
+      style={{ maskImage, visibility }}
     >
       <div
         className={cn(
@@ -808,11 +813,14 @@ export function FoldableSlider({
 }) {
   const labelId = useId()
   const { progress } = useFoldable()
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Controlled, as the cover also moves by drag and spring. Only this
-  // re-renders as it turns.
-  const [value, setValue] = useState(0)
-  useMotionValueEvent(progress, "change", (p) => setValue(clamp01(p)))
+  // Avoid React state re-renders at 120fps by directly updating the input element
+  useMotionValueEvent(progress, "change", (p) => {
+    if (inputRef.current) {
+      inputRef.current.value = String(clamp01(p))
+    }
+  })
 
   return (
     <div className={cn("flex w-64 flex-col gap-3", className)}>
@@ -820,12 +828,13 @@ export function FoldableSlider({
         {label}
       </p>
       <input
+        ref={inputRef}
         type="range"
         aria-labelledby={labelId}
         min={0}
         max={1}
         step={0.001}
-        value={value}
+        defaultValue={0}
         onChange={(event) => {
           progress.stop()
           progress.set(Number(event.target.value))

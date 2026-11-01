@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Users } from "lucide-react"
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { STARTER_TEMPLATES } from "@/lib/presets"
@@ -96,6 +96,7 @@ function Crowd() {
               src={userpicUrl(seed)}
               alt=""
               loading="lazy"
+              decoding="async"
               className="size-full rounded-full border border-border bg-muted object-cover"
             />
           </button>
@@ -120,17 +121,36 @@ function Crowd() {
 function RoomStack() {
   const [top, setTop] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [inView, setInView] = useState(false)
+  const ref = useRef<HTMLButtonElement>(null)
   const n = ROOM_CARDS.length
   const half = Math.floor(n / 2)
 
   useEffect(() => {
-    if (paused || matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: "100px" }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (
+      !inView ||
+      paused ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return
     const id = setInterval(() => setTop((t) => (t + 1) % n), 2600)
     return () => clearInterval(id)
-  }, [n, paused])
+  }, [inView, n, paused])
 
   return (
     <button
+      ref={ref}
       type="button"
       aria-label="Show next room"
       onClick={() => setTop((t) => (t + 1) % n)}
@@ -147,17 +167,15 @@ function RoomStack() {
         const z = -depth * 16
         const rotateX = -offset * 10
         const scale = 1 - depth * 0.05
-        const brightness = 1 - depth * 0.1
-        const opacity = depth === 2 ? 0.75 : depth === 1 ? 0.92 : 1
+        const opacity = depth >= 2 ? 0.65 : depth === 1 ? 0.88 : 1
 
         return (
           <span
             key={t.name}
-            className="absolute inset-x-0 flex h-[134px] flex-col justify-between rounded-2xl border border-border bg-card p-3.5 text-left shadow-md transition-[transform,filter,opacity] duration-500 ease-(--ease-out) will-change-transform select-none motion-reduce:transition-none"
+            className="absolute inset-x-0 flex h-[134px] flex-col justify-between rounded-2xl border border-border bg-card p-3.5 text-left shadow-md transition-[transform,opacity] duration-500 ease-(--ease-out) will-change-transform select-none motion-reduce:transition-none"
             style={{
               transform: `translateY(${y}px) translateZ(${z}px) rotateX(${rotateX}deg)`,
               scale,
-              filter: `brightness(${brightness})`,
               opacity,
               zIndex: n - depth,
             }}
