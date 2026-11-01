@@ -17,6 +17,7 @@ import {
   Shuffle,
   UserCheck,
   Volume2,
+  Send,
 } from "lucide-react"
 import { DotGrid } from "@/components/landing/dot-grid"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -40,7 +41,6 @@ import {
   MessageGroup,
   MessageHeader,
 } from "@/components/ui/message"
-import { RiSendPlane2Fill } from "@remixicon/react"
 import {
   Select,
   SelectContent,
@@ -590,7 +590,7 @@ function ChatAndReactions() {
             disabled={!draft.trim()}
             className="size-10 shrink-0 rounded-xl shadow-none"
           >
-            <RiSendPlane2Fill className="size-4" />
+            <Send className="size-4" />
           </Button>
         </form>
       </div>

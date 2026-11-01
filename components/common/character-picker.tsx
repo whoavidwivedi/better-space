@@ -17,7 +17,6 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Bend } from "@/components/canvasui/Bend"
 import { cn } from "@/lib/utils"
 import {
   CHARACTER_COLLECTIONS,
@@ -162,20 +161,7 @@ export function CharacterPicker({
             </div>
 
             {/* Avatar Grid */}
-            <Bend
-              className="-mx-0.5 h-52 sm:h-60"
-              zone={240}
-              angle={80}
-              rounding={150}
-              perspective={700}
-              ease={240}
-              smoothing={0.1}
-              tumble={0.5}
-              tilt={0.5}
-              direction="in"
-              top
-              bottom
-            >
+            <div className="-mx-0.5 h-52 overflow-y-auto overscroll-contain pr-1 sm:h-60">
               <div className="grid grid-cols-4 gap-1.5 px-0.5 py-0.5 sm:grid-cols-5 sm:gap-2">
                 {filtered.map((name) => {
                   const isSelected = value === name
@@ -211,7 +197,7 @@ export function CharacterPicker({
                   )
                 })}
               </div>
-            </Bend>
+            </div>
           </div>
 
           {/* Selected Persona Footer */}
