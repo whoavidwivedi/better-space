@@ -492,7 +492,7 @@ export function FoldableStage({
           <div className="pointer-events-none absolute inset-0">{under}</div>
         )}
         <motion.div
-          className="absolute inset-0 origin-left transform-3d will-change-transform"
+          className="absolute inset-0 origin-left will-change-transform transform-3d"
           style={{ rotateY, z: under ? 1 : 0 }}
         >
           {front || back ? (
