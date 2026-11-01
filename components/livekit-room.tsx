@@ -44,10 +44,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { BetterSpaceMark } from "@/components/brand/better-space-mark"
 import { ModeToggle } from "@/components/common/mode-toggle"
-import {
-  SpaceDuration,
-  SpaceDurationPill,
-} from "@/components/ui/animated-counter"
+import { SpaceDurationPill } from "@/components/ui/animated-counter"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -982,13 +979,6 @@ function RoomUI({
                   />
                   Stage ({participants.length})
                 </h2>
-                <div className="flex items-center gap-1.5 font-mono text-[10px] font-semibold text-muted-foreground sm:text-xs">
-                  <span>Live for</span>
-                  <SpaceDuration
-                    createdAt={roomCreatedAt}
-                    className="font-bold text-foreground"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">

@@ -47,7 +47,6 @@ import {
   FoldableSlider,
   FoldableStage,
 } from "@/components/foldable"
-import { SpaceDurationPill } from "@/components/ui/animated-counter"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { getDisplayRoomTitle, ROOM_NAME_MAX, toSlug } from "@/lib/presets"
 import { userpicUrl } from "@/lib/userpics"
@@ -342,7 +341,6 @@ function RoomPreview({
             <span className="size-1.5 rounded-full bg-emerald-500" />
             <span className="hidden @[40rem]:inline">Connected</span>
           </span>
-          <SpaceDurationPill className="hidden @[30rem]:flex" />
         </div>
         <div className="flex shrink-0 items-center gap-1.5 @[40rem]:gap-2">
           <span className="hidden size-8 items-center justify-center rounded-xl border border-border text-muted-foreground @[40rem]:flex">

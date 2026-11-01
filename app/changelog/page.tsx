@@ -15,6 +15,18 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.7",
+    date: "2026-11-02",
+    label: "Streamlined live duration & clean landing metrics",
+    summary:
+      "Consolidated live duration exclusively into the sticky top room header with a solid indicator light, and simplified landing page stats to clean static figures.",
+    highlights: [
+      "Removed the redundant 'Live for' subheader from the active room stage, keeping duration cleanly anchored in the sticky header pill.",
+      "Replaced the pulsing red dot on the live duration pill with a solid, non-distracting status indicator.",
+      "Removed animated counters from the landing page, restoring crisp, instant static numbers to the network stats and hero preview.",
+    ],
+  },
+  {
     version: "v1.7.6",
     date: "2026-11-01",
     label: "iPhone frame corner clipping & iOS gesture bar",
