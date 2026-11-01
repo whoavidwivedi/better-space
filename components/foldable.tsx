@@ -122,6 +122,16 @@ const PRINT_LEVELS = [
     print: "inset-0",
     mask: "",
   },
+  {
+    level: 4,
+    blur: "blur-[calc(var(--foldable-w)*var(--foldable-texel)*16)]",
+    body: "bg-black",
+    bleed: "-inset-[calc(var(--foldable-w)*var(--foldable-texel)*32)]",
+    paper: "inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*40)]",
+    print:
+      "inset-x-[calc(var(--foldable-w)*var(--foldable-texel)*32)] -inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*8)]",
+    mask: "[mask-size:calc(100%_-_var(--foldable-w)*var(--foldable-texel)*64)_calc(100%_-_var(--foldable-w)*var(--foldable-texel)*64)]",
+  },
 ]
 
 /**
