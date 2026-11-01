@@ -19,7 +19,6 @@ import {
   Volume2,
   Send,
 } from "lucide-react"
-import { DotGrid } from "@/components/landing/dot-grid"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -925,7 +924,6 @@ export function ProductPillars() {
                 </p>
               </div>
               <div className="relative flex min-h-60 flex-1 items-center justify-center overflow-hidden p-6 sm:p-8">
-                <DotGrid />
                 <div className="relative flex w-full justify-center">
                   {f.visual}
                 </div>
