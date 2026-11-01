@@ -15,6 +15,20 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.4",
+    date: "2026-11-01",
+    label: "SSR-first device previews & buttery 120fps motion",
+    summary:
+      "Eliminated animation and device preview jitter across Mobile, Mac, and Duo: instant SSR device rendering, zero-re-render compositor scaling, and optimized Duo 3D fold physics.",
+    highlights: [
+      "Eliminated SSR blank flash and layout shift in device screens by providing pre-calculated SSR default scales and updating transforms directly on the DOM during resize without React re-renders.",
+      "Optimized iPhone Duo folding physics by pruning redundant multi-pass blurs to a single balanced pass, reducing DOM node overhead by 50% for buttery 60/120fps dragging.",
+      "Added a dedicated, responsive mobile iPhone 18 Pro live preview showcasing Better Space in iOS Safari on handheld screens.",
+      "Paused background speaker-switching intervals when preview devices scroll out of view via IntersectionObserver.",
+      "Accelerated floating reactions and 3D room deck transforms on the GPU with translate3d compositor matrices.",
+    ],
+  },
+  {
     version: "v1.7.3",
     date: "2026-11-01",
     label: "Mobile performance & fluid 60/120fps motion",
