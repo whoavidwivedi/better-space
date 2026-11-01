@@ -16,7 +16,6 @@ export function Navbar() {
   const [avatar, setAvatar] = useState("OSLO-1")
 
   useEffect(() => {
-    setAvatar(randomUserpic())
     if (
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
       window.matchMedia("(max-width: 640px)").matches

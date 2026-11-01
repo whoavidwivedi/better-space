@@ -123,16 +123,6 @@ const PRINT_LEVELS = [
     mask: "",
   },
   {
-    level: 2,
-    blur: "blur-[calc(var(--foldable-w)*var(--foldable-texel)*4)]",
-    body: "bg-black",
-    bleed: "-inset-[calc(var(--foldable-w)*var(--foldable-texel)*8)]",
-    paper: "inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*10)]",
-    print:
-      "inset-x-[calc(var(--foldable-w)*var(--foldable-texel)*8)] -inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*2)]",
-    mask: "[mask-size:calc(100%_-_var(--foldable-w)*var(--foldable-texel)*16)_calc(100%_-_var(--foldable-w)*var(--foldable-texel)*16)]",
-  },
-  {
     level: 4,
     blur: "blur-[calc(var(--foldable-w)*var(--foldable-texel)*16)]",
     body: "bg-black",
@@ -141,16 +131,6 @@ const PRINT_LEVELS = [
     print:
       "inset-x-[calc(var(--foldable-w)*var(--foldable-texel)*32)] -inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*8)]",
     mask: "[mask-size:calc(100%_-_var(--foldable-w)*var(--foldable-texel)*64)_calc(100%_-_var(--foldable-w)*var(--foldable-texel)*64)]",
-  },
-  {
-    level: 6,
-    blur: "blur-[calc(var(--foldable-w)*var(--foldable-texel)*64)]",
-    body: "bg-black",
-    bleed: "-inset-[calc(var(--foldable-w)*var(--foldable-texel)*128)]",
-    paper: "inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*160)]",
-    print:
-      "inset-x-[calc(var(--foldable-w)*var(--foldable-texel)*128)] -inset-y-[calc(var(--foldable-w)*var(--foldable-texel)*32)]",
-    mask: "[mask-size:calc(100%_-_var(--foldable-w)*var(--foldable-texel)*256)_calc(100%_-_var(--foldable-w)*var(--foldable-texel)*256)]",
   },
 ]
 
