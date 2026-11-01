@@ -459,7 +459,7 @@ export function SpaceDurationPill({
         className
       )}
     >
-      <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-red-500" />
+      <span className="size-1.5 shrink-0 rounded-full bg-red-500" />
       {label && (
         <span className="text-muted-foreground uppercase">{label}</span>
       )}

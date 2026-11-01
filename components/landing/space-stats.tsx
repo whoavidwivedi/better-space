@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Users } from "lucide-react"
 import { AudioVisualizer } from "@/components/audio-visualizer"
-import { AnimatedCounter } from "@/components/ui/animated-counter"
 import { STARTER_TEMPLATES } from "@/lib/presets"
 import { USERPIC_NAMES, userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
@@ -12,11 +11,11 @@ import { cn } from "@/lib/utils"
 const PEOPLE = 266
 const ROOMS = 157
 const MINUTES = 5118
-const SUCCESS = 99.8
+const SUCCESS = "99.8%"
 const COUNTRY = { name: "India", sessions: 443 }
 const TRANSPORT = [
-  { label: "UDP", value: 99.1 },
-  { label: "TCP", value: 0.9 },
+  { label: "UDP", value: "99.1%" },
+  { label: "TCP", value: "0.9%" },
 ]
 const PLATFORMS = [
   { label: "macOS", value: 70.1 },
@@ -52,7 +51,7 @@ function Cell({
   className,
   children,
 }: {
-  stat: React.ReactNode
+  stat: string
   label: React.ReactNode
   className?: string
   children: React.ReactNode
@@ -229,7 +228,7 @@ function OnAir() {
 }
 
 // The room header's connection pill, plus how the audio got there.
-function Connection({ inView = true }: { inView?: boolean }) {
+function Connection() {
   return (
     <div className="flex flex-col items-center gap-3">
       <span className="flex items-center gap-2 rounded-full border border-border/70 bg-card px-3.5 py-2 font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase shadow-xs">
@@ -243,12 +242,7 @@ function Connection({ inView = true }: { inView?: boolean }) {
             className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground tabular-nums"
           >
             <span className="font-medium text-foreground">{t.label}</span>{" "}
-            <AnimatedCounter
-              value={inView ? t.value : 0}
-              decimals={1}
-              duration={1}
-            />
-            %
+            {t.value}
           </span>
         ))}
       </div>
@@ -257,7 +251,7 @@ function Connection({ inView = true }: { inView?: boolean }) {
 }
 
 // Devices as pills filled to their share.
-function Platforms({ inView = true }: { inView?: boolean }) {
+function Platforms() {
   return (
     <ul className="flex w-full max-w-64 flex-col gap-2">
       {PLATFORMS.map((p) => (
@@ -267,18 +261,13 @@ function Platforms({ inView = true }: { inView?: boolean }) {
         >
           <span
             aria-hidden="true"
-            className="absolute inset-y-0 left-0 bg-muted transition-all duration-1000 ease-out"
-            style={{ width: inView ? `${p.value}%` : "0%" }}
+            className="absolute inset-y-0 left-0 bg-muted"
+            style={{ width: `${p.value}%` }}
           />
           <span className="relative flex justify-between gap-2">
             <span className="font-medium text-foreground">{p.label}</span>
             <span className="text-muted-foreground tabular-nums">
-              <AnimatedCounter
-                value={inView ? p.value : 0}
-                decimals={p.value % 1 !== 0 ? 1 : 0}
-                duration={1}
-              />
-              %
+              {p.value}%
             </span>
           </span>
         </li>
@@ -288,30 +277,8 @@ function Platforms({ inView = true }: { inView?: boolean }) {
 }
 
 export function SpaceStats() {
-  const [inView, setInView] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: "50px", threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
   return (
-    <section
-      ref={sectionRef}
-      className="relative w-full border-b border-border/80 bg-background py-16 sm:py-24"
-    >
+    <section className="relative w-full border-b border-border/80 bg-background py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-14">
           <span className="font-mono text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -327,12 +294,7 @@ export function SpaceStats() {
 
         <div className="grid grid-cols-1 gap-px overflow-hidden rounded-3xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-6">
           <Cell
-            stat={
-              <span className="inline-flex items-center gap-1.5">
-                <AnimatedCounter value={inView ? PEOPLE : 0} duration={1.2} />
-                <span>people</span>
-              </span>
-            }
+            stat={`${PEOPLE} people`}
             label={
               <>
                 <Users
@@ -340,11 +302,7 @@ export function SpaceStats() {
                   aria-hidden="true"
                 />
                 joined a room, most of them from {COUNTRY.name} (
-                <AnimatedCounter
-                  value={inView ? COUNTRY.sessions : 0}
-                  duration={1.2}
-                />{" "}
-                sessions).
+                {COUNTRY.sessions} sessions).
               </>
             }
             className="sm:col-span-2 lg:col-span-4"
@@ -352,64 +310,32 @@ export function SpaceStats() {
             <Crowd />
           </Cell>
           <Cell
-            stat={
-              <span className="inline-flex items-center gap-1.5">
-                <AnimatedCounter value={inView ? ROOMS : 0} duration={1.2} />
-                <span>rooms</span>
-              </span>
-            }
+            stat={`${ROOMS} rooms`}
             label="opened, about 1.7 people in each."
             className="sm:col-span-2 lg:col-span-2"
           >
             <RoomStack />
           </Cell>
           <Cell
-            stat={
-              <span className="inline-flex items-center gap-1.5">
-                <AnimatedCounter
-                  value={inView ? MINUTES : 0}
-                  separator=","
-                  duration={1.4}
-                />
-                <span>minutes</span>
-              </span>
-            }
-            label={
-              <>
-                on the mic.{" "}
-                <AnimatedCounter
-                  value={inView ? Math.round(MINUTES / 60) : 0}
-                  duration={1.2}
-                />{" "}
-                hours of people talking.
-              </>
-            }
+            stat={`${MINUTES.toLocaleString("en-US")} minutes`}
+            label={`on the mic. ${Math.round(MINUTES / 60)} hours of people talking.`}
             className="lg:col-span-2"
           >
             <OnAir />
           </Cell>
           <Cell
-            stat={
-              <span className="inline-flex items-center">
-                <AnimatedCounter
-                  value={inView ? SUCCESS : 0}
-                  decimals={1}
-                  duration={1.2}
-                />
-                <span>%</span>
-              </span>
-            }
+            stat={SUCCESS}
             label="of connections worked first time."
             className="lg:col-span-2"
           >
-            <Connection inView={inView} />
+            <Connection />
           </Cell>
           <Cell
             stat="Any device"
             label="Mostly Macs, then phones."
             className="sm:col-span-2 lg:col-span-2"
           >
-            <Platforms inView={inView} />
+            <Platforms />
           </Cell>
         </div>
       </div>
