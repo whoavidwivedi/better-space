@@ -15,6 +15,19 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.5",
+    date: "2026-11-01",
+    label: "Live space duration & mechanical animated counters",
+    summary:
+      "Active spaces now track and display their live duration in real time with tactile rolling mechanical counters, and the landing page numbers come alive with physics-driven animated counters.",
+    highlights: [
+      "Added live space duration counters to the active space header and stage overview, rolling elapsed time live using spring-animated split-flap wheel mechanics.",
+      "Synchronized space duration tracking in room metadata backed by LiveKit room creation timestamps with automatic backfilling.",
+      "Brought the landing page hero live stage to life with real-time live duration counter previews across Mac, Duo, and mobile frames.",
+      "Transformed the landing page 'The network, in numbers' section with animated counters that smoothly roll into view as visitors scroll into the section.",
+    ],
+  },
+  {
     version: "v1.7.4",
     date: "2026-11-01",
     label: "SSR-first device previews & buttery 120fps motion",
