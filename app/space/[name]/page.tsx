@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation"
 
+// TODO: Cache Components adoption. This route performs request-time param redirect.
+export const instant = false
+
 // A room's link (shared from inside a room, or older links) opens the lobby,
 // which shows that room's Join panel if it is live, or Launch filled in with
 // its name if not.

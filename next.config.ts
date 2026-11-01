@@ -1,6 +1,7 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   allowedDevOrigins: ["192.168.29.119"],
   output: process.env.BUILD_MODE === "export" ? "export" : undefined,
   async headers() {

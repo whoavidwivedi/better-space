@@ -18,7 +18,7 @@ const CAST = [
 ]
 
 const dataUrl = async (path: string, type: string) =>
-  `data:${type};base64,${(await readFile(join(process.cwd(), path))).toString("base64")}`
+  `data:${type};base64,${(await readFile(join(/*turbopackIgnore: true*/ process.cwd(), path))).toString("base64")}`
 
 const userpic = (name: string) =>
   dataUrl(`public/Userpics/PNG/Circle/${name}.png`, "image/png")
