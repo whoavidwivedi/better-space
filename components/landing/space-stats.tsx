@@ -174,8 +174,7 @@ function RoomStack() {
             key={t.name}
             className="absolute inset-x-0 flex h-[134px] flex-col justify-between rounded-2xl border border-border bg-card p-3.5 text-left shadow-md transition-[transform,opacity] duration-500 ease-(--ease-out) will-change-transform select-none motion-reduce:transition-none"
             style={{
-              transform: `translateY(${y}px) translateZ(${z}px) rotateX(${rotateX}deg)`,
-              scale,
+              transform: `translate3d(0, ${y}px, ${z}px) rotateX(${rotateX}deg) scale(${scale})`,
               opacity,
               zIndex: n - depth,
             }}

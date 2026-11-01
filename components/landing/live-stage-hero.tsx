@@ -270,18 +270,31 @@ function RoomPreview({
   still?: boolean
   rail?: number
 }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
   const [speaker, setSpeaker] = useState(0)
   const [muted, setMuted] = useState(true)
   const [deafened, setDeafened] = useState(false)
   const [reaction, setReaction] = useState<string | null>(null)
   const [ended, setEnded] = useState(false)
+  const [inView, setInView] = useState(true)
   const reactionTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof IntersectionObserver === "undefined") return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: "100px" }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (
       still ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      matchMedia("(max-width: 768px)").matches
+      !inView ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return
     const id = setInterval(
@@ -289,7 +302,7 @@ function RoomPreview({
       2400
     )
     return () => clearInterval(id)
-  }, [still])
+  }, [still, inView])
 
   const react = () => {
     setReaction(REACTIONS[Math.floor(Math.random() * REACTIONS.length)])
@@ -305,6 +318,7 @@ function RoomPreview({
 
   return (
     <div
+      ref={containerRef}
       className="@container relative flex size-full flex-col overflow-hidden bg-background text-left text-foreground"
       style={{ "--rail": `${rail}px` } as React.CSSProperties}
     >
@@ -718,22 +732,29 @@ function Tile({
 function Screen({
   width,
   height,
+  defaultScale = 0.5,
   children,
 }: {
   width: number
   height: number
+  defaultScale?: number
   children: React.ReactNode
 }) {
   const ref = React.useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(0)
+  const innerRef = React.useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = ref.current
-    if (!el) return
+    const inner = innerRef.current
+    if (!el || !inner) return
+
     const updateScale = () => {
       const rect = el.getBoundingClientRect()
-      setScale(Math.max(rect.width / width, rect.height / height))
+      if (rect.width === 0 || rect.height === 0) return
+      const scale = Math.max(rect.width / width, rect.height / height)
+      inner.style.transform = `scale(${scale})`
     }
+
     updateScale()
     const ro = new ResizeObserver(updateScale)
     ro.observe(el)
@@ -743,12 +764,12 @@ function Screen({
   return (
     <div ref={ref} className="relative size-full overflow-hidden bg-[#0c0a09]">
       <div
-        className="absolute top-0 left-0 origin-top-left"
+        ref={innerRef}
+        className="absolute top-0 left-0 origin-top-left will-change-transform"
         style={{
           width: width + 2,
           height: height + 2,
-          transform: `scale(${scale})`,
-          visibility: scale ? "visible" : "hidden",
+          transform: `scale(${defaultScale})`,
         }}
       >
         {children}
@@ -785,9 +806,11 @@ const IPHONE_18_PRO: BezelArt = {
 
 function Bezel({
   art,
+  defaultScale,
   children,
 }: {
   art: BezelArt
+  defaultScale?: number
   children: React.ReactNode
 }) {
   const [w, h] = art.size
@@ -814,7 +837,11 @@ function Bezel({
           height: `${((sh + 12) / h) * 100}%`,
         }}
       >
-        <Screen width={art.points[0]} height={art.points[1]}>
+        <Screen
+          width={art.points[0]}
+          height={art.points[1]}
+          defaultScale={defaultScale}
+        >
           {children}
         </Screen>
       </div>
@@ -834,7 +861,7 @@ function Bezel({
 
 function MacBook({ live }: { live: Live | null }) {
   return (
-    <Bezel art={MACBOOK_PRO}>
+    <Bezel art={MACBOOK_PRO} defaultScale={0.46}>
       <div className="relative flex size-full flex-col overflow-hidden bg-[#0c0a09] select-none">
         <picture className="pointer-events-none absolute -inset-[4px] block select-none">
           <source srcSet="/wallpapers/golden-dark.webp" type="image/webp" />
@@ -1113,7 +1140,11 @@ function DuoCoverScreen({ live }: { live: Live | null }) {
       className="absolute overflow-hidden"
       style={{ ...onPage(s.x, s.y, s.w, s.h), borderRadius: DUO_COVER_RADIUS }}
     >
-      <Screen width={DUO_COVER_POINTS[0]} height={DUO_COVER_POINTS[1]}>
+      <Screen
+        width={DUO_COVER_POINTS[0]}
+        height={DUO_COVER_POINTS[1]}
+        defaultScale={0.35}
+      >
         <PhoneScreen live={live} still duo="cover" />
         {/* The camera, from the closed bezel: drawn over the screen, which
             lies over the frame. Centre (411, 48), 36 across, in points. */}
@@ -1142,7 +1173,11 @@ function DuoInnerScreen({
       className="absolute overflow-hidden"
       style={{ ...onPage(x, s.y, s.w, s.h), borderRadius: DUO_INNER_RADIUS }}
     >
-      <Screen width={DUO_INNER_POINTS[0]} height={DUO_INNER_POINTS[1]}>
+      <Screen
+        width={DUO_INNER_POINTS[0]}
+        height={DUO_INNER_POINTS[1]}
+        defaultScale={0.35}
+      >
         <PhoneScreen live={live} split still duo="inner" />
       </Screen>
     </div>
@@ -1285,20 +1320,29 @@ function DuoSection({ live }: { live: Live | null }) {
 
 // The same room on a MacBook Pro and an iPhone 18 Pro at true relative scale
 // (the iPhone is 22.9% of the Mac's width), then the iPhone Duo's section.
-// Phones skip the Mac, which would be too small to read.
+// Mobile screens center the iPhone 18 Pro; desktop shows both Mac and iPhone.
 function Devices({ live }: { live: Live | null }) {
   return (
     <div className="@container mx-auto mt-14 max-w-5xl sm:mt-20">
+      {/* Desktop & Tablet: MacBook Pro with overlapping iPhone 18 Pro */}
       <div className="relative hidden md:block">
         <div className="w-[88%]">
           <MacBook live={live} />
         </div>
         <div className="absolute right-0 -bottom-4 z-20 w-[20.2%]">
-          <Bezel art={IPHONE_18_PRO}>
+          <Bezel art={IPHONE_18_PRO} defaultScale={0.48}>
             <PhoneScreen live={live} />
           </Bezel>
         </div>
       </div>
+
+      {/* Mobile: Centered iPhone 18 Pro live preview */}
+      <div className="mx-auto w-full max-w-[17rem] md:hidden">
+        <Bezel art={IPHONE_18_PRO} defaultScale={0.65}>
+          <PhoneScreen live={live} />
+        </Bezel>
+      </div>
+
       <DuoSection live={live} />
     </div>
   )
