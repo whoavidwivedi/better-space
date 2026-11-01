@@ -18,8 +18,8 @@ import {
   Users,
   VolumeX,
   X,
+  Send,
 } from "lucide-react"
-import { RiSendPlane2Fill } from "@remixicon/react"
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -637,7 +637,7 @@ function ChatPeek({ className }: { className?: string }) {
             disabled={!draft.trim()}
             className="size-10 shrink-0 rounded-xl shadow-none"
           >
-            <RiSendPlane2Fill className="size-4" />
+            <Send className="size-4" />
           </Button>
         </form>
       </div>

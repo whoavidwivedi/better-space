@@ -28,8 +28,7 @@ import {
 } from "@/components/ui/message-scroller"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { MessageSquare } from "lucide-react"
-import { RiSendPlane2Fill, RiCloseLine } from "@remixicon/react"
+import { MessageSquare, Send, X } from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
 
@@ -281,7 +280,7 @@ export function ChatPanel({
             onClick={() => setIsCollapsed(true)}
             className="absolute top-2 right-2 z-30 flex size-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground sm:hidden"
           >
-            <RiCloseLine className="size-4" />
+            <X className="size-4" />
           </button>
 
           <MessageScrollerProvider autoScroll defaultScrollPosition="end">
@@ -472,7 +471,7 @@ export function ChatPanel({
               disabled={!inputValue.trim() || isSending}
               className="size-10 shrink-0 rounded-xl shadow-none"
             >
-              <RiSendPlane2Fill className="size-4" />
+              <Send className="size-4" />
             </Button>
           </form>
         </div>
