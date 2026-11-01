@@ -16,17 +16,17 @@ export function Navbar() {
   const [avatar, setAvatar] = useState("OSLO-1")
 
   useEffect(() => {
-    if (
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      window.matchMedia("(max-width: 640px)").matches
-    )
-      return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
-        setAvatar(randomUserpic())
+        setAvatar((current) => {
+          let next = randomUserpic()
+          if (next === current) next = randomUserpic()
+          return next
+        })
       }
-    }, 8000)
+    }, 3000)
 
     return () => clearInterval(interval)
   }, [])

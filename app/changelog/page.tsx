@@ -15,6 +15,18 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.8",
+    date: "2026-11-02",
+    label: "Snappier navbar brand character rotation",
+    summary:
+      "Tuned the dynamic character avatar cycler beside the Better Space brand wordmark to a faster, livelier 3-second interval across all screen sizes.",
+    highlights: [
+      "Reduced the character logo cycling interval from 8 seconds to a snappy, responsive 3 seconds.",
+      "Guaranteed that each cycle rotates to a distinct character without back-to-back duplicate rolls.",
+      "Enabled dynamic character cycling across mobile and desktop devices while honoring reduced-motion preferences.",
+    ],
+  },
+  {
     version: "v1.7.7",
     date: "2026-11-02",
     label: "Streamlined live duration & clean landing metrics",
