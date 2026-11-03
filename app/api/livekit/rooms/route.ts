@@ -15,10 +15,10 @@ function getRoomService() {
   return new RoomServiceClient(wsUrl, apiKey, apiSecret)
 }
 
-export async function GET(req?: NextRequest) {
-  const url = req?.nextUrl
+export async function GET(req: NextRequest) {
   const checkName =
-    url?.searchParams.get("space") || url?.searchParams.get("room")
+    req.nextUrl.searchParams.get("space") ||
+    req.nextUrl.searchParams.get("room")
   if (checkName) {
     const cleanRoom = checkName.toLowerCase().trim()
     if (isSpaceEnded(cleanRoom)) {
