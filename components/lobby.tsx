@@ -41,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { SpaceEndedScreen } from "@/components/space-ended-screen"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import { userpicUrl, randomUserpic } from "@/lib/userpics"
@@ -93,6 +94,12 @@ export function Lobby() {
   const [isJoinOpen, setIsJoinOpen] = useState(false)
   const [newSpaceName, setNewSpaceName] = useState("")
   const [selectedRoom, setSelectedRoom] = useState("")
+  const [endedModalSpace, setEndedModalSpace] = useState<{
+    name: string
+    host?: string
+    speakers?: Array<{ identity: string; avatar?: string }>
+  } | null>(null)
+  const [isCheckingSpace, setIsCheckingSpace] = useState(false)
 
   // Every way into Launch space comes through here, with the room name to
   // start from: a template's, one brought from elsewhere, or blank from the
@@ -204,6 +211,19 @@ export function Lobby() {
       })
       const res = await fetch(`${apiUrl}/api/livekit/token?${query.toString()}`)
       const data = await res.json()
+      if (res.status === 410 || data.ended) {
+        setIsJoinOpen(false)
+        setEndedModalSpace({
+          name: roomName,
+          host: data.space?.host,
+          speakers: data.space?.speakers,
+        })
+        toast.add({
+          title: "This space has ended.",
+          type: "error",
+        })
+        return
+      }
       if (data.data?.token) {
         setActiveUserName(uName)
         setToken(data.data.token)
@@ -247,6 +267,18 @@ export function Lobby() {
         }),
       })
       const data = await res.json()
+
+      if (res.status === 410 || data.ended) {
+        setIsCreateOpen(false)
+        setEndedModalSpace({
+          name: rName,
+        })
+        toast.add({
+          title: "This space has ended and cannot be reopened.",
+          type: "error",
+        })
+        return
+      }
 
       if (res.ok && data.data?.token) {
         setActiveUserName(uName)
@@ -296,7 +328,28 @@ export function Lobby() {
     const space = params.get("space")
     if (!space) return
     if (rooms.some((r) => r.name === space)) return onRoomClick(space)
-    openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
+
+    // Check if space has ended before opening launch
+    setIsCheckingSpace(true)
+    fetch(`/api/livekit/rooms?space=${encodeURIComponent(space)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ended) {
+          setEndedModalSpace({
+            name: space,
+            host: data.data?.space?.host,
+            speakers: data.data?.space?.speakers,
+          })
+        } else {
+          openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
+        }
+      })
+      .catch(() => {
+        openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
+      })
+      .finally(() => {
+        setIsCheckingSpace(false)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once rooms load
   }, [isLoading])
 
@@ -333,14 +386,20 @@ export function Lobby() {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
-              <span className="relative flex size-1.5" aria-hidden="true">
-                <span
-                  className={cn(
-                    "relative size-1.5 rounded-full",
-                    liveCount > 0 ? "bg-emerald-500" : "bg-muted-foreground/50"
-                  )}
-                />
-              </span>
+              {isLoading ? (
+                <Spinner className="size-3 text-muted-foreground" />
+              ) : (
+                <span className="relative flex size-1.5" aria-hidden="true">
+                  <span
+                    className={cn(
+                      "relative size-1.5 rounded-full",
+                      liveCount > 0
+                        ? "bg-emerald-500"
+                        : "bg-muted-foreground/50"
+                    )}
+                  />
+                </span>
+              )}
               {isLoading
                 ? "Checking who's live…"
                 : liveCount === 0
@@ -383,10 +442,16 @@ export function Lobby() {
         {/* Live rooms */}
         <section aria-label="Live rooms" className="mt-8">
           {isLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }, (_, i) => (
-                <RoomCardSkeleton key={i} />
-              ))}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Spinner className="size-3.5" />
+                <span>Discovering active spaces…</span>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <RoomCardSkeleton key={i} />
+                ))}
+              </div>
             </div>
           ) : filteredRooms.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -595,8 +660,17 @@ export function Lobby() {
                   rooms.some((r) => r.host === createUserName.trim())
                 }
               >
-                {isJoining ? <Spinner /> : <RiMicLine />}
-                Go live
+                {isJoining ? (
+                  <>
+                    <Spinner data-icon="inline-start" />
+                    <span>Launching space…</span>
+                  </>
+                ) : (
+                  <>
+                    <RiMicLine data-icon="inline-start" />
+                    <span>Go live</span>
+                  </>
+                )}
               </Button>
               {createUserName.trim() &&
               rooms.some((r) => r.host === createUserName.trim()) ? (
@@ -662,13 +736,61 @@ export function Lobby() {
               className="h-11 w-full rounded-[10px] text-[15px]"
               disabled={!joinUserName.trim() || isJoining}
             >
-              {isJoining ? <Spinner /> : null}
-              {joinRoom?.host === joinUserName.trim()
-                ? "Go live"
-                : "Join space"}
+              {isJoining ? (
+                <>
+                  <Spinner data-icon="inline-start" />
+                  <span>Connecting to space…</span>
+                </>
+              ) : (
+                <span>
+                  {joinRoom?.host === joinUserName.trim()
+                    ? "Go live"
+                    : "Join space"}
+                </span>
+              )}
             </Button>
           </form>
         </SpacePanel>
+      </Dialog>
+
+      {/* Checking space link dialog */}
+      <Dialog open={isCheckingSpace}>
+        <DialogContent
+          className="max-w-xs p-6 text-center sm:max-w-xs"
+          showClose={false}
+        >
+          <div className="flex flex-col items-center justify-center gap-3 py-4">
+            <Spinner className="size-6 text-foreground" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                Checking space...
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Verifying space status
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ended Space Dialog */}
+      <Dialog
+        open={Boolean(endedModalSpace)}
+        onOpenChange={(open) => {
+          if (!open) setEndedModalSpace(null)
+        }}
+      >
+        <DialogContent className="max-w-md p-6 sm:max-w-md" showClose={true}>
+          {endedModalSpace && (
+            <SpaceEndedScreen
+              roomName={endedModalSpace.name}
+              host={endedModalSpace.host}
+              speakers={endedModalSpace.speakers}
+              isModal
+              onReturn={() => setEndedModalSpace(null)}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </div>
   )

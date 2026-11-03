@@ -15,6 +15,20 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.9",
+    date: "2026-11-03",
+    label: "Voice space lifecycles, informative loading states & wheel deck",
+    summary:
+      "Added complete lifecycle handling for ended voice spaces, rich loading and transition feedback across all stages, and a fluid touch/wheel 3D room deck.",
+    highlights: [
+      "Standardized loading and connection states with a lightweight Lucide Spinner and clear status copy ('Entering space…', 'Checking who\\'s live…', 'Discovering active spaces…', 'Ending space…').",
+      "Full space termination flow: immediate WebRTC data broadcast on room closure, durable space-ended tombstones, and dedicated SpaceEndedScreen blocking any rejoining or room recreation.",
+      "Instant ended-space verification when opening shared links (/space/<room> or /lobby?space=<room>) to clearly inform users without leaving them stranded.",
+      "Rebuilt the 157 rooms landing section into a fluid, physical 3D wheel deck using Framer Motion with momentum wheel scrolling, touch swipe gestures, and solid cards.",
+      "Added the 'Learn more hover' micro-interaction from transitions.dev to the hero live indicator badge.",
+    ],
+  },
+  {
     version: "v1.7.8",
     date: "2026-11-02",
     label: "Snappier navbar brand character rotation",
