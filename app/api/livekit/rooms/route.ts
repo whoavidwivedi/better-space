@@ -1,6 +1,6 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
-import { isSpaceEnded } from "@/lib/ended-spaces"
+import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import { hashHostSecret, roleCookieName } from "@/lib/space-auth"
 
@@ -15,7 +15,60 @@ function getRoomService() {
   return new RoomServiceClient(wsUrl, apiKey, apiSecret)
 }
 
-export async function GET() {
+export async function GET(req?: NextRequest) {
+  const url = req?.nextUrl
+  const checkName =
+    url?.searchParams.get("space") || url?.searchParams.get("room")
+  if (checkName) {
+    const cleanRoom = checkName.toLowerCase().trim()
+    if (isSpaceEnded(cleanRoom)) {
+      const ended = getEndedSpace(cleanRoom)
+      return NextResponse.json({
+        ended: true,
+        data: { ended: true, space: ended },
+      })
+    }
+    try {
+      const roomService = getRoomService()
+      const liveRooms = await roomService.listRooms([cleanRoom])
+      const r = liveRooms.find((rm) => rm.name.toLowerCase() === cleanRoom)
+      if (r?.metadata) {
+        try {
+          const meta = JSON.parse(r.metadata)
+          if (meta.ended) {
+            return NextResponse.json({
+              ended: true,
+              data: {
+                ended: true,
+                space: {
+                  name: cleanRoom,
+                  host: meta.host || "Unknown",
+                  endedAt: meta.endedAt ?? Date.now(),
+                  cohosts: meta.cohosts || [],
+                  speakers: (meta.speakers || []).map((s: string) => ({
+                    identity: s,
+                  })),
+                },
+              },
+            })
+          }
+        } catch {}
+      }
+      if (r) {
+        return NextResponse.json({
+          ended: false,
+          live: true,
+          data: { ended: false, live: true },
+        })
+      }
+    } catch {}
+    return NextResponse.json({
+      ended: false,
+      live: false,
+      data: { ended: false, live: false },
+    })
+  }
+
   let roomService: RoomServiceClient
   try {
     roomService = getRoomService()

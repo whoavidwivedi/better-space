@@ -199,7 +199,7 @@ function HeroBadge({ live }: { live: Live | null }) {
       href={live ? "/lobby" : "/changelog"}
       className={cn(
         PILL,
-        "group transition-[border-color,box-shadow] duration-(--duration-quick) ease-(--ease-out) hover:border-foreground/25 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        "t-learn group transition-[border-color,box-shadow] duration-(--duration-quick) ease-(--ease-out) hover:border-foreground/25 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       )}
     >
       <PillTag>
@@ -215,11 +215,35 @@ function HeroBadge({ live }: { live: Live | null }) {
           ? `${live.people} ${live.people === 1 ? "person" : "people"} talking in ${live.rooms} ${live.rooms === 1 ? "room" : "rooms"}`
           : "Live chat in every room"}
       </span>
-      <RiArrowRightLine
-        size={14}
+      <span
+        className="t-learn-chevron shrink-0 text-muted-foreground transition-colors duration-(--duration-quick) ease-(--ease-out) group-hover:text-foreground"
         aria-hidden="true"
-        className="shrink-0 text-muted-foreground transition-[translate,color] duration-(--duration-quick) ease-(--ease-out) group-hover:translate-x-0.5 group-hover:text-foreground"
-      />
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="size-3.5"
+        >
+          <path
+            className="t-learn-arm t-learn-arm-top"
+            d="M6 4L10 8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            className="t-learn-arm t-learn-arm-bot"
+            d="M10 8L6 12"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
     </Link>
   )
 }

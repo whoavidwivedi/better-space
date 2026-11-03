@@ -2,6 +2,16 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Users } from "lucide-react"
+import {
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion"
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { STARTER_TEMPLATES } from "@/lib/presets"
 import { USERPIC_NAMES, userpicUrl } from "@/lib/userpics"
@@ -27,19 +37,57 @@ const PLATFORMS = [
 // A spread of the characters people actually joined as.
 const CROWD = USERPIC_NAMES.filter((_, i) => i % 2 === 0).slice(0, 40)
 
-// The stack: the lobby's starter rooms and a couple more, so the deck has
-// cards above and below the one in front.
-const ROOM_CARDS = [
-  ...STARTER_TEMPLATES,
+type RoomCardData = {
+  name: string
+  title: string
+  topic?: string
+  speakers: string[]
+  listeners?: number
+}
+
+// The stack: starter rooms + active community rooms representing real spaces.
+const ROOM_CARDS: RoomCardData[] = [
+  ...STARTER_TEMPLATES.map((t, idx) => ({
+    name: t.name,
+    title: t.title,
+    topic: t.topic,
+    speakers: t.speakers,
+    listeners: 14 + ((idx * 7) % 18),
+  })),
   {
     name: "late-night-lo-fi",
     title: "Late Night Lo-fi & Focus",
+    topic: "Chill & Cowork",
     speakers: ["Afterclap-6", "OSLO-2", "Cranks-1"],
+    listeners: 31,
   },
   {
     name: "first-100-users",
     title: "Founder Fireside: First 100 Users",
+    topic: "Startups & Growth",
     speakers: ["Funny Bunny-4", "Teamwork-2", "Upstream-1"],
+    listeners: 29,
+  },
+  {
+    name: "ai-voice-realtime-agents",
+    title: "Real-time AI Voice & Low Latency LLMs",
+    topic: "AI Architecture",
+    speakers: ["Cranks-2", "OSLO-11", "Afterclap-3"],
+    listeners: 42,
+  },
+  {
+    name: "open-source-showcase",
+    title: "Open Source Showcase: Next.js & Bun",
+    topic: "Engineering",
+    speakers: ["Upstream-4", "OSLO-4", "Funny Bunny-1"],
+    listeners: 18,
+  },
+  {
+    name: "indie-hackers-revenue",
+    title: "Indie Hackers: Pre-revenue to $10k MRR",
+    topic: "Bootstrapping",
+    speakers: ["No Comments-2", "No gravity-2", "Teamwork-3"],
+    listeners: 27,
   },
 ]
 
@@ -73,136 +121,305 @@ function Cell({
   )
 }
 
-// The crowd: tap anyone to send them a wave. Decorative, so it stays out of
-// the tab order and the accessibility tree.
+// The crowd: decorative grid of people who joined.
 function Crowd() {
-  const [waved, setWaved] = useState<Record<number, number>>({})
-
   return (
     <ul
       aria-hidden="true"
       className="grid w-full max-w-xl grid-cols-8 gap-1.5 [mask-image:linear-gradient(to_bottom,#000_60%,transparent)] sm:grid-cols-10 sm:gap-2"
     >
-      {CROWD.map((seed, i) => (
-        <li key={seed} className="relative">
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => setWaved((w) => ({ ...w, [i]: Date.now() }))}
-            className="block aspect-square w-full rounded-full"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={userpicUrl(seed)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="size-full rounded-full border border-border bg-muted object-cover"
-            />
-          </button>
-          {waved[i] && (
-            <span
-              key={waved[i]}
-              aria-hidden="true"
-              className="pillar-float pointer-events-none absolute bottom-full left-1/2 text-lg"
-            >
-              👋
-            </span>
-          )}
+      {CROWD.map((seed) => (
+        <li key={seed} className="aspect-square w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={userpicUrl(seed)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="size-full rounded-full border border-border bg-muted object-cover select-none"
+          />
         </li>
       ))}
     </ul>
   )
 }
 
-// Rooms as the lobby shows them: a 3D circular cylinder stack that turns itself,
-// pausing on hover or focus. Tap it to deal the next one. Both top and bottom cards
-// tilt and recede along a circular arc.
-function RoomStack() {
-  const [top, setTop] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const [inView, setInView] = useState(false)
-  const ref = useRef<HTMLButtonElement>(null)
-  const n = ROOM_CARDS.length
-  const half = Math.floor(n / 2)
+// Interactive 3D room card in the cylindrical wheel.
+function StackCardItem({
+  card,
+  index,
+  total,
+  position,
+  onCardClick,
+}: {
+  card: (typeof ROOM_CARDS)[number]
+  index: number
+  total: number
+  position: MotionValue<number>
+  onCardClick: (diff: number) => void
+}) {
+  const half = total / 2
 
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { rootMargin: "100px" }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+  const y = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    return d * 38
+  })
 
-  useEffect(() => {
-    if (
-      !inView ||
-      paused ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches
-    )
-      return
-    const id = setInterval(() => setTop((t) => (t + 1) % n), 2600)
-    return () => clearInterval(id)
-  }, [inView, n, paused])
+  const z = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    return -Math.abs(d) * 24
+  })
+
+  const rotateX = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    return -d * 14
+  })
+
+  const scale = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    return Math.max(0.76, 1 - Math.abs(d) * 0.065)
+  })
+
+  const opacity = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    const absD = Math.abs(d)
+    if (absD >= 2.2) return 0
+    if (absD > 1.8) return (2.2 - absD) / 0.4
+    return 1
+  })
+
+  const zIndex = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    return Math.round(50 - Math.abs(d) * 10)
+  })
+
+  const pointerEvents = useTransform(position, (pos) => {
+    let d = (index - pos) % total
+    if (d < -half) d += total
+    if (d > half) d -= total
+    return Math.abs(d) <= 1.3 ? ("auto" as const) : ("none" as const)
+  })
 
   return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label="Show next room"
-      onClick={() => setTop((t) => (t + 1) % n)}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
-      className="relative flex h-52 w-full max-w-64 items-center justify-center rounded-2xl [perspective:800px] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+    <motion.div
+      onClick={(e) => {
+        e.stopPropagation()
+        let d = (index - position.get()) % total
+        if (d < -half) d += total
+        if (d > half) d -= total
+        onCardClick(d)
+      }}
+      className="absolute inset-x-0 top-[42px] flex h-[132px] flex-col justify-between rounded-2xl border border-border bg-card p-3.5 text-left shadow-md transition-colors duration-150 will-change-transform select-none hover:border-foreground/25"
+      style={{
+        y,
+        z,
+        rotateX,
+        scale,
+        opacity,
+        zIndex,
+        pointerEvents,
+      }}
     >
-      {ROOM_CARDS.map((t, i) => {
-        const offset = ((i - top + n + half) % n) - half
-        const depth = Math.abs(offset)
-        const y = offset * 26
-        const z = -depth * 16
-        const rotateX = -offset * 10
-        const scale = 1 - depth * 0.05
-        const opacity = depth >= 2 ? 0.65 : depth === 1 ? 0.88 : 1
-
-        return (
-          <span
-            key={t.name}
-            className="absolute inset-x-0 flex h-[134px] flex-col justify-between rounded-2xl border border-border bg-card p-3.5 text-left shadow-md transition-[transform,opacity] duration-500 ease-(--ease-out) will-change-transform select-none motion-reduce:transition-none"
-            style={{
-              transform: `translate3d(0, ${y}px, ${z}px) rotateX(${rotateX}deg) scale(${scale})`,
-              opacity,
-              zIndex: n - depth,
-            }}
-          >
-            <div className="flex flex-col gap-1.5">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold tracking-wide text-background uppercase">
-                <span className="size-1.5 rounded-full bg-emerald-400" />
-                Live
-              </span>
-              <span className="line-clamp-2 font-display text-sm leading-snug text-foreground">
-                {t.title}
-              </span>
-            </div>
-            <div className="flex -space-x-2">
-              {t.speakers.map((s) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={s}
-                  src={userpicUrl(s)}
-                  alt=""
-                  className="size-6.5 rounded-full border-2 border-card bg-muted object-cover"
-                />
-              ))}
-            </div>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold tracking-wide text-background uppercase shadow-xs">
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+            Live
           </span>
-        )
-      })}
-    </button>
+          {card.topic && (
+            <span className="truncate font-mono text-[10px] text-muted-foreground/80">
+              {card.topic}
+            </span>
+          )}
+        </div>
+        <span className="line-clamp-2 font-display text-sm leading-snug text-foreground">
+          {card.title}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <div className="flex -space-x-2">
+          {card.speakers.map((s) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={s}
+              src={userpicUrl(s)}
+              alt=""
+              className="size-6.5 rounded-full border-2 border-card bg-muted object-cover shadow-xs"
+            />
+          ))}
+        </div>
+        {card.listeners !== undefined && (
+          <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+            <Users className="size-3" aria-hidden="true" />
+            <span>{card.listeners}</span>
+          </span>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// Rooms cylinder wheel: physical scrolling, touch & drag gestures for mobile & desktop,
+// momentum flick physics, and spring animations via framer-motion.
+function RoomStack() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(containerRef, { margin: "120px" })
+  const reducedMotion = useReducedMotion()
+
+  const position = useMotionValue(0)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
+
+  const animationControls = useRef<ReturnType<typeof animate> | null>(null)
+  const isDraggingRef = useRef(false)
+  const dragStartPos = useRef(0)
+  const targetIndexRef = useRef(0)
+  const lastInteractionTime = useRef(0)
+  const lastWheelTime = useRef(0)
+  const total = ROOM_CARDS.length
+
+  // Track active index for a11y & indicator dots
+  useMotionValueEvent(position, "change", (latest) => {
+    const raw = Math.round(latest)
+    const norm = ((raw % total) + total) % total
+    setActiveIndex(norm)
+  })
+
+  const animateTo = (target: number, velocity = 0) => {
+    animationControls.current?.stop()
+    targetIndexRef.current = target
+    lastInteractionTime.current = Date.now()
+
+    if (reducedMotion) {
+      position.set(target)
+      return
+    }
+
+    animationControls.current = animate(position, target, {
+      type: "spring",
+      stiffness: 190,
+      damping: 24,
+      mass: 0.8,
+      restDelta: 0.001,
+      velocity,
+    })
+  }
+
+  // Smooth auto-advance when in view & idle
+  useEffect(() => {
+    lastInteractionTime.current = Date.now()
+    if (reducedMotion) return
+
+    const interval = setInterval(() => {
+      const isIdle = Date.now() - lastInteractionTime.current > 2600
+      if (inView && !isHovered && !isDraggingRef.current && isIdle) {
+        animateTo(targetIndexRef.current + 1)
+      }
+    }, 2800)
+
+    return () => clearInterval(interval)
+  }, [inView, isHovered, reducedMotion])
+
+  // Handle card click
+  const handleCardClick = (diff: number) => {
+    if (Math.abs(diff) < 0.4) {
+      animateTo(targetIndexRef.current + 1)
+    } else {
+      animateTo(targetIndexRef.current + Math.round(diff))
+    }
+  }
+
+  // Handle wheel / trackpad scroll
+  const handleWheel = (e: React.WheelEvent) => {
+    const now = Date.now()
+    lastInteractionTime.current = now
+    if (Math.abs(e.deltaY) > 8 && now - lastWheelTime.current > 160) {
+      lastWheelTime.current = now
+      const dir = e.deltaY > 0 ? 1 : -1
+      animateTo(targetIndexRef.current + dir)
+    }
+  }
+
+  // Keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault()
+      animateTo(targetIndexRef.current + 1)
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault()
+      animateTo(targetIndexRef.current - 1)
+    } else if (e.key === " " || e.key === "Enter") {
+      e.preventDefault()
+      animateTo(targetIndexRef.current + 1)
+    }
+  }
+
+  const PIXELS_PER_CARD = 54
+
+  return (
+    <motion.div
+      ref={containerRef}
+      role="region"
+      tabIndex={0}
+      aria-label={`Live rooms stack. Currently showing: ${ROOM_CARDS[activeIndex].title}.`}
+      onKeyDown={handleKeyDown}
+      onWheel={handleWheel}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
+      onPanStart={() => {
+        animationControls.current?.stop()
+        isDraggingRef.current = true
+        dragStartPos.current = position.get()
+        lastInteractionTime.current = Date.now()
+      }}
+      onPan={(_, info) => {
+        lastInteractionTime.current = Date.now()
+        const newPos = dragStartPos.current - info.offset.y / PIXELS_PER_CARD
+        position.set(newPos)
+      }}
+      onPanEnd={(_, info) => {
+        isDraggingRef.current = false
+        lastInteractionTime.current = Date.now()
+
+        const current = position.get()
+        const cardVelocity = -info.velocity.y / PIXELS_PER_CARD
+        const projection = Math.max(-2, Math.min(2, cardVelocity * 0.12))
+        const target = Math.round(current + projection)
+        animateTo(target, cardVelocity)
+      }}
+      style={{
+        touchAction: "none",
+        perspective: 850,
+        transformStyle: "preserve-3d",
+      }}
+      className="relative flex h-[216px] w-full max-w-64 cursor-grab items-center justify-center rounded-2xl select-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:cursor-grabbing"
+    >
+      {ROOM_CARDS.map((card, i) => (
+        <StackCardItem
+          key={card.name}
+          card={card}
+          index={i}
+          total={total}
+          position={position}
+          onCardClick={handleCardClick}
+        />
+      ))}
+    </motion.div>
   )
 }
 

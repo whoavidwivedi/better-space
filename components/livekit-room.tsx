@@ -77,6 +77,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SpaceEndedScreen } from "@/components/space-ended-screen"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import {
@@ -102,8 +103,20 @@ export function SpaceRoomLiveKit({
 
   if (!wsUrl || !token) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
-        <Spinner className="text-muted-foreground" />
+      <div className="flex min-h-svh flex-col items-center justify-center bg-background p-4 text-center">
+        <div className="flex max-w-sm animate-in flex-col items-center gap-4 duration-300 fade-in">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-xs">
+            <Spinner className="size-6 text-foreground" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-display text-xl text-foreground">
+              Preparing {getDisplayRoomTitle(roomName)}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Connecting to live voice channel...
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -166,6 +179,21 @@ function RoomUI({
     null
   )
   const [disconnectCountdown, setDisconnectCountdown] = useState(60)
+  const [spaceEndedInfo, setSpaceEndedInfo] = useState<{
+    host?: string
+    speakers?: Array<{ identity: string; avatar?: string }>
+  } | null>(null)
+  const [isEndingTransition, setIsEndingTransition] = useState(false)
+
+  const spaceEndedInfoRef = useRef(spaceEndedInfo)
+  useEffect(() => {
+    spaceEndedInfoRef.current = spaceEndedInfo
+  }, [spaceEndedInfo])
+
+  const isEndingTransitionRef = useRef(isEndingTransition)
+  useEffect(() => {
+    isEndingTransitionRef.current = isEndingTransition
+  }, [isEndingTransition])
 
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
     []
@@ -306,11 +334,16 @@ function RoomUI({
 
   const [isEndSpaceOpen, setIsEndSpaceOpen] = useState(false)
   const [isEndingSpace, setIsEndingSpace] = useState(false)
+  const isEndingSpaceRef = useRef(isEndingSpace)
+  useEffect(() => {
+    isEndingSpaceRef.current = isEndingSpace
+  }, [isEndingSpace])
 
   const handleEndSpace = async () => {
     if (isEndingSpace) return
     setIsEndingSpace(true)
     setIsEndSpaceOpen(false)
+    setIsEndingTransition(true)
     intentionalLeaveRef.current = true
     localStorage.removeItem(`space_host_disconnected_${roomName}`)
     try {
@@ -322,15 +355,34 @@ function RoomUI({
       if (!res.ok) {
         intentionalLeaveRef.current = false
         setIsEndingSpace(false)
+        setIsEndingTransition(false)
         const data = await res.json().catch(() => null)
         toast.add({
           title: data?.error?.message || "Failed to end space",
           type: "error",
         })
+      } else {
+        setTimeout(() => {
+          setSpaceEndedInfo({
+            host: userName,
+            speakers: participants.map((p) => {
+              let avatar = p.identity
+              try {
+                if (p.metadata) {
+                  const m = JSON.parse(p.metadata)
+                  if (m.avatar) avatar = m.avatar
+                }
+              } catch {}
+              return { identity: p.identity, avatar }
+            }),
+          })
+          setIsEndingTransition(false)
+        }, 600)
       }
     } catch {
       intentionalLeaveRef.current = false
       setIsEndingSpace(false)
+      setIsEndingTransition(false)
       toast.add({ title: "Failed to end space", type: "error" })
     }
   }
@@ -434,12 +486,56 @@ function RoomUI({
           } else if (isHostOrCohost) {
             setMicRequests((prev) => prev.filter((id) => id !== data.identity))
           }
+        } else if (data.type === "SPACE_ENDED") {
+          setIsEndingTransition(true)
+          setTimeout(() => {
+            setSpaceEndedInfo({
+              host: data.host || roomHost,
+              speakers:
+                data.speakers ||
+                participants.map((p) => {
+                  let avatar = p.identity
+                  try {
+                    if (p.metadata) {
+                      const m = JSON.parse(p.metadata)
+                      if (m.avatar) avatar = m.avatar
+                    }
+                  } catch {}
+                  return { identity: p.identity, avatar }
+                }),
+            })
+            setIsEndingTransition(false)
+          }, 600)
         }
       } catch {}
     }
 
-    const handleDisconnected = () => {
-      onLeave()
+    const handleDisconnected = async () => {
+      if (
+        spaceEndedInfoRef.current ||
+        isEndingSpaceRef.current ||
+        isEndingTransitionRef.current
+      )
+        return
+      try {
+        const res = await fetch(
+          `/api/livekit/rooms?space=${encodeURIComponent(roomName)}`
+        )
+        const data = await res.json()
+        if (data.ended) {
+          setSpaceEndedInfo({
+            host: data.data?.space?.host || roomHost,
+            speakers:
+              data.data?.space?.speakers ||
+              participants.map((p) => ({ identity: p.identity })),
+          })
+          return
+        }
+      } catch {}
+
+      if (!intentionalLeaveRef.current) {
+        onLeave()
+      }
     }
 
     room.on(RoomEvent.DataReceived, handleData)
@@ -512,9 +608,11 @@ function RoomUI({
               action: "end",
             }),
           }).catch(() => {})
-        } else {
-          deps.onLeave()
         }
+        setSpaceEndedInfo({
+          host: roomHost,
+          speakers: participants.map((p) => ({ identity: p.identity })),
+        })
         return true
       }
       setDisconnectCountdown(remaining)
@@ -801,6 +899,57 @@ function RoomUI({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMuted, isDeafened])
 
+  if (spaceEndedInfo) {
+    return (
+      <SpaceEndedScreen
+        roomName={roomName}
+        host={spaceEndedInfo.host}
+        speakers={spaceEndedInfo.speakers}
+        onReturn={onLeave}
+      />
+    )
+  }
+
+  if (isEndingTransition) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center bg-background p-4 text-center">
+        <div className="flex max-w-sm animate-in flex-col items-center gap-4 duration-300 fade-in">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-destructive/20 bg-destructive/10 text-destructive shadow-xs">
+            <Spinner className="size-6 text-destructive" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-display text-xl text-foreground">
+              Ending space...
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Wrapping up the conversation and closing voice channel...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (connectionState === ConnectionState.Connecting) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center bg-background p-4 text-center">
+        <div className="flex max-w-sm animate-in flex-col items-center gap-4 duration-300 fade-in">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-xs">
+            <Spinner className="size-6 text-foreground" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-display text-xl text-foreground">
+              Entering {getDisplayRoomTitle(roomName)}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Connecting to live voice channel...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative flex min-h-svh flex-col bg-background text-foreground">
       <div className="bg-studio-grid pointer-events-none absolute inset-0 opacity-40" />
@@ -820,7 +969,12 @@ function RoomUI({
             aria-label={`Connection status: ${connectionLabel}`}
             className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-2 py-1 font-mono text-[10px] font-bold tracking-wide text-muted-foreground uppercase"
           >
-            <span className={`size-1.5 rounded-full ${connectionTone}`} />
+            {connectionLabel === "Reconnecting" ||
+            connectionLabel === "Joining" ? (
+              <Spinner className="size-2.5 text-amber-500" />
+            ) : (
+              <span className={`size-1.5 rounded-full ${connectionTone}`} />
+            )}
             <span className="hidden sm:inline">{connectionLabel}</span>
           </div>
           <SpaceDurationPill createdAt={roomCreatedAt} />
@@ -898,9 +1052,16 @@ function RoomUI({
                       variant="destructive"
                       size="sm"
                       disabled={isEndingSpace}
-                      className="h-8 font-mono text-xs font-bold"
+                      className="h-8 gap-1.5 font-mono text-xs font-bold"
                     >
-                      {isEndingSpace ? "Ending…" : "End Space"}
+                      {isEndingSpace ? (
+                        <>
+                          <Spinner className="size-3" />
+                          <span>Ending…</span>
+                        </>
+                      ) : (
+                        "End Space"
+                      )}
                     </Button>
                   }
                 />
@@ -923,8 +1084,9 @@ function RoomUI({
                       variant="destructive"
                       onClick={handleEndSpace}
                       disabled={isEndingSpace}
-                      className="font-bold"
+                      className="gap-2 font-bold"
                     >
+                      {isEndingSpace && <Spinner className="size-3.5" />}
                       End for everyone
                     </Button>
                     <Button
@@ -1013,11 +1175,7 @@ function RoomUI({
         {hostDisconnectTime !== null && (
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
             <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive px-5 py-2.5 font-mono text-xs font-bold text-destructive-foreground shadow-xl">
-              <HugeiconsIcon
-                icon={Alert01Icon}
-                className="mr-2 size-4 shrink-0"
-                aria-hidden="true"
-              />
+              <Spinner className="mr-2 size-3.5 shrink-0 text-destructive-foreground" />
               Host disconnected. Space ends in {disconnectCountdown}s
             </div>
           </div>

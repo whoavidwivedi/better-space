@@ -1,17 +1,11 @@
-import { Loader2 as RiLoaderLine } from "lucide-react"
-type RemixiconComponentType = React.ComponentType<
-  React.ComponentPropsWithoutRef<"svg">
->
+import * as React from "react"
+import { LoaderIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-function Spinner({
-  className,
-  ...props
-}: React.ComponentProps<RemixiconComponentType>) {
+function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
   return (
-    <RiLoaderLine
-      data-slot="spinner"
+    <LoaderIcon
       role="status"
       aria-label="Loading"
       className={cn("size-4 animate-spin", className)}
@@ -20,4 +14,12 @@ function Spinner({
   )
 }
 
-export { Spinner }
+function SpinnerCustom() {
+  return (
+    <div className="flex items-center gap-4">
+      <Spinner />
+    </div>
+  )
+}
+
+export { Spinner, SpinnerCustom }

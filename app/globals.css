@@ -62,6 +62,12 @@
 
 :root {
   --radius: 0.625rem;
+  /* transitions.dev: Learn more hover */
+  --learn-shift: 2px;
+  --learn-spread: 8deg;
+  --learn-in: 350ms;
+  --learn-out: 350ms;
+  --learn-ease: cubic-bezier(0.22, 1, 0.36, 1);
   /* Stark, Minimal Archival Studio Canvas */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -720,5 +726,42 @@ a {
     opacity: 1;
     transform: none;
     animation: none;
+  }
+}
+
+/* transitions.dev: Learn more hover */
+.t-learn-chevron {
+  display: inline-flex;
+  transform: translateX(0);
+  transition: transform var(--learn-out) var(--learn-ease);
+}
+.t-learn-arm {
+  transform-box: view-box;
+  transform-origin: 10px 8px;
+  vector-effect: non-scaling-stroke;
+  transition: transform var(--learn-out) var(--learn-ease);
+}
+.t-learn:hover .t-learn-chevron,
+.t-learn:focus-visible .t-learn-chevron {
+  transform: translateX(var(--learn-shift));
+  transition-duration: var(--learn-in);
+}
+.t-learn:hover .t-learn-arm,
+.t-learn:focus-visible .t-learn-arm {
+  transition-duration: var(--learn-in);
+}
+.t-learn:hover .t-learn-arm-top,
+.t-learn:focus-visible .t-learn-arm-top {
+  transform: rotate(var(--learn-spread));
+}
+.t-learn:hover .t-learn-arm-bot,
+.t-learn:focus-visible .t-learn-arm-bot {
+  transform: rotate(calc(var(--learn-spread) * -1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-learn-chevron,
+  .t-learn-arm {
+    transition: none !important;
   }
 }

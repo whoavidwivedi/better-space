@@ -265,6 +265,20 @@ export async function POST(req: NextRequest) {
           speakers,
         })
 
+        // Broadcast to all connected participants that the space has ended
+        try {
+          const payload = new TextEncoder().encode(
+            JSON.stringify({
+              type: "SPACE_ENDED",
+              room: cleanRoom,
+              endedAt: Date.now(),
+              host,
+              speakers,
+            })
+          )
+          await roomService.sendData(cleanRoom, payload, 0)
+        } catch {}
+
         // Disconnect everyone by deleting the room...
         await roomService.deleteRoom(cleanRoom)
 
