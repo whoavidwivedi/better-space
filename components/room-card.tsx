@@ -63,7 +63,7 @@ export function Faces({
         </span>
       ))}
       {extra > 0 && (
-        <span className="relative flex size-8 items-center justify-center rounded-full border-2 border-card bg-muted text-[11px] font-semibold text-muted-foreground tabular-nums">
+        <span className="relative flex size-8 items-center justify-center rounded-full border-2 border-card bg-muted text-[11px] font-semibold text-foreground tabular-nums">
           +{extra}
         </span>
       )}
@@ -73,7 +73,7 @@ export function Faces({
 
 export function LivePill() {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
       <span className="relative flex size-1.5" aria-hidden="true">
         <span className="relative size-1.5 rounded-full bg-emerald-500" />
       </span>

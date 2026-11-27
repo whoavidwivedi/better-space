@@ -1,8 +1,19 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import {
+  readBrowserSession,
+  roomParticipantIdentity,
+  setBrowserSession,
+} from "@/lib/browser-session"
+import { limitLiveKitRequest } from "@/lib/livekit-rate-limit"
+import {
+  closureMarkerName,
+  isClosureMarker,
+  readRoomClosure,
+} from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
-import { hashHostSecret, roleCookieName } from "@/lib/space-auth"
+import { hasHostAccess, hashHostSecret, roleCookieName } from "@/lib/space-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -30,7 +41,25 @@ export async function GET(req: NextRequest) {
     }
     try {
       const roomService = getRoomService()
-      const liveRooms = await roomService.listRooms([cleanRoom])
+      const liveRooms = await roomService.listRooms([
+        cleanRoom,
+        closureMarkerName(cleanRoom),
+      ])
+      const closure = readRoomClosure(liveRooms, cleanRoom)
+      if (closure?.closing) {
+        return NextResponse.json(
+          { error: { message: "This space is closing" } },
+          { status: 503 }
+        )
+      }
+      if (closure) {
+        const space = {
+          name: cleanRoom,
+          host: closure.host,
+          endedAt: closure.endedAt,
+        }
+        return NextResponse.json({ ended: true, data: { ended: true, space } })
+      }
       const r = liveRooms.find((rm) => rm.name.toLowerCase() === cleanRoom)
       if (r?.metadata) {
         try {
@@ -42,12 +71,8 @@ export async function GET(req: NextRequest) {
                 ended: true,
                 space: {
                   name: cleanRoom,
-                  host: meta.host || "Unknown",
+                  host: meta.hostName || meta.host || "Unknown",
                   endedAt: meta.endedAt ?? Date.now(),
-                  cohosts: meta.cohosts || [],
-                  speakers: (meta.speakers || []).map((s: string) => ({
-                    identity: s,
-                  })),
                 },
               },
             })
@@ -61,7 +86,12 @@ export async function GET(req: NextRequest) {
           data: { ended: false, live: true },
         })
       }
-    } catch {}
+    } catch {
+      return NextResponse.json(
+        { error: { message: "Could not check this space" } },
+        { status: 503 }
+      )
+    }
     return NextResponse.json({
       ended: false,
       live: false,
@@ -69,15 +99,57 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  let roomService: RoomServiceClient
   try {
-    roomService = getRoomService()
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 500 })
-  }
+    const now = Date.now()
+    if (!lobbySnapshot || lobbySnapshot.expiresAt <= now) {
+      const pending = loadLobbySnapshot(getRoomService())
+      lobbySnapshot = { pending, expiresAt: Infinity }
+      void pending.then(
+        () => {
+          if (lobbySnapshot?.pending === pending) {
+            lobbySnapshot.expiresAt = Date.now() + LOBBY_CACHE_MS
+          }
+        },
+        () => {
+          if (lobbySnapshot?.pending === pending) lobbySnapshot = undefined
+        }
+      )
+    }
 
-  const rooms = (await roomService.listRooms()).filter((r) => {
-    if (isSpaceEnded(r.name)) return false
+    return NextResponse.json(
+      { data: await lobbySnapshot.pending },
+      {
+        headers: {
+          "Vercel-CDN-Cache-Control": "public, s-maxage=5",
+        },
+      }
+    )
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Could not load live spaces" } },
+      { status: 503 }
+    )
+  }
+}
+
+const LOBBY_CACHE_MS = 5_000
+let lobbySnapshot:
+  | { pending: ReturnType<typeof loadLobbySnapshot>; expiresAt: number }
+  | undefined
+
+async function loadLobbySnapshot(roomService: RoomServiceClient) {
+  const all = await roomService.listRooms()
+  const markers = new Set(
+    all.filter((room) => isClosureMarker(room.name)).map((room) => room.name)
+  )
+  const rooms = all.filter((r) => {
+    if (
+      isClosureMarker(r.name) ||
+      markers.has(closureMarkerName(r.name)) ||
+      isSpaceEnded(r.name)
+    ) {
+      return false
+    }
     if (r.metadata) {
       try {
         const meta = JSON.parse(r.metadata)
@@ -90,19 +162,21 @@ export async function GET(req: NextRequest) {
     rooms.map(async (r) => {
       let participants: any[] = []
       try {
-        participants = await roomService.listParticipants(r.name)
+        if (r.numParticipants > 0) {
+          participants = await roomService.listParticipants(r.name)
+        }
       } catch {}
 
       let host = "Unknown"
       try {
         if (r.metadata) {
           const meta = JSON.parse(r.metadata)
-          if (meta.host) host = meta.host
+          if (meta.host) host = meta.hostName || meta.host
         }
       } catch {}
 
       if (host === "Unknown" && participants.length > 0) {
-        host = participants[0].identity
+        host = participants[0].name || participants[0].identity
       }
 
       return {
@@ -117,7 +191,8 @@ export async function GET(req: NextRequest) {
             try {
               if (p.metadata) {
                 const meta = JSON.parse(p.metadata)
-                if (meta.avatar) avatar = meta.avatar
+                if (typeof meta.avatar === "string" && meta.avatar)
+                  avatar = meta.avatar
               }
             } catch {}
             return {
@@ -131,29 +206,35 @@ export async function GET(req: NextRequest) {
     })
   )
 
-  return NextResponse.json({ data: roomDetails })
+  return roomDetails
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { roomName, hostName, avatar } = body
+  const limited = limitLiveKitRequest(req, "create")
+  if (limited) return limited
 
-  if (!roomName || !hostName) {
+  const body = await req.json().catch(() => null)
+  if (
+    !body ||
+    typeof body.roomName !== "string" ||
+    typeof body.hostName !== "string" ||
+    (body.avatar !== undefined && typeof body.avatar !== "string")
+  ) {
     return NextResponse.json(
-      { error: { message: "Missing roomName or hostName" } },
+      { error: { message: "Invalid room name, host name, or avatar" } },
       { status: 400 }
     )
   }
 
-  if (typeof roomName !== "string" || typeof hostName !== "string") {
+  const cleanRoom = body.roomName.trim()
+  const cleanHost = body.hostName.trim().slice(0, 30)
+  const avatar = body.avatar?.trim().slice(0, 128) || cleanHost
+  if (!cleanHost) {
     return NextResponse.json(
-      { error: { message: "Invalid roomName or hostName" } },
+      { error: { message: "Missing host name" } },
       { status: 400 }
     )
   }
-
-  const cleanRoom = roomName.trim()
-  const cleanHost = hostName.trim().substring(0, 30)
 
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
@@ -176,15 +257,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: { message: e.message } }, { status: 500 })
   }
 
+  const session = readBrowserSession(req)
+  const hostIdentity = roomParticipantIdentity(session, cleanRoom)
   const hostSecret = crypto.randomUUID()
 
   try {
     const allRooms = await roomService.listRooms()
+    const closure = readRoomClosure(allRooms, cleanRoom)
+    if (closure) {
+      return NextResponse.json(
+        closure.closing
+          ? { error: { message: "This space is closing" } }
+          : { ended: true, error: "Space has ended" },
+        { status: closure.closing ? 503 : 410 }
+      )
+    }
     for (const r of allRooms) {
+      if (isClosureMarker(r.name)) continue
       if (r.metadata) {
         try {
           const meta = JSON.parse(r.metadata)
-          if (!meta.ended && meta.host === cleanHost) {
+          if (
+            !meta.ended &&
+            (meta.host === roomParticipantIdentity(session, r.name) ||
+              hasHostAccess(
+                meta,
+                meta.host,
+                req.cookies.get(roleCookieName(r.name))?.value ?? ""
+              ))
+          ) {
             return NextResponse.json(
               {
                 error: {
@@ -210,13 +311,19 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
-  } catch {}
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Could not verify room availability" } },
+      { status: 503 }
+    )
+  }
 
   await roomService.createRoom({
     name: cleanRoom,
     emptyTimeout: 43200,
     metadata: JSON.stringify({
-      host: cleanHost,
+      host: hostIdentity,
+      hostName: cleanHost,
       hostSecretHash: hashHostSecret(hostSecret),
       banned: [],
       cohosts: [],
@@ -224,12 +331,15 @@ export async function POST(req: NextRequest) {
     }),
   })
 
+  lobbySnapshot = undefined
+
   const at = new AccessToken(
     process.env.LIVEKIT_API_KEY!,
     process.env.LIVEKIT_API_SECRET!,
     {
-      identity: cleanHost,
-      metadata: JSON.stringify({ avatar: avatar?.trim() || cleanHost }),
+      identity: hostIdentity,
+      name: cleanHost,
+      metadata: JSON.stringify({ avatar }),
     }
   )
   at.addGrant({
@@ -243,6 +353,7 @@ export async function POST(req: NextRequest) {
 
   const token = await at.toJwt()
   const response = NextResponse.json({ data: { roomName: cleanRoom, token } })
+  setBrowserSession(response, session)
   response.cookies.set({
     name: roleCookieName(cleanRoom),
     value: hostSecret,

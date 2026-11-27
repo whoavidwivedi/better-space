@@ -7,12 +7,13 @@ import { MicOff, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { userpicUrl } from "@/lib/userpics"
 import { getDisplayRoomTitle } from "@/lib/presets"
+import type { EndedSpaceParticipant } from "@/lib/ended-roster"
 import { cn } from "@/lib/utils"
 
 export type SpaceEndedScreenProps = {
   roomName: string
   host?: string
-  speakers?: Array<{ identity: string; avatar?: string }>
+  speakers?: EndedSpaceParticipant[]
   onReturn?: () => void
   isModal?: boolean
 }
@@ -26,9 +27,21 @@ export function SpaceEndedScreen({
 }: SpaceEndedScreenProps) {
   const title = getDisplayRoomTitle(roomName)
   const uniqueSpeakers = React.useMemo(() => {
-    const list = [...speakers]
-    if (host && !list.some((s) => s.identity === host)) {
-      list.unshift({ identity: host, avatar: host })
+    const list = Array.from(
+      new Map(
+        speakers.map((speaker) => [
+          speaker.identity,
+          { ...speaker, isHost: speaker.isHost ?? speaker.identity === host },
+        ])
+      ).values()
+    )
+    if (host && !list.some((speaker) => speaker.isHost)) {
+      list.unshift({
+        identity: `host-summary:${host}`,
+        name: host,
+        avatar: host,
+        isHost: true,
+      })
     }
     return list.slice(0, 8)
   }, [host, speakers])
@@ -80,14 +93,14 @@ export function SpaceEndedScreen({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={userpicUrl(s.avatar || s.identity)}
+                    src={userpicUrl(s.avatar || s.name || s.identity)}
                     alt=""
                     className="size-5 rounded-full object-cover"
                   />
                   <span className="max-w-24 truncate font-medium text-foreground">
-                    {s.identity}
+                    {s.name || s.identity}
                   </span>
-                  {s.identity === host && (
+                  {s.isHost && (
                     <span className="rounded bg-muted px-1 font-mono text-[9px] text-muted-foreground uppercase">
                       Host
                     </span>

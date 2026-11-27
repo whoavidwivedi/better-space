@@ -7,8 +7,6 @@ export type EndedSpace = {
   name: string
   endedAt: number
   host: string
-  cohosts: string[]
-  speakers: EndedSpaceParticipant[]
 }
 
 const DATA_DIR = path.join(process.cwd(), ".data")
@@ -20,10 +18,16 @@ function load(): Record<string, EndedSpace> {
   if (cache) return cache
   try {
     if (fs.existsSync(FILE)) {
-      cache = JSON.parse(fs.readFileSync(FILE, "utf-8")) as Record<
+      const stored = JSON.parse(fs.readFileSync(FILE, "utf-8")) as Record<
         string,
         EndedSpace
       >
+      cache = Object.fromEntries(
+        Object.entries(stored).map(([key, { name, endedAt, host }]) => [
+          key,
+          { name, endedAt, host },
+        ])
+      )
     }
   } catch {
     cache = {}
@@ -50,24 +54,20 @@ export function isSpaceEnded(name: string): boolean {
 export function getEndedSpace(name: string): EndedSpace | null {
   if (!name) return null
   const key = name.toLowerCase().trim()
-  return load()[key] ?? null
+  const ended = load()[key]
+  if (!ended?.name) return null
+  // Older files may include a roster. Never return it to a caller.
+  return { name: ended.name, host: ended.host, endedAt: ended.endedAt }
 }
 
-export function markSpaceEnded(
-  name: string,
-  info: { host: string; cohosts: string[]; speakers: EndedSpaceParticipant[] }
-): void {
+export function markSpaceEnded(name: string, host: string): void {
   if (!name) return
   const key = name.toLowerCase().trim()
-  const existing = load()[key]
+  const existing = getEndedSpace(key)
   load()[key] = {
     name: key,
     endedAt: existing?.endedAt ?? Date.now(),
-    host: info.host || existing?.host || "Unknown",
-    cohosts: info.cohosts?.length ? info.cohosts : (existing?.cohosts ?? []),
-    speakers: info.speakers?.length
-      ? info.speakers
-      : (existing?.speakers ?? []),
+    host: host || existing?.host || "Unknown",
   }
   persist()
 }

@@ -7,30 +7,18 @@ describe("ended spaces registry", () => {
     expect(isSpaceEnded(testRoom)).toBe(false)
     expect(getEndedSpace(testRoom)).toBeNull()
 
-    markSpaceEnded(testRoom, {
-      host: "Alice",
-      cohosts: ["Bob"],
-      speakers: [
-        { identity: "Alice", avatar: "OSLO-1" },
-        { identity: "Charlie", avatar: "Guacamole-2" },
-      ],
-    })
+    markSpaceEnded(testRoom, "Alice")
 
     expect(isSpaceEnded(testRoom)).toBe(true)
     const ended = getEndedSpace(testRoom)
     expect(ended).not.toBeNull()
     expect(ended?.host).toBe("Alice")
-    expect(ended?.cohosts).toEqual(["Bob"])
-    expect(ended?.speakers).toHaveLength(2)
+    expect(Object.keys(ended ?? {}).sort()).toEqual(["endedAt", "host", "name"])
   })
 
   it("handles case and whitespace normalization", () => {
     const unique = `mixed-${Date.now()}-${Math.floor(Math.random() * 100000)}`
-    markSpaceEnded(`  ${unique}  `, {
-      host: "David",
-      cohosts: [],
-      speakers: [],
-    })
+    markSpaceEnded(`  ${unique}  `, "David")
 
     expect(isSpaceEnded(unique.toLowerCase())).toBe(true)
     expect(isSpaceEnded(`  ${unique.toUpperCase()}  `)).toBe(true)
