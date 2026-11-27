@@ -153,15 +153,18 @@ export function ChatPanel({
     }
   })
 
+  const cachedTranscript = React.useRef<string | null>(null)
   const [loadedRoom, setLoadedRoom] = React.useState<string>()
 
   React.useEffect(() => {
     if (!roomName) return
+    cachedTranscript.current = null
     try {
       const stored = JSON.parse(
         sessionStorage.getItem(`space_chat_${roomName}`) || "null"
       )
       if (stored?.expiresAt > Date.now() && isHistory(stored.messages)) {
+        cachedTranscript.current = JSON.stringify(stored.messages)
         setHistory(stored.messages)
       } else {
         sessionStorage.removeItem(`space_chat_${roomName}`)
@@ -177,6 +180,8 @@ export function ChatPanel({
     if (!roomName || loadedRoom !== roomName) return
     try {
       if (!history.length) return
+      const transcript = JSON.stringify(history)
+      if (transcript === cachedTranscript.current) return
       sessionStorage.setItem(
         `space_chat_${roomName}`,
         JSON.stringify({
@@ -184,6 +189,7 @@ export function ChatPanel({
           expiresAt: Date.now() + CHAT_TTL_MS,
         })
       )
+      cachedTranscript.current = transcript
     } catch {}
   }, [history, loadedRoom, roomName])
 
