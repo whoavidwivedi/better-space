@@ -135,25 +135,28 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { roomName, hostName, avatar } = body
-
-  if (!roomName || !hostName) {
+  const body = await req.json().catch(() => null)
+  if (
+    !body ||
+    typeof body.roomName !== "string" ||
+    typeof body.hostName !== "string" ||
+    (body.avatar !== undefined && typeof body.avatar !== "string")
+  ) {
     return NextResponse.json(
-      { error: { message: "Missing roomName or hostName" } },
+      { error: { message: "Invalid room name, host name, or avatar" } },
       { status: 400 }
     )
   }
 
-  if (typeof roomName !== "string" || typeof hostName !== "string") {
+  const cleanRoom = body.roomName.trim()
+  const cleanHost = body.hostName.trim().slice(0, 30)
+  const avatar = body.avatar?.trim().slice(0, 128) || cleanHost
+  if (!cleanHost) {
     return NextResponse.json(
-      { error: { message: "Invalid roomName or hostName" } },
+      { error: { message: "Missing host name" } },
       { status: 400 }
     )
   }
-
-  const cleanRoom = roomName.trim()
-  const cleanHost = hostName.trim().substring(0, 30)
 
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
@@ -229,7 +232,7 @@ export async function POST(req: NextRequest) {
     process.env.LIVEKIT_API_SECRET!,
     {
       identity: cleanHost,
-      metadata: JSON.stringify({ avatar: avatar?.trim() || cleanHost }),
+      metadata: JSON.stringify({ avatar }),
     }
   )
   at.addGrant({
