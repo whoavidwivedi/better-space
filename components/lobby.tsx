@@ -341,6 +341,8 @@ export function Lobby() {
             host: data.data?.space?.host,
             speakers: data.data?.space?.speakers,
           })
+        } else if (data.live || data.data?.live) {
+          onRoomClick(space)
         } else {
           openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
         }
