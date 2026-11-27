@@ -200,8 +200,9 @@ export function randomUserpic() {
   return USERPIC_NAMES[Math.floor(Math.random() * USERPIC_NAMES.length)]
 }
 
-export function userpicUrl(seed?: string | null) {
-  if (!seed) return "/Userpics/SVG/Circle/OSLO-1.svg"
+export function userpicUrl(seed?: unknown) {
+  if (typeof seed !== "string" || !seed)
+    return "/Userpics/SVG/Circle/OSLO-1.svg"
   const name = USERPIC_NAMES.includes(seed)
     ? seed
     : USERPIC_NAMES[hashSeed(seed) % USERPIC_NAMES.length]
