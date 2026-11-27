@@ -318,18 +318,10 @@ function RoomUI({
   const prevCanPublish = useRef(canPublish)
 
   useEffect(() => {
-    if (prevCanPublish.current === undefined) {
-      prevCanPublish.current = canPublish
-      return
-    }
-
     if (canPublish && !prevCanPublish.current) {
-      toast.add({ title: "Host granted you the microphone!", type: "success" })
-      localParticipant.setMicrophoneEnabled(true).catch(() => {
-        toast.add({
-          title: "Could not automatically enable microphone.",
-          type: "error",
-        })
+      toast.add({
+        title: "Microphone access granted. Unmute when you're ready.",
+        type: "success",
       })
     } else if (!canPublish && prevCanPublish.current) {
       toast.add({
@@ -342,7 +334,7 @@ function RoomUI({
     if (canPublish) {
       setHasRequestedMicLocal(false)
     }
-  }, [canPublish, localParticipant])
+  }, [canPublish])
 
   const sortedParticipants = [...participants].sort((a, b) => {
     if (a.identity === roomHost) return -1
