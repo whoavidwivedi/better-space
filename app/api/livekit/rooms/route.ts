@@ -117,7 +117,8 @@ export async function GET(req: NextRequest) {
             try {
               if (p.metadata) {
                 const meta = JSON.parse(p.metadata)
-                if (meta.avatar) avatar = meta.avatar
+                if (typeof meta.avatar === "string" && meta.avatar)
+                  avatar = meta.avatar
               }
             } catch {}
             return {
