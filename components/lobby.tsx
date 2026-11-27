@@ -143,6 +143,7 @@ export function Lobby() {
   }
 
   useEffect(() => {
+    if (hasJoined) return
     fetchRooms()
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -159,7 +160,7 @@ export function Lobby() {
       clearInterval(interval)
       document.removeEventListener("visibilitychange", handleVisibility)
     }
-  }, [])
+  }, [hasJoined])
 
   // Rejoin countdown ticker: only runs every second while the host has an active disconnected room (< 60s)
   useEffect(() => {

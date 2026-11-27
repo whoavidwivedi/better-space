@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import { limitLiveKitRequest } from "@/lib/livekit-rate-limit"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import { hashHostSecret, roleCookieName } from "@/lib/space-auth"
 
@@ -69,13 +70,45 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  let roomService: RoomServiceClient
   try {
-    roomService = getRoomService()
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 500 })
-  }
+    const now = Date.now()
+    if (!lobbySnapshot || lobbySnapshot.expiresAt <= now) {
+      const pending = loadLobbySnapshot(getRoomService())
+      lobbySnapshot = { pending, expiresAt: Infinity }
+      void pending.then(
+        () => {
+          if (lobbySnapshot?.pending === pending) {
+            lobbySnapshot.expiresAt = Date.now() + LOBBY_CACHE_MS
+          }
+        },
+        () => {
+          if (lobbySnapshot?.pending === pending) lobbySnapshot = undefined
+        }
+      )
+    }
 
+    return NextResponse.json(
+      { data: await lobbySnapshot.pending },
+      {
+        headers: {
+          "Vercel-CDN-Cache-Control": "public, s-maxage=5",
+        },
+      }
+    )
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Could not load live spaces" } },
+      { status: 503 }
+    )
+  }
+}
+
+const LOBBY_CACHE_MS = 5_000
+let lobbySnapshot:
+  | { pending: ReturnType<typeof loadLobbySnapshot>; expiresAt: number }
+  | undefined
+
+async function loadLobbySnapshot(roomService: RoomServiceClient) {
   const rooms = (await roomService.listRooms()).filter((r) => {
     if (isSpaceEnded(r.name)) return false
     if (r.metadata) {
@@ -90,7 +123,9 @@ export async function GET(req: NextRequest) {
     rooms.map(async (r) => {
       let participants: any[] = []
       try {
-        participants = await roomService.listParticipants(r.name)
+        if (r.numParticipants > 0) {
+          participants = await roomService.listParticipants(r.name)
+        }
       } catch {}
 
       let host = "Unknown"
@@ -131,10 +166,13 @@ export async function GET(req: NextRequest) {
     })
   )
 
-  return NextResponse.json({ data: roomDetails })
+  return roomDetails
 }
 
 export async function POST(req: NextRequest) {
+  const limited = limitLiveKitRequest(req, "create")
+  if (limited) return limited
+
   const body = await req.json()
   const { roomName, hostName, avatar } = body
 
@@ -223,6 +261,8 @@ export async function POST(req: NextRequest) {
       createdAt: Date.now(),
     }),
   })
+
+  lobbySnapshot = undefined
 
   const at = new AccessToken(
     process.env.LIVEKIT_API_KEY!,
