@@ -49,3 +49,7 @@ next-env.d.ts
 TEST_INFRA.md
 TEST_READY.md
 tests/
+
+# Playwright
+/playwright-report/
+/test-results/
