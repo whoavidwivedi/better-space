@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
           participants = await roomService.listParticipants(cleanRoom)
         } catch {}
         try {
-          if (meta?.host) host = meta.host
+          if (meta?.host) host = meta.hostName || meta.host
           if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts
         } catch {}
 
@@ -330,7 +330,7 @@ export async function POST(req: NextRequest) {
                 if (m.avatar) avatar = m.avatar
               }
             } catch {}
-            return { identity: p.identity, avatar }
+            return { identity: p.name || p.identity, avatar }
           })
           .filter(
             (p: any, i: number, arr: any[]) =>
@@ -362,7 +362,7 @@ export async function POST(req: NextRequest) {
               endedAt: Date.now(),
               host,
               cohosts,
-              speakers: participants.map((p) => p.identity),
+              speakers: participants.map((p) => p.name || p.identity),
             }),
           })
         } catch {}
