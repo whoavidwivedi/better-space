@@ -36,6 +36,7 @@ import { useTheme } from "next-themes"
 import {
   ConnectionQuality,
   ConnectionState,
+  DisconnectReason,
   RoomEvent,
   Track,
 } from "livekit-client"
@@ -486,31 +487,11 @@ function RoomUI({
           } else if (isHostOrCohost) {
             setMicRequests((prev) => prev.filter((id) => id !== data.identity))
           }
-        } else if (data.type === "SPACE_ENDED") {
-          setIsEndingTransition(true)
-          setTimeout(() => {
-            setSpaceEndedInfo({
-              host: data.host || roomHost,
-              speakers:
-                data.speakers ||
-                participants.map((p) => {
-                  let avatar = p.identity
-                  try {
-                    if (p.metadata) {
-                      const m = JSON.parse(p.metadata)
-                      if (m.avatar) avatar = m.avatar
-                    }
-                  } catch {}
-                  return { identity: p.identity, avatar }
-                }),
-            })
-            setIsEndingTransition(false)
-          }, 600)
         }
       } catch {}
     }
 
-    const handleDisconnected = async () => {
+    const handleDisconnected = async (reason?: DisconnectReason) => {
       if (
         spaceEndedInfoRef.current ||
         isEndingSpaceRef.current ||
@@ -533,6 +514,14 @@ function RoomUI({
         }
       } catch {}
 
+      if (reason === DisconnectReason.ROOM_DELETED) {
+        setSpaceEndedInfo({
+          host: roomHost,
+          speakers: participants.map((p) => ({ identity: p.identity })),
+        })
+        return
+      }
+
       if (!intentionalLeaveRef.current) {
         onLeave()
       }
@@ -549,6 +538,7 @@ function RoomUI({
     isHostOrCohost,
     localParticipant,
     onLeave,
+    participants,
     roomHost,
     roomName,
     userName,
