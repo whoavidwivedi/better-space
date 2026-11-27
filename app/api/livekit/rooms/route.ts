@@ -180,23 +180,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const allRooms = await roomService.listRooms()
-    if (allRooms.length >= 5) {
-      return NextResponse.json(
-        {
-          error: {
-            message:
-              "Server is at capacity (max 5 active spaces). Please try again later.",
-          },
-        },
-        { status: 429 }
-      )
-    }
-
     for (const r of allRooms) {
       if (r.metadata) {
         try {
           const meta = JSON.parse(r.metadata)
-          if (meta.host === cleanHost) {
+          if (!meta.ended && meta.host === cleanHost) {
             return NextResponse.json(
               {
                 error: {
@@ -227,7 +215,6 @@ export async function POST(req: NextRequest) {
   await roomService.createRoom({
     name: cleanRoom,
     emptyTimeout: 43200,
-    maxParticipants: 50,
     metadata: JSON.stringify({
       host: cleanHost,
       hostSecretHash: hashHostSecret(hostSecret),

@@ -218,17 +218,9 @@ export async function GET(req: NextRequest) {
       await roomService.createRoom({
         name: cleanRoom,
         emptyTimeout: 43200,
-        maxParticipants: 50,
         metadata: JSON.stringify(meta),
       })
     } catch {}
-  }
-
-  if (targetRoom && targetRoom.numParticipants >= 50 && !isHost) {
-    return NextResponse.json(
-      { error: { message: "This space is full (max 50 participants)." } },
-      { status: 403 }
-    )
   }
 
   const at = new AccessToken(
