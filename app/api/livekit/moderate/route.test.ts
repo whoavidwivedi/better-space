@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test"
+import { describe, expect, mock, spyOn, test } from "bun:test"
 import { NextRequest } from "next/server"
 import {
   decryptCohostSecrets,
@@ -18,10 +18,11 @@ let deleted = false
 let tombstoneCreated = false
 let sentCredentials = ""
 let cohostCanPublish = false
+let participantIdentities = [host, cohost]
 
 class FakeRoomServiceClient {
   async listRooms() {
-    return [{ metadata, numParticipants: 1 }]
+    return [{ sid: "test-room-sid", metadata, numParticipants: 1 }]
   }
 
   async updateRoomMetadata(_room: string, nextMetadata: string) {
@@ -38,7 +39,7 @@ class FakeRoomServiceClient {
   }
 
   async listParticipants() {
-    return [{ identity: host }, { identity: cohost }]
+    return participantIdentities.map((identity) => ({ identity }))
   }
 
   async getParticipant(_room: string, identity: string) {
@@ -80,7 +81,7 @@ mock.module("livekit-server-sdk", () => ({
   RoomServiceClient: FakeRoomServiceClient,
   TokenVerifier: class {
     async verify(token: string) {
-      return { sub: token, video: { room: roomName } }
+      return { sub: token, video: { room: roomName, roomJoin: true } }
     }
   },
 }))
@@ -189,4 +190,40 @@ describe("moderation room flow", () => {
     )
     expect(response.status).toBe(403)
   })
+
+  test("requires a connected listener and keeps hosted rooms open", async () => {
+    metadata = JSON.stringify({ host, cohosts: [cohost] })
+    deleted = false
+    const hosted = await POST(request(cohost, "", "end_if_unhosted"))
+    expect(hosted.status).toBe(409)
+    expect(deleted).toBe(false)
+
+    participantIdentities = ["listener"]
+    try {
+      const disconnected = await POST(request("absent", "", "end_if_unhosted"))
+      expect(disconnected.status).toBe(409)
+      expect(deleted).toBe(false)
+    } finally {
+      participantIdentities = [host, cohost]
+    }
+  })
+
+  test("rechecks presence before closing an abandoned room", async () => {
+    metadata = JSON.stringify({ host, cohosts: [] })
+    participantIdentities = ["listener"]
+    deleted = false
+    tombstoneCreated = false
+    const clock = spyOn(performance, "now")
+      .mockReturnValueOnce(0)
+      .mockReturnValue(60_000)
+    try {
+      const response = await POST(request("listener", "", "end_if_unhosted"))
+      expect(response.status).toBe(200)
+      expect(deleted).toBe(true)
+      expect(tombstoneCreated).toBe(true)
+    } finally {
+      clock.mockRestore()
+      participantIdentities = [host, cohost]
+    }
+  }, 10_000)
 })

@@ -575,45 +575,58 @@ function RoomUI({
     }
   }, [participants, roomHost, isHost, roomCohosts])
 
-  const timeoutDeps = useRef({ isCohost, onLeave, roomName, userName, token })
+  const endCoordinator = participants.map((p) => p.identity).sort()[0]
+
   useEffect(() => {
-    timeoutDeps.current = { isCohost, onLeave, roomName, userName, token }
-  }, [isCohost, onLeave, roomName, userName, token])
+    if (
+      hostDisconnectTime === null ||
+      connectionState !== ConnectionState.Connected ||
+      endCoordinator !== localParticipant.identity
+    ) {
+      return
+    }
+
+    const controller = new AbortController()
+    let retry: ReturnType<typeof setTimeout> | undefined
+    const checkPresence = async () => {
+      try {
+        const response = await fetch("/api/livekit/moderate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName, token, action: "end_if_unhosted" }),
+          signal: controller.signal,
+        })
+        if (response.ok) return
+      } catch {}
+      if (!controller.signal.aborted) retry = setTimeout(checkPresence, 5000)
+    }
+    void checkPresence()
+
+    return () => {
+      controller.abort()
+      clearTimeout(retry)
+    }
+  }, [
+    connectionState,
+    endCoordinator,
+    hostDisconnectTime,
+    localParticipant.identity,
+    roomName,
+    token,
+  ])
 
   useEffect(() => {
     if (hostDisconnectTime === null) return
 
     const tick = () => {
-      const elapsed = Date.now() - hostDisconnectTime
-      const remaining = Math.ceil((60000 - elapsed) / 1000)
-      if (remaining <= 0) {
-        const deps = timeoutDeps.current
-        if (deps.isCohost) {
-          fetch("/api/livekit/moderate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roomName: deps.roomName,
-              token: deps.token,
-              action: "end",
-            }),
-          }).catch(() => {})
-        }
-        setSpaceEndedInfo({
-          host: roomHost,
-          speakers: participants.map((p) => ({ identity: p.identity })),
-        })
-        return true
-      }
-      setDisconnectCountdown(remaining)
-      return false
+      const remaining = Math.ceil(
+        (60000 - (Date.now() - hostDisconnectTime)) / 1000
+      )
+      setDisconnectCountdown(Math.max(remaining, 0))
     }
 
     tick()
-    const interval = setInterval(() => {
-      if (tick()) clearInterval(interval)
-    }, 1000)
-
+    const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
   }, [hostDisconnectTime])
 
@@ -1166,7 +1179,9 @@ function RoomUI({
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
             <div className="pointer-events-auto flex items-center justify-center rounded-full border border-destructive/20 bg-destructive px-5 py-2.5 font-mono text-xs font-bold text-destructive-foreground shadow-xl">
               <Spinner className="mr-2 size-3.5 shrink-0 text-destructive-foreground" />
-              Host disconnected. Space ends in {disconnectCountdown}s
+              {disconnectCountdown > 0
+                ? `Host disconnected. Space ends in ${disconnectCountdown}s`
+                : "Host disconnected. Checking room status…"}
             </div>
           </div>
         )}
