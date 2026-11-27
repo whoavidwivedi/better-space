@@ -1,6 +1,11 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import {
+  closureMarkerName,
+  isClosureMarker,
+  readRoomClosure,
+} from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import { hashHostSecret, roleCookieName } from "@/lib/space-auth"
 
@@ -30,7 +35,25 @@ export async function GET(req: NextRequest) {
     }
     try {
       const roomService = getRoomService()
-      const liveRooms = await roomService.listRooms([cleanRoom])
+      const liveRooms = await roomService.listRooms([
+        cleanRoom,
+        closureMarkerName(cleanRoom),
+      ])
+      const closure = readRoomClosure(liveRooms, cleanRoom)
+      if (closure?.closing) {
+        return NextResponse.json(
+          { error: { message: "This space is closing" } },
+          { status: 503 }
+        )
+      }
+      if (closure) {
+        const space = {
+          name: cleanRoom,
+          host: closure.host,
+          endedAt: closure.endedAt,
+        }
+        return NextResponse.json({ ended: true, data: { ended: true, space } })
+      }
       const r = liveRooms.find((rm) => rm.name.toLowerCase() === cleanRoom)
       if (r?.metadata) {
         try {
@@ -72,8 +95,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: { message: e.message } }, { status: 500 })
   }
 
-  const rooms = (await roomService.listRooms()).filter((r) => {
-    if (isSpaceEnded(r.name)) return false
+  const all = await roomService.listRooms()
+  const markers = new Set(
+    all.filter((room) => isClosureMarker(room.name)).map((room) => room.name)
+  )
+  const rooms = all.filter((r) => {
+    if (
+      isClosureMarker(r.name) ||
+      markers.has(closureMarkerName(r.name)) ||
+      isSpaceEnded(r.name)
+    ) {
+      return false
+    }
     if (r.metadata) {
       try {
         const meta = JSON.parse(r.metadata)
@@ -176,6 +209,15 @@ export async function POST(req: NextRequest) {
 
   try {
     const allRooms = await roomService.listRooms()
+    const closure = readRoomClosure(allRooms, cleanRoom)
+    if (closure) {
+      return NextResponse.json(
+        closure.closing
+          ? { error: { message: "This space is closing" } }
+          : { ended: true, error: "Space has ended" },
+        { status: closure.closing ? 503 : 410 }
+      )
+    }
     for (const r of allRooms) {
       if (r.metadata) {
         try {
@@ -206,7 +248,12 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
-  } catch {}
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Could not verify room availability" } },
+      { status: 503 }
+    )
+  }
 
   await roomService.createRoom({
     name: cleanRoom,

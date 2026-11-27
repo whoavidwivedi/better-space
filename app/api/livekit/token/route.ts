@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import { closureMarkerName, readRoomClosure } from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   hasCohostAccess,
@@ -81,7 +82,33 @@ export async function GET(req: NextRequest) {
 
   let targetRoom
   try {
-    const rooms = await roomService.listRooms([cleanRoom])
+    const rooms = await roomService.listRooms([
+      cleanRoom,
+      closureMarkerName(cleanRoom),
+    ])
+    const closure = readRoomClosure(rooms, cleanRoom)
+    if (closure?.closing) {
+      return NextResponse.json(
+        { error: { message: "This space is closing" } },
+        { status: 503 }
+      )
+    }
+    if (closure) {
+      const space = {
+        name: cleanRoom,
+        host: closure.host,
+        endedAt: closure.endedAt,
+      }
+      return NextResponse.json(
+        {
+          ended: true,
+          error: "Space has ended",
+          space,
+          data: { ended: true, endedInfo: space },
+        },
+        { status: 410 }
+      )
+    }
     targetRoom = rooms.find((room) => room.name === cleanRoom)
   } catch {
     return NextResponse.json(

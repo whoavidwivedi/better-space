@@ -1,5 +1,6 @@
 import { describe, expect, mock, spyOn, test } from "bun:test"
 import { NextRequest } from "next/server"
+import { closureMarkerName } from "@/lib/livekit-room-closure"
 import {
   decryptCohostSecrets,
   encryptCohostSecrets,
@@ -16,13 +17,26 @@ const hostSecret = "host-secret"
 let metadata = ""
 let deleted = false
 let tombstoneCreated = false
+let marker: { name: string; sid: string; metadata: string } | undefined
+let failDelete = false
+let failCreate = false
 let sentCredentials = ""
 let cohostCanPublish = false
 let participantIdentities = [host, cohost]
 
 class FakeRoomServiceClient {
-  async listRooms() {
-    return [{ sid: "test-room-sid", metadata, numParticipants: 1 }]
+  async listRooms(names: string[]) {
+    const rooms = []
+    if (!deleted && names.includes(roomName)) {
+      rooms.push({
+        name: roomName,
+        sid: "test-room-sid",
+        metadata,
+        numParticipants: 1,
+      })
+    }
+    if (marker && names.includes(marker.name)) rooms.push(marker)
+    return rooms
   }
 
   async updateRoomMetadata(_room: string, nextMetadata: string) {
@@ -68,11 +82,16 @@ class FakeRoomServiceClient {
   }
 
   async deleteRoom() {
+    if (failDelete) throw new Error("LiveKit deletion failed")
+    expect(marker?.name).toBe(closureMarkerName(roomName))
     deleted = true
   }
 
-  async createRoom() {
+  async createRoom(options: { name: string; metadata: string }) {
+    if (failCreate) throw new Error("LiveKit marker creation failed")
+    marker = { ...options, sid: "marker-sid" }
     tombstoneCreated = true
+    return marker
   }
 }
 
@@ -154,6 +173,8 @@ describe("moderation room flow", () => {
     expect(deleted).toBe(true)
     expect(tombstoneCreated).toBe(true)
 
+    deleted = false
+    marker = undefined
     metadata = JSON.stringify({
       host,
       hostSecretHash: hashHostSecret(hostSecret),
@@ -226,4 +247,35 @@ describe("moderation room flow", () => {
       participantIdentities = [host, cohost]
     }
   }, 10_000)
+
+  test("keeps closure retryable through LiveKit failures", async () => {
+    metadata = JSON.stringify({
+      host,
+      hostSecretHash: hashHostSecret(hostSecret),
+    })
+    deleted = false
+    marker = undefined
+    failCreate = true
+    try {
+      const failedReservation = await POST(request(host, hostSecret, "end"))
+      expect(failedReservation.status).toBe(503)
+      expect(deleted).toBe(false)
+      expect(marker).toBeUndefined()
+
+      failCreate = false
+      failDelete = true
+      const failedClosure = await POST(request(host, hostSecret, "end"))
+      expect(failedClosure.status).toBe(503)
+      expect(deleted).toBe(false)
+      expect(marker).toBeDefined()
+
+      failDelete = false
+      const retried = await POST(request(host, hostSecret, "end"))
+      expect(retried.status).toBe(200)
+      expect(deleted).toBe(true)
+    } finally {
+      failCreate = false
+      failDelete = false
+    }
+  })
 })
