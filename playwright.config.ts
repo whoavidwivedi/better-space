@@ -5,6 +5,7 @@ export default defineConfig({
   testMatch: "**/*.browser.ts",
   timeout: 45_000,
   use: {
+    channel: "chromium",
     baseURL: "http://localhost:3188",
     permissions: ["microphone"],
     launchOptions: {
