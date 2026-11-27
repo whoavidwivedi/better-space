@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Users } from "lucide-react"
 import {
   animate,
@@ -298,25 +298,28 @@ function RoomStack() {
     setActiveIndex(norm)
   })
 
-  const animateTo = (target: number, velocity = 0) => {
-    animationControls.current?.stop()
-    targetIndexRef.current = target
-    lastInteractionTime.current = Date.now()
+  const animateTo = useCallback(
+    (target: number, velocity = 0) => {
+      animationControls.current?.stop()
+      targetIndexRef.current = target
+      lastInteractionTime.current = Date.now()
 
-    if (reducedMotion) {
-      position.set(target)
-      return
-    }
+      if (reducedMotion) {
+        position.set(target)
+        return
+      }
 
-    animationControls.current = animate(position, target, {
-      type: "spring",
-      stiffness: 190,
-      damping: 24,
-      mass: 0.8,
-      restDelta: 0.001,
-      velocity,
-    })
-  }
+      animationControls.current = animate(position, target, {
+        type: "spring",
+        stiffness: 190,
+        damping: 24,
+        mass: 0.8,
+        restDelta: 0.001,
+        velocity,
+      })
+    },
+    [position, reducedMotion]
+  )
 
   // Smooth auto-advance when in view & idle
   useEffect(() => {
@@ -331,7 +334,7 @@ function RoomStack() {
     }, 2800)
 
     return () => clearInterval(interval)
-  }, [inView, isHovered, reducedMotion])
+  }, [animateTo, inView, isHovered, reducedMotion])
 
   // Handle card click
   const handleCardClick = (diff: number) => {
