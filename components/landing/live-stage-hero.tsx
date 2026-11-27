@@ -480,7 +480,15 @@ function RoomPreview({
         <Button
           onClick={() => setMuted((m) => !m)}
           disabled={deafened}
-          aria-label={muted ? "Unmute microphone" : "Mute microphone"}
+          aria-label={
+            muted
+              ? dock
+                ? "Unmute microphone"
+                : "Mic muted, unmute microphone"
+              : dock
+                ? "Mute microphone"
+                : "Mic live, mute microphone"
+          }
           aria-pressed={muted}
           variant={muted ? "destructive" : "default"}
           size="lg"

@@ -100,8 +100,6 @@ async function roomRemainsUnhosted(
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { roomName, targetIdentity, action, token } = body
   const origin = req.headers.get("origin")
   if (origin && origin !== new URL(req.url).origin) {
     return NextResponse.json(
@@ -110,14 +108,25 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!roomName || !action || !token) {
+  const body = await req.json().catch(() => null)
+  if (
+    !body ||
+    typeof body.roomName !== "string" ||
+    typeof body.action !== "string" ||
+    typeof body.token !== "string" ||
+    !body.token ||
+    (body.targetIdentity !== undefined &&
+      (typeof body.targetIdentity !== "string" ||
+        body.targetIdentity.length > 128))
+  ) {
     return NextResponse.json(
-      { error: { message: "Missing parameters" } },
+      { error: { message: "Invalid moderation request" } },
       { status: 400 }
     )
   }
 
-  const cleanRoom = typeof roomName === "string" ? roomName.trim() : ""
+  const { targetIdentity, action, token } = body
+  const cleanRoom = body.roomName.trim()
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
       { error: { message: "Invalid room name" } },
