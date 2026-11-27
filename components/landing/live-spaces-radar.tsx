@@ -124,7 +124,7 @@ export function LiveSpacesRadar() {
                       LIVE NOW
                     </span>
                   ) : (
-                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-muted/80 px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wide whitespace-nowrap text-muted-foreground uppercase sm:px-3 sm:py-1 sm:text-[11px]">
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-muted/80 px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wide whitespace-nowrap text-foreground uppercase sm:px-3 sm:py-1 sm:text-[11px]">
                       STARTER TEMPLATE
                     </span>
                   )}

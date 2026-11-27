@@ -15,6 +15,19 @@ export const metadata: Metadata = pageMetadata({
 
 const releases = [
   {
+    version: "v1.7.10",
+    date: "2026-11-28",
+    label: "Room capacity and reliability fixes",
+    summary:
+      "Removed the app's room capacity limits and improved how Better Space handles joining, chat history, and room closure.",
+    highlights: [
+      "Removed the five-room app cap and the 50-participant cap for new rooms. LiveKit plan quotas still apply.",
+      "The join endpoint verifies that a room exists before issuing a token.",
+      "Chat history sync validates messages from the host and preserves messages already received.",
+      "The server checks for a returning host or co-host before ending an abandoned room.",
+    ],
+  },
+  {
     version: "v1.7.9",
     date: "2026-11-03",
     label: "Voice space lifecycles, informative loading states & wheel deck",
