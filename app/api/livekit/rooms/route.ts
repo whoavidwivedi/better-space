@@ -219,6 +219,7 @@ export async function POST(req: NextRequest) {
       )
     }
     for (const r of allRooms) {
+      if (isClosureMarker(r.name)) continue
       if (r.metadata) {
         try {
           const meta = JSON.parse(r.metadata)
