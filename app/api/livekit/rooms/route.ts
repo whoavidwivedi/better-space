@@ -44,10 +44,6 @@ export async function GET(req: NextRequest) {
                   name: cleanRoom,
                   host: meta.host || "Unknown",
                   endedAt: meta.endedAt ?? Date.now(),
-                  cohosts: meta.cohosts || [],
-                  speakers: (meta.speakers || []).map((s: string) => ({
-                    identity: s,
-                  })),
                 },
               },
             })

@@ -32,6 +32,8 @@ import { MessageSquare, Send, X } from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
 
+const CHAT_TTL_MS = 24 * 60 * 60 * 1000
+
 type HistoryMessage = {
   id: string
   timestamp: number
@@ -157,9 +159,14 @@ export function ChatPanel({
     if (!roomName) return
     try {
       const stored = JSON.parse(
-        localStorage.getItem(`space_chat_${roomName}`) || "null"
+        sessionStorage.getItem(`space_chat_${roomName}`) || "null"
       )
-      setHistory(isHistory(stored) ? stored : [])
+      if (stored?.expiresAt > Date.now() && isHistory(stored.messages)) {
+        setHistory(stored.messages)
+      } else {
+        sessionStorage.removeItem(`space_chat_${roomName}`)
+        setHistory([])
+      }
     } catch {
       setHistory([])
     }
@@ -169,7 +176,14 @@ export function ChatPanel({
   React.useEffect(() => {
     if (!roomName || loadedRoom !== roomName) return
     try {
-      localStorage.setItem(`space_chat_${roomName}`, JSON.stringify(history))
+      if (!history.length) return
+      sessionStorage.setItem(
+        `space_chat_${roomName}`,
+        JSON.stringify({
+          messages: history,
+          expiresAt: Date.now() + CHAT_TTL_MS,
+        })
+      )
     } catch {}
   }, [history, loadedRoom, roomName])
 

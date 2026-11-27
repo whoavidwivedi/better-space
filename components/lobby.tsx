@@ -679,7 +679,7 @@ export function Lobby() {
                 </p>
               ) : (
                 <p className="text-center text-xs text-muted-foreground">
-                  No account. Nothing recorded.
+                  No account. Voice isn’t recorded.
                 </p>
               )}
             </div>
