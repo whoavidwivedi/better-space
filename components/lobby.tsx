@@ -128,21 +128,25 @@ export function Lobby() {
     }
   }, [])
 
+  const [roomsUnavailable, setRoomsUnavailable] = useState(false)
+  const [failedInvite, setFailedInvite] = useState<string | null>(null)
+
   const fetchRooms = async () => {
     try {
       const res = await fetch("/api/livekit/rooms")
-      if (res.ok) {
-        const data = await res.json()
-        setRooms(data.data || [])
-      }
-    } catch (e) {
-      console.error("Failed to fetch rooms", e)
+      if (!res.ok) throw new Error("Could not load spaces")
+      const data = await res.json()
+      setRooms(data.data || [])
+      setRoomsUnavailable(false)
+    } catch {
+      setRoomsUnavailable(true)
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
+    if (hasJoined) return
     fetchRooms()
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -159,14 +163,13 @@ export function Lobby() {
       clearInterval(interval)
       document.removeEventListener("visibilitychange", handleVisibility)
     }
-  }, [])
+  }, [hasJoined])
 
   // Rejoin countdown ticker: only runs every second while the host has an active disconnected room (< 60s)
   useEffect(() => {
     const hasActiveDisconnect = () => {
-      if (typeof window === "undefined" || !activeUserName) return false
+      if (typeof window === "undefined") return false
       return rooms.some((room) => {
-        if (room.host !== activeUserName) return false
         const disconnectTimeStr = localStorage.getItem(
           `space_host_disconnected_${room.name}`
         )
@@ -189,7 +192,7 @@ export function Lobby() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [rooms, activeUserName])
+  }, [rooms])
 
   const handleJoin = async (roomName: string) => {
     const uName = joinUserName.trim()
@@ -317,6 +320,33 @@ export function Lobby() {
   }
 
   // Act on the arrival (above) once the rooms have loaded.
+  const checkInvite = async (space: string) => {
+    setFailedInvite(null)
+    setIsCheckingSpace(true)
+    try {
+      const response = await fetch(
+        `/api/livekit/rooms?space=${encodeURIComponent(space)}`
+      )
+      if (!response.ok) throw new Error("Could not check space")
+      const data = await response.json()
+      if (data.ended) {
+        setEndedModalSpace({
+          name: space,
+          host: data.data?.space?.host,
+          speakers: data.data?.space?.speakers,
+        })
+      } else if (data.live || data.data?.live) {
+        onRoomClick(space)
+      } else {
+        openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
+      }
+    } catch {
+      setFailedInvite(space)
+    } finally {
+      setIsCheckingSpace(false)
+    }
+  }
+
   useEffect(() => {
     const params = arrival.current
     if (isLoading || !params) return
@@ -326,31 +356,8 @@ export function Lobby() {
     )
     if (template) return openLaunch(template.name)
     const space = params.get("space")
-    if (!space) return
-    if (rooms.some((r) => r.name === space)) return onRoomClick(space)
-
-    // Check if space has ended before opening launch
-    setIsCheckingSpace(true)
-    fetch(`/api/livekit/rooms?space=${encodeURIComponent(space)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.ended) {
-          setEndedModalSpace({
-            name: space,
-            host: data.data?.space?.host,
-            speakers: data.data?.space?.speakers,
-          })
-        } else {
-          openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
-        }
-      })
-      .catch(() => {
-        openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
-      })
-      .finally(() => {
-        setIsCheckingSpace(false)
-      })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once rooms load
+    if (space) void checkInvite(space)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consume the initial URL once
   }, [isLoading])
 
   if (hasJoined && token) {
@@ -388,7 +395,7 @@ export function Lobby() {
             <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
               {isLoading ? (
                 <Spinner className="size-3 text-muted-foreground" />
-              ) : (
+              ) : roomsUnavailable ? null : (
                 <span className="relative flex size-1.5" aria-hidden="true">
                   <span
                     className={cn(
@@ -402,9 +409,11 @@ export function Lobby() {
               )}
               {isLoading
                 ? "Checking who's live…"
-                : liveCount === 0
-                  ? "No rooms live yet"
-                  : `${liveCount} ${liveCount === 1 ? "room" : "rooms"} live now`}
+                : roomsUnavailable
+                  ? "Live spaces unavailable"
+                  : liveCount === 0
+                    ? "No rooms live yet"
+                    : `${liveCount} ${liveCount === 1 ? "room" : "rooms"} live now`}
             </span>
             <h1 className="mt-3 font-display text-3xl tracking-tight text-foreground sm:text-4xl">
               Lobby
@@ -439,6 +448,27 @@ export function Lobby() {
           </div>
         )}
 
+        {failedInvite && (
+          <div role="alert" className="mt-6 flex flex-wrap items-center gap-3">
+            <p>Could not check the invited space.</p>
+            <Button
+              variant="outline"
+              onClick={() => void checkInvite(failedInvite)}
+            >
+              Retry invite
+            </Button>
+          </div>
+        )}
+
+        {roomsUnavailable && (
+          <div role="status" className="mt-6 flex flex-wrap items-center gap-3">
+            <p>Could not refresh live spaces.</p>
+            <Button variant="outline" onClick={() => void fetchRooms()}>
+              Retry lobby
+            </Button>
+          </div>
+        )}
+
         {/* Live rooms */}
         <section aria-label="Live rooms" className="mt-8">
           {isLoading ? (
@@ -463,7 +493,7 @@ export function Lobby() {
                       )
                     : null
                 let timeLeft = 0
-                if (disconnectTimeStr && room.host === activeUserName) {
+                if (disconnectTimeStr) {
                   const elapsed = Date.now() - parseInt(disconnectTimeStr, 10)
                   if (elapsed < 60000) {
                     timeLeft = Math.ceil((60000 - elapsed) / 1000)
@@ -487,7 +517,7 @@ export function Lobby() {
                 )
               })}
             </div>
-          ) : (
+          ) : roomsUnavailable ? null : (
             <div className="flex flex-col items-center rounded-3xl border border-dashed border-border bg-card/50 px-6 py-12 text-center sm:py-16">
               <div className="flex -space-x-3" aria-hidden="true">
                 {["OSLO-3", "Funny Bunny-3", "Afterclap-2", "Guacamole-1"].map(
@@ -654,10 +684,7 @@ export function Lobby() {
                 size="lg"
                 className="h-11 w-full rounded-[10px] text-[15px]"
                 disabled={
-                  !newSpaceName.trim() ||
-                  !createUserName.trim() ||
-                  isJoining ||
-                  rooms.some((r) => r.host === createUserName.trim())
+                  !newSpaceName.trim() || !createUserName.trim() || isJoining
                 }
               >
                 {isJoining ? (
@@ -672,16 +699,9 @@ export function Lobby() {
                   </>
                 )}
               </Button>
-              {createUserName.trim() &&
-              rooms.some((r) => r.host === createUserName.trim()) ? (
-                <p className="text-center text-xs font-medium text-destructive">
-                  You already host a space. End it to start another.
-                </p>
-              ) : (
-                <p className="text-center text-xs text-muted-foreground">
-                  No account. Nothing recorded.
-                </p>
-              )}
+              <p className="text-center text-xs text-muted-foreground">
+                No account. Voice isn’t recorded.
+              </p>
             </div>
           </form>
         </SpacePanel>
@@ -691,11 +711,7 @@ export function Lobby() {
       <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
         <SpacePanel
           title={getDisplayRoomTitle(selectedRoom)}
-          description={
-            joinRoom?.host === joinUserName.trim()
-              ? "This is your room. Go live to pick up where you left off."
-              : "You'll join as a listener. Raise your hand to get the mic."
-          }
+          description="Join as a listener or resume hosting from this browser."
           previewLabel="You, in the room"
           preview={
             joinRoom && (
@@ -742,11 +758,7 @@ export function Lobby() {
                   <span>Connecting to space…</span>
                 </>
               ) : (
-                <span>
-                  {joinRoom?.host === joinUserName.trim()
-                    ? "Go live"
-                    : "Join space"}
-                </span>
+                <span>Join space</span>
               )}
             </Button>
           </form>

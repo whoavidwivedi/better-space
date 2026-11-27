@@ -111,3 +111,46 @@ jobs:
 
       - name: Production build
         run: bun run build
+
+  production-audit:
+    name: Production Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+          cache: true
+      - run: bun install --frozen-lockfile
+      - run: bun audit --production
+
+  room-browser:
+    name: Room Browser Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+          cache: true
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: Start a local LiveKit server
+        env:
+          LIVEKIT_VERSION: 1.13.11
+        run: |
+          archive="livekit_${LIVEKIT_VERSION}_linux_amd64.tar.gz"
+          base="https://github.com/livekit/livekit/releases/download/v${LIVEKIT_VERSION}"
+          cd "$RUNNER_TEMP"
+          curl --fail --location --retry 3 --silent --show-error "$base/$archive" --output "$archive"
+          curl --fail --location --retry 3 --silent --show-error "$base/checksums.txt" --output livekit-checksums.txt
+          awk -v archive="$archive" '$2 == archive { print; matched = 1 } END { if (!matched) exit 1 }' livekit-checksums.txt | sha256sum --check
+          tar xzf "$archive" livekit-server
+          ./livekit-server --dev --bind 127.0.0.1 > livekit-server.log 2>&1 &
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:7880/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat livekit-server.log
+          exit 1
+      - run: bunx playwright test

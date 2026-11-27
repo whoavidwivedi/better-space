@@ -1,5 +1,6 @@
-import { describe, expect, mock, test } from "bun:test"
+import { describe, expect, mock, spyOn, test } from "bun:test"
 import { NextRequest } from "next/server"
+import { closureMarkerName } from "@/lib/livekit-room-closure"
 import {
   decryptCohostSecrets,
   encryptCohostSecrets,
@@ -16,12 +17,26 @@ const hostSecret = "host-secret"
 let metadata = ""
 let deleted = false
 let tombstoneCreated = false
+let marker: { name: string; sid: string; metadata: string } | undefined
+let failDelete = false
+let failCreate = false
 let sentCredentials = ""
 let cohostCanPublish = false
+let participantIdentities = [host, cohost]
 
 class FakeRoomServiceClient {
-  async listRooms() {
-    return [{ metadata, numParticipants: 1 }]
+  async listRooms(names: string[]) {
+    const rooms = []
+    if (!deleted && names.includes(roomName)) {
+      rooms.push({
+        name: roomName,
+        sid: "test-room-sid",
+        metadata,
+        numParticipants: 1,
+      })
+    }
+    if (marker && names.includes(marker.name)) rooms.push(marker)
+    return rooms
   }
 
   async updateRoomMetadata(_room: string, nextMetadata: string) {
@@ -38,7 +53,7 @@ class FakeRoomServiceClient {
   }
 
   async listParticipants() {
-    return [{ identity: host }, { identity: cohost }]
+    return participantIdentities.map((identity) => ({ identity }))
   }
 
   async getParticipant(_room: string, identity: string) {
@@ -67,11 +82,16 @@ class FakeRoomServiceClient {
   }
 
   async deleteRoom() {
+    if (failDelete) throw new Error("LiveKit deletion failed")
+    expect(marker?.name).toBe(closureMarkerName(roomName))
     deleted = true
   }
 
-  async createRoom() {
+  async createRoom(options: { name: string; metadata: string }) {
+    if (failCreate) throw new Error("LiveKit marker creation failed")
+    marker = { ...options, sid: "marker-sid" }
     tombstoneCreated = true
+    return marker
   }
 }
 
@@ -80,7 +100,7 @@ mock.module("livekit-server-sdk", () => ({
   RoomServiceClient: FakeRoomServiceClient,
   TokenVerifier: class {
     async verify(token: string) {
-      return { sub: token, video: { room: roomName } }
+      return { sub: token, video: { room: roomName, roomJoin: true } }
     }
   },
 }))
@@ -114,6 +134,22 @@ function request(
 }
 
 describe("moderation room flow", () => {
+  test("rejects malformed JSON and invalid request shapes", async () => {
+    for (const body of [
+      "{",
+      "null",
+      JSON.stringify({ roomName, action: {}, token: "token" }),
+    ]) {
+      const response = await POST(
+        new NextRequest("http://localhost/api/livekit/moderate", {
+          method: "POST",
+          body,
+        })
+      )
+      expect(response.status).toBe(400)
+    }
+  })
+
   test("promotes, revokes, and ends through the API boundary", async () => {
     process.env.LIVEKIT_API_KEY = "test-key"
     process.env.LIVEKIT_API_SECRET = "test-secret"
@@ -153,6 +189,8 @@ describe("moderation room flow", () => {
     expect(deleted).toBe(true)
     expect(tombstoneCreated).toBe(true)
 
+    deleted = false
+    marker = undefined
     metadata = JSON.stringify({
       host,
       hostSecretHash: hashHostSecret(hostSecret),
@@ -188,5 +226,72 @@ describe("moderation room flow", () => {
       request(cohost, "cohost-secret", "grant_cohost", "another-user")
     )
     expect(response.status).toBe(403)
+  })
+
+  test("requires a connected listener and keeps hosted rooms open", async () => {
+    metadata = JSON.stringify({ host, cohosts: [cohost] })
+    deleted = false
+    const hosted = await POST(request(cohost, "", "end_if_unhosted"))
+    expect(hosted.status).toBe(409)
+    expect(deleted).toBe(false)
+
+    participantIdentities = ["listener"]
+    try {
+      const disconnected = await POST(request("absent", "", "end_if_unhosted"))
+      expect(disconnected.status).toBe(409)
+      expect(deleted).toBe(false)
+    } finally {
+      participantIdentities = [host, cohost]
+    }
+  })
+
+  test("rechecks presence before closing an abandoned room", async () => {
+    metadata = JSON.stringify({ host, cohosts: [] })
+    participantIdentities = ["listener"]
+    deleted = false
+    tombstoneCreated = false
+    const clock = spyOn(performance, "now")
+      .mockReturnValueOnce(0)
+      .mockReturnValue(60_000)
+    try {
+      const response = await POST(request("listener", "", "end_if_unhosted"))
+      expect(response.status).toBe(200)
+      expect(deleted).toBe(true)
+      expect(tombstoneCreated).toBe(true)
+    } finally {
+      clock.mockRestore()
+      participantIdentities = [host, cohost]
+    }
+  }, 10_000)
+
+  test("keeps closure retryable through LiveKit failures", async () => {
+    metadata = JSON.stringify({
+      host,
+      hostSecretHash: hashHostSecret(hostSecret),
+    })
+    deleted = false
+    marker = undefined
+    failCreate = true
+    try {
+      const failedReservation = await POST(request(host, hostSecret, "end"))
+      expect(failedReservation.status).toBe(503)
+      expect(deleted).toBe(false)
+      expect(marker).toBeUndefined()
+
+      failCreate = false
+      failDelete = true
+      const failedClosure = await POST(request(host, hostSecret, "end"))
+      expect(failedClosure.status).toBe(503)
+      expect(deleted).toBe(false)
+      expect(marker).toBeDefined()
+
+      failDelete = false
+      const retried = await POST(request(host, hostSecret, "end"))
+      expect(retried.status).toBe(200)
+      expect(deleted).toBe(true)
+    } finally {
+      failCreate = false
+      failDelete = false
+    }
   })
 })

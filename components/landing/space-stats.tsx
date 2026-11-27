@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Users } from "lucide-react"
 import {
   animate,
@@ -192,10 +192,7 @@ function StackCardItem({
     let d = (index - pos) % total
     if (d < -half) d += total
     if (d > half) d -= total
-    const absD = Math.abs(d)
-    if (absD >= 2.2) return 0
-    if (absD > 1.8) return (2.2 - absD) / 0.4
-    return 1
+    return Math.abs(d) <= 1.8 ? 1 : 0
   })
 
   const zIndex = useTransform(position, (pos) => {
@@ -239,7 +236,7 @@ function StackCardItem({
             Live
           </span>
           {card.topic && (
-            <span className="truncate font-mono text-[10px] text-muted-foreground/80">
+            <span className="truncate font-mono text-[10px] text-foreground">
               {card.topic}
             </span>
           )}
@@ -262,7 +259,7 @@ function StackCardItem({
           ))}
         </div>
         {card.listeners !== undefined && (
-          <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1 font-mono text-[11px] text-foreground">
             <Users className="size-3" aria-hidden="true" />
             <span>{card.listeners}</span>
           </span>
@@ -298,25 +295,28 @@ function RoomStack() {
     setActiveIndex(norm)
   })
 
-  const animateTo = (target: number, velocity = 0) => {
-    animationControls.current?.stop()
-    targetIndexRef.current = target
-    lastInteractionTime.current = Date.now()
+  const animateTo = useCallback(
+    (target: number, velocity = 0) => {
+      animationControls.current?.stop()
+      targetIndexRef.current = target
+      lastInteractionTime.current = Date.now()
 
-    if (reducedMotion) {
-      position.set(target)
-      return
-    }
+      if (reducedMotion) {
+        position.set(target)
+        return
+      }
 
-    animationControls.current = animate(position, target, {
-      type: "spring",
-      stiffness: 190,
-      damping: 24,
-      mass: 0.8,
-      restDelta: 0.001,
-      velocity,
-    })
-  }
+      animationControls.current = animate(position, target, {
+        type: "spring",
+        stiffness: 190,
+        damping: 24,
+        mass: 0.8,
+        restDelta: 0.001,
+        velocity,
+      })
+    },
+    [position, reducedMotion]
+  )
 
   // Smooth auto-advance when in view & idle
   useEffect(() => {
@@ -331,7 +331,7 @@ function RoomStack() {
     }, 2800)
 
     return () => clearInterval(interval)
-  }, [inView, isHovered, reducedMotion])
+  }, [animateTo, inView, isHovered, reducedMotion])
 
   // Handle card click
   const handleCardClick = (diff: number) => {
