@@ -166,7 +166,7 @@ function RoomStarter() {
           />
         </Link>
         <span className="text-muted-foreground">
-          No account &middot; Nothing recorded &middot; Any device
+          No account &middot; Voice isn’t recorded &middot; Any device
         </span>
       </div>
     </div>
@@ -480,7 +480,15 @@ function RoomPreview({
         <Button
           onClick={() => setMuted((m) => !m)}
           disabled={deafened}
-          aria-label={muted ? "Unmute microphone" : "Mute microphone"}
+          aria-label={
+            muted
+              ? dock
+                ? "Unmute microphone"
+                : "Mic muted, unmute microphone"
+              : dock
+                ? "Mute microphone"
+                : "Mic live, mute microphone"
+          }
           aria-pressed={muted}
           variant={muted ? "destructive" : "default"}
           size="lg"
@@ -499,7 +507,7 @@ function RoomPreview({
         <div className="absolute inset-0 z-20 flex animate-in flex-col items-center justify-center gap-4 bg-background/95 p-6 text-center duration-200 fade-in">
           <p className="font-display text-lg">This space has ended</p>
           <p className="text-sm text-muted-foreground">
-            Nothing was recorded. Only who hosted remains.
+            Voice wasn’t recorded. The host name can remain visible.
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setEnded(false)}>

@@ -5,8 +5,8 @@ import {
   TokenVerifier,
 } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
-import { snapshotEndedSpeaker } from "@/lib/ended-roster"
 import { markSpaceEnded } from "@/lib/ended-spaces"
+import { closureMarkerName, readRoomClosure } from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   decryptCohostSecrets,
@@ -100,8 +100,6 @@ async function roomRemainsUnhosted(
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { roomName, targetIdentity, action, token } = body
   const origin = req.headers.get("origin")
   if (origin && origin !== new URL(req.url).origin) {
     return NextResponse.json(
@@ -110,14 +108,25 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!roomName || !action || !token) {
+  const body = await req.json().catch(() => null)
+  if (
+    !body ||
+    typeof body.roomName !== "string" ||
+    typeof body.action !== "string" ||
+    typeof body.token !== "string" ||
+    !body.token ||
+    (body.targetIdentity !== undefined &&
+      (typeof body.targetIdentity !== "string" ||
+        body.targetIdentity.length > 128))
+  ) {
     return NextResponse.json(
-      { error: { message: "Missing parameters" } },
+      { error: { message: "Invalid moderation request" } },
       { status: 400 }
     )
   }
 
-  const cleanRoom = typeof roomName === "string" ? roomName.trim() : ""
+  const { targetIdentity, action, token } = body
+  const cleanRoom = body.roomName.trim()
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
       { error: { message: "Invalid room name" } },
@@ -309,54 +318,64 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ data: { ended: false } }, { status: 409 })
       }
     // Fall through to the same closure procedure as a moderator request.
-    case "end":
-      {
-        let host = "Unknown"
-        let cohosts: string[] = []
-        let participants: any[] = []
-        try {
-          participants = await roomService.listParticipants(cleanRoom)
-        } catch {}
-        try {
-          if (meta?.host) host = meta.hostName || meta.host
-          if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts
-        } catch {}
-
-        const speakers = participants.map((participant) =>
-          snapshotEndedSpeaker(participant, meta?.host || "")
+    case "end": {
+      if (!targetRoom?.sid) {
+        return NextResponse.json(
+          { error: { message: "Could not identify this room" } },
+          { status: 503 }
         )
+      }
 
-        markSpaceEnded(cleanRoom.toLowerCase().trim(), {
-          host,
-          cohosts,
-          speakers,
-        })
+      const markerName = closureMarkerName(cleanRoom)
+      const host = meta?.hostName || meta?.host || "Unknown"
+      try {
+        const rooms = await roomService.listRooms([cleanRoom, markerName])
+        const closure = readRoomClosure(rooms, cleanRoom)
 
-        // Disconnect everyone by deleting the room...
-        await roomService.deleteRoom(cleanRoom)
+        if (closure && closure.roomSid !== targetRoom.sid) {
+          return NextResponse.json(
+            { error: { message: "The room has already ended" } },
+            { status: 409 }
+          )
+        }
 
-        // ...then re-create it as a durable "ended" tombstone so the name stays
-        // reserved and the join route can never fall through to "create + host".
-        // Roster lives in metadata (shared LiveKit state), not the server disk.
-        try {
-          await roomService.createRoom({
-            name: cleanRoom,
-            // LiveKit is the durable tombstone store on Vercel. Keep the
-            // ended name reserved for a year; the local JSON write is only a
-            // best-effort cache for local development.
-            emptyTimeout: 31536000,
-            maxParticipants: 0,
+        if (!closure) {
+          const marker = await roomService.createRoom({
+            name: markerName,
+            emptyTimeout: 31_536_000,
             metadata: JSON.stringify({
-              ended: true,
+              roomSid: targetRoom.sid,
               endedAt: Date.now(),
               host,
-              cohosts,
-              speakers,
             }),
           })
-        } catch {}
+          if (
+            readRoomClosure([marker], cleanRoom)?.roomSid !== targetRoom.sid
+          ) {
+            throw new Error("Room closure could not be reserved")
+          }
+        }
+
+        try {
+          await roomService.deleteRoom(cleanRoom)
+        } catch (error) {
+          const current = await roomService.listRooms([cleanRoom])
+          if (current.some((room) => room.sid === targetRoom.sid)) throw error
+        }
+
+        markSpaceEnded(cleanRoom, host)
+        return NextResponse.json({ data: { success: true } })
+      } catch {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Could not finish ending this space. Please retry.",
+            },
+          },
+          { status: 503 }
+        )
       }
-      return NextResponse.json({ data: { success: true } })
+    }
 
     case "kick":
       if (!targetIdentity) {

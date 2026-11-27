@@ -874,9 +874,9 @@ const FEATURES = [
     span: "lg:col-span-2",
   },
   {
-    title: "Gone when you go.",
+    title: "What stays after a space.",
     description:
-      "Rooms are never recorded. The host can end the space, and if they drop, everyone gets 60 seconds. Afterwards only who hosted remains.",
+      "Better Space does not record voice. Chat can resume in the same tab for up to 24 hours after its last update. An ended-room link can still show the room title and host name.",
     visual: <Ended />,
     span: "lg:col-span-4",
   },

@@ -469,7 +469,9 @@ export function FoldableStage({
         onPointerCancel={handlePointerUp}
       >
         {under && (
-          <div className="pointer-events-none absolute inset-0">{under}</div>
+          <div inert className="pointer-events-none absolute inset-0">
+            {under}
+          </div>
         )}
         <motion.div
           className="absolute inset-0 origin-left will-change-transform transform-3d"
@@ -477,10 +479,16 @@ export function FoldableStage({
         >
           {front || back ? (
             <>
-              <div className="pointer-events-none absolute inset-0 backface-hidden">
+              <div
+                inert
+                className="pointer-events-none absolute inset-0 backface-hidden"
+              >
                 {front}
               </div>
-              <div className="pointer-events-none absolute inset-0 [transform:rotateY(180deg)] backface-hidden">
+              <div
+                inert
+                className="pointer-events-none absolute inset-0 [transform:rotateY(180deg)] backface-hidden"
+              >
                 {back}
               </div>
             </>
@@ -492,6 +500,7 @@ export function FoldableStage({
 
       <motion.div
         aria-hidden
+        inert
         className="pointer-events-none absolute inset-0"
         style={{ x }}
       >

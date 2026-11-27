@@ -1,12 +1,13 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
-import { readEndedRoster } from "@/lib/ended-roster"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
 import {
   readBrowserSession,
   roomParticipantIdentity,
   setBrowserSession,
 } from "@/lib/browser-session"
+import { limitLiveKitRequest } from "@/lib/livekit-rate-limit"
+import { closureMarkerName, readRoomClosure } from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   hasCohostAccess,
@@ -28,6 +29,9 @@ function getRoomService() {
 }
 
 export async function GET(req: NextRequest) {
+  const limited = limitLiveKitRequest(req, "join")
+  if (limited) return limited
+
   const room = req.nextUrl.searchParams.get("room")
   const usernameQuery = req.nextUrl.searchParams.get("username")
   const avatarQuery = req.nextUrl.searchParams.get("avatar")
@@ -42,7 +46,7 @@ export async function GET(req: NextRequest) {
   }
 
   const cleanRoom = room.trim()
-  const avatar = avatarQuery?.trim() ?? ""
+  const avatar = avatarQuery?.trim().slice(0, 128) ?? ""
 
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
@@ -69,14 +73,13 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  if (!usernameQuery) {
+  const username = usernameQuery?.trim().slice(0, 30)
+  if (!username) {
     return NextResponse.json(
       { error: { message: "Missing username" } },
       { status: 400 }
     )
   }
-
-  const username = usernameQuery.trim().substring(0, 30)
 
   let roomService: RoomServiceClient
   try {
@@ -87,7 +90,33 @@ export async function GET(req: NextRequest) {
 
   let targetRoom
   try {
-    const rooms = await roomService.listRooms([cleanRoom])
+    const rooms = await roomService.listRooms([
+      cleanRoom,
+      closureMarkerName(cleanRoom),
+    ])
+    const closure = readRoomClosure(rooms, cleanRoom)
+    if (closure?.closing) {
+      return NextResponse.json(
+        { error: { message: "This space is closing" } },
+        { status: 503 }
+      )
+    }
+    if (closure) {
+      const space = {
+        name: cleanRoom,
+        host: closure.host,
+        endedAt: closure.endedAt,
+      }
+      return NextResponse.json(
+        {
+          ended: true,
+          error: "Space has ended",
+          space,
+          data: { ended: true, endedInfo: space },
+        },
+        { status: 410 }
+      )
+    }
     targetRoom = rooms.find((room) => room.name === cleanRoom)
   } catch {
     return NextResponse.json(
@@ -123,8 +152,6 @@ export async function GET(req: NextRequest) {
           name: cleanRoom,
           endedAt: meta.endedAt ?? Date.now(),
           host: meta.hostName || meta.host || "Unknown",
-          cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
-          speakers: readEndedRoster(meta.speakers),
         }
         return NextResponse.json(
           {
