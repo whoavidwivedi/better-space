@@ -1,5 +1,6 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
+import { readEndedRoster } from "@/lib/ended-roster"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
 import {
   readBrowserSession,
@@ -50,9 +51,7 @@ export async function GET(req: NextRequest) {
                   host: meta.hostName || meta.host || "Unknown",
                   endedAt: meta.endedAt ?? Date.now(),
                   cohosts: meta.cohosts || [],
-                  speakers: (meta.speakers || []).map((s: string) => ({
-                    identity: s,
-                  })),
+                  speakers: readEndedRoster(meta.speakers),
                 },
               },
             })

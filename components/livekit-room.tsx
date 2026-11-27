@@ -87,6 +87,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { userpicUrl } from "@/lib/userpics"
+import {
+  snapshotEndedSpeaker,
+  type EndedSpaceParticipant,
+} from "@/lib/ended-roster"
 import { getDisplayRoomTitle } from "@/lib/presets"
 
 export function SpaceRoomLiveKit({
@@ -182,7 +186,7 @@ function RoomUI({
   const [disconnectCountdown, setDisconnectCountdown] = useState(60)
   const [spaceEndedInfo, setSpaceEndedInfo] = useState<{
     host?: string
-    speakers?: Array<{ identity: string; avatar?: string }>
+    speakers?: EndedSpaceParticipant[]
   } | null>(null)
   const [isEndingTransition, setIsEndingTransition] = useState(false)
 
@@ -373,16 +377,9 @@ function RoomUI({
         setTimeout(() => {
           setSpaceEndedInfo({
             host: roomHostName,
-            speakers: participants.map((p) => {
-              let avatar = p.identity
-              try {
-                if (p.metadata) {
-                  const m = JSON.parse(p.metadata)
-                  if (m.avatar) avatar = m.avatar
-                }
-              } catch {}
-              return { identity: p.name || p.identity, avatar }
-            }),
+            speakers: participants.map((participant) =>
+              snapshotEndedSpeaker(participant, roomHost)
+            ),
           })
           setIsEndingTransition(false)
         }, 600)
@@ -521,7 +518,7 @@ function RoomUI({
             host: data.data?.space?.host || roomHostName,
             speakers:
               data.data?.space?.speakers ||
-              participants.map((p) => ({ identity: p.name || p.identity })),
+              participants.map((p) => snapshotEndedSpeaker(p, roomHost)),
           })
           return
         }
@@ -530,9 +527,7 @@ function RoomUI({
       if (reason === DisconnectReason.ROOM_DELETED) {
         setSpaceEndedInfo({
           host: roomHostName,
-          speakers: participants.map((p) => ({
-            identity: p.name || p.identity,
-          })),
+          speakers: participants.map((p) => snapshotEndedSpeaker(p, roomHost)),
         })
         return
       }
