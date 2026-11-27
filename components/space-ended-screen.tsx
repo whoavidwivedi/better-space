@@ -88,7 +88,7 @@ export function SpaceEndedScreen({
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               {uniqueSpeakers.map((s) => (
                 <div
-                  key={s.name || s.identity}
+                  key={s.identity}
                   className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
