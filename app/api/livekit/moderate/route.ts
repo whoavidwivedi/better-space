@@ -1,3 +1,4 @@
+import { setTimeout as delay } from "node:timers/promises"
 import {
   DataPacket_Kind,
   RoomServiceClient,
@@ -14,6 +15,11 @@ import {
   roleCookieName,
 } from "@/lib/space-auth"
 import { canPerformModerationAction } from "@/lib/moderation-auth"
+
+export const maxDuration = 90
+
+const HOST_GRACE_MS = 60_000
+const PRESENCE_CHECK_MS = 5_000
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -49,6 +55,47 @@ async function syncParticipantPublishPermission(
       recorder: participant.permission?.recorder ?? false,
     },
   })
+}
+
+async function roomRemainsUnhosted(
+  service: RoomServiceClient,
+  roomName: string,
+  roomSid: string,
+  identity: string,
+  signal: AbortSignal
+) {
+  let unhostedSince: number | undefined
+
+  while (!signal.aborted) {
+    const rooms = await service.listRooms([roomName])
+    const room = rooms.find((entry) => entry.sid === roomSid)
+    if (!room?.metadata) return false
+
+    const meta = JSON.parse(room.metadata)
+    if (meta.ended || typeof meta.host !== "string" || !meta.host) return false
+
+    const moderators = new Set<string>([
+      meta.host,
+      ...(Array.isArray(meta.cohosts) ? meta.cohosts : []),
+    ])
+    const participants = await service.listParticipants(roomName)
+    const identities = participants.map((participant) => participant.identity)
+    if (
+      signal.aborted ||
+      identities.some((participant) => moderators.has(participant)) ||
+      identities.sort()[0] !== identity
+    ) {
+      return false
+    }
+
+    const now = performance.now()
+    unhostedSince ??= now
+    const remaining = HOST_GRACE_MS - (now - unhostedSince)
+    if (remaining <= 0) return true
+    await delay(Math.min(remaining, PRESENCE_CHECK_MS), undefined, { signal })
+  }
+
+  return false
 }
 
 export async function POST(req: NextRequest) {
@@ -89,7 +136,11 @@ export async function POST(req: NextRequest) {
     if (!identity) throw new Error("Invalid token identity")
 
     const tokenRoom = claims.video?.room
-    if (tokenRoom && tokenRoom !== cleanRoom) {
+    if (
+      (tokenRoom && tokenRoom !== cleanRoom) ||
+      (action === "end_if_unhosted" &&
+        (!claims.video?.roomJoin || tokenRoom !== cleanRoom))
+    ) {
       return NextResponse.json(
         { error: { message: "Token does not match this space" } },
         { status: 403 }
@@ -124,7 +175,7 @@ export async function POST(req: NextRequest) {
     }
   } catch {}
 
-  if (!isHost && !isCohost) {
+  if (action !== "end_if_unhosted" && !isHost && !isCohost) {
     return NextResponse.json(
       {
         error: { message: "Only the host or co-host can perform this action" },
@@ -133,7 +184,10 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!canPerformModerationAction(action, isHost, isCohost)) {
+  if (
+    action !== "end_if_unhosted" &&
+    !canPerformModerationAction(action, isHost, isCohost)
+  ) {
     return NextResponse.json(
       { error: { message: "Only the main host can manage co-hosts" } },
       { status: 403 }
@@ -230,6 +284,30 @@ export async function POST(req: NextRequest) {
       )
       return NextResponse.json({ data: { success: true } })
 
+    case "end_if_unhosted":
+      try {
+        if (
+          !targetRoom?.sid ||
+          !(await roomRemainsUnhosted(
+            roomService,
+            cleanRoom,
+            targetRoom.sid,
+            identity,
+            req.signal
+          ))
+        ) {
+          return NextResponse.json({ data: { ended: false } }, { status: 409 })
+        }
+      } catch {
+        return NextResponse.json(
+          { error: { message: "Could not verify room presence" } },
+          { status: req.signal.aborted ? 409 : 503 }
+        )
+      }
+      if (req.signal.aborted) {
+        return NextResponse.json({ data: { ended: false } }, { status: 409 })
+      }
+    // Fall through to the same closure procedure as a moderator request.
     case "end":
       {
         let host = "Unknown"
