@@ -32,12 +32,39 @@ import { MessageSquare, Send, X } from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
 
+type HistoryMessage = {
+  id: string
+  timestamp: number
+  message: string
+  sender: string
+  avatarSeed?: string
+}
+
+function isHistory(value: unknown): value is HistoryMessage[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        entry !== null &&
+        typeof entry === "object" &&
+        typeof entry.id === "string" &&
+        typeof entry.timestamp === "number" &&
+        Number.isFinite(entry.timestamp) &&
+        typeof entry.message === "string" &&
+        typeof entry.sender === "string" &&
+        (entry.avatarSeed === undefined || typeof entry.avatarSeed === "string")
+    )
+  )
+}
+
 export function ChatPanel({
   className,
   isHost,
+  hostIdentity,
 }: {
   className?: string
   isHost?: boolean
+  hostIdentity: string
 }) {
   const room = useRoomContext()
   const roomName = room?.name
@@ -45,7 +72,7 @@ export function ChatPanel({
   const { localParticipant } = useLocalParticipant()
   const participants = useParticipants()
   const [inputValue, setInputValue] = React.useState("")
-  const [history, setHistory] = React.useState<any[]>([])
+  const [history, setHistory] = React.useState<HistoryMessage[]>([])
   const [typingUsers, setTypingUsers] = React.useState<
     Record<string, NodeJS.Timeout>
   >({})
@@ -71,29 +98,33 @@ export function ChatPanel({
           ),
           { destinationIdentities: [msg.from.identity], reliable: true }
         ).catch(() => {})
-      } else if (payload.type === "history_payload" && !isHost) {
-        setHistory(payload.history)
-        if (roomName) {
-          localStorage.setItem(
-            `space_chat_${roomName}`,
-            JSON.stringify(payload.history)
-          )
-        }
+      } else if (
+        payload.type === "history_payload" &&
+        !isHost &&
+        msg.from.identity === hostIdentity &&
+        isHistory(payload.history)
+      ) {
+        const incoming: HistoryMessage[] = payload.history
+        setHistory((current) => {
+          const byId = new Map(incoming.map((entry) => [entry.id, entry]))
+          for (const entry of current) byId.set(entry.id, entry)
+          return [...byId.values()].sort((a, b) => a.timestamp - b.timestamp)
+        })
       }
     } catch {}
   })
 
   React.useEffect(() => {
-    if (!isHost && roomName && typeof sendSyncData === "function") {
+    if (!isHost && roomName && hostIdentity) {
       const t = setTimeout(() => {
         sendSyncData(
           new TextEncoder().encode(JSON.stringify({ type: "request_history" })),
-          { reliable: true }
+          { destinationIdentities: [hostIdentity], reliable: true }
         ).catch(() => {})
       }, 1000)
       return () => clearTimeout(t)
     }
-  }, [isHost, roomName, sendSyncData])
+  }, [isHost, roomName, hostIdentity, sendSyncData])
 
   const { send: sendTypingData } = useDataChannel("typing", (msg) => {
     if (msg.from?.identity) {
@@ -120,15 +151,27 @@ export function ChatPanel({
     }
   })
 
+  const [loadedRoom, setLoadedRoom] = React.useState<string>()
+
   React.useEffect(() => {
     if (!roomName) return
-    const stored = localStorage.getItem(`space_chat_${roomName}`)
-    if (stored) {
-      try {
-        setHistory(JSON.parse(stored))
-      } catch {}
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem(`space_chat_${roomName}`) || "null"
+      )
+      setHistory(isHistory(stored) ? stored : [])
+    } catch {
+      setHistory([])
     }
+    setLoadedRoom(roomName)
   }, [roomName])
+
+  React.useEffect(() => {
+    if (!roomName || loadedRoom !== roomName) return
+    try {
+      localStorage.setItem(`space_chat_${roomName}`, JSON.stringify(history))
+    } catch {}
+  }, [history, loadedRoom, roomName])
 
   React.useEffect(() => {
     if (!roomName || chatMessages.length === 0) return
@@ -142,7 +185,8 @@ export function ChatPanel({
           try {
             if (msg.from?.metadata) {
               const meta = JSON.parse(msg.from.metadata)
-              if (meta.avatar) storedAvatarSeed = meta.avatar
+              if (typeof meta.avatar === "string")
+                storedAvatarSeed = meta.avatar
             }
           } catch {}
 
@@ -158,10 +202,6 @@ export function ChatPanel({
       })
       if (changed) {
         newMessages.sort((a, b) => a.timestamp - b.timestamp)
-        localStorage.setItem(
-          `space_chat_${roomName}`,
-          JSON.stringify(newMessages)
-        )
         return newMessages
       }
       return prev
@@ -176,7 +216,7 @@ export function ChatPanel({
   }
 
   const groupedMessages = React.useMemo(() => {
-    const groups: { sender: string; messages: any[] }[] = []
+    const groups: { sender: string; messages: HistoryMessage[] }[] = []
     history.forEach((msg) => {
       const lastGroup = groups[groups.length - 1]
       const senderIdentity = msg.sender

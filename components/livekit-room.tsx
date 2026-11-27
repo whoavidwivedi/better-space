@@ -1168,7 +1168,7 @@ function RoomUI({
             </section>
           </main>
           <aside className="z-10 order-last mt-2 flex shrink-0 flex-col self-center sm:mt-auto sm:self-end spread:mt-0 spread:items-center spread:justify-center spread:self-auto spread:p-6 spread:pr-[calc(4.5rem+env(safe-area-inset-right))]">
-            <ChatPanel isHost={isHost} />
+            <ChatPanel isHost={isHost} hostIdentity={roomHost} />
           </aside>
         </div>
 
