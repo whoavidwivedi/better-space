@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   }
 
   const cleanRoom = room.trim()
-  const avatar = avatarQuery?.trim() ?? ""
+  const avatar = avatarQuery?.trim().slice(0, 128) ?? ""
 
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
@@ -67,14 +67,13 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  if (!usernameQuery) {
+  const username = usernameQuery?.trim().slice(0, 30)
+  if (!username) {
     return NextResponse.json(
       { error: { message: "Missing username" } },
       { status: 400 }
     )
   }
-
-  const username = usernameQuery.trim().substring(0, 30)
 
   let roomService: RoomServiceClient
   try {

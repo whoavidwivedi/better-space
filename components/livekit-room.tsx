@@ -101,21 +101,40 @@ export function SpaceRoomLiveKit({
   onLeave: () => void
 }) {
   const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
+  const hasConnected = useRef(false)
+  const [joinFailed, setJoinFailed] = useState(false)
+  const reportJoinError = useCallback(() => {
+    if (!hasConnected.current) setJoinFailed(true)
+  }, [])
+  const markConnected = useCallback(() => {
+    hasConnected.current = true
+  }, [])
+  const handleUnexpectedDisconnect = useCallback(() => {
+    if (hasConnected.current) onLeave()
+    else setJoinFailed(true)
+  }, [onLeave])
 
-  if (!wsUrl || !token) {
+  if (joinFailed || !wsUrl || !token) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-background p-4 text-center">
-        <div className="flex max-w-sm animate-in flex-col items-center gap-4 duration-300 fade-in">
-          <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-xs">
-            <Spinner className="size-6 text-foreground" />
-          </div>
-          <div className="space-y-1">
+        <div className="flex max-w-sm flex-col gap-4">
+          <div role="alert" className="space-y-1">
             <h2 className="font-display text-xl text-foreground">
-              Preparing {getDisplayRoomTitle(roomName)}
+              Could not join {getDisplayRoomTitle(roomName)}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Connecting to live voice channel...
+              The connection to the live voice channel failed.
             </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {wsUrl && token && (
+              <Button onClick={() => setJoinFailed(false)}>
+                Retry connection
+              </Button>
+            )}
+            <Button variant="outline" onClick={onLeave}>
+              Return to lobby
+            </Button>
           </div>
         </div>
       </div>
@@ -127,6 +146,8 @@ export function SpaceRoomLiveKit({
       serverUrl={wsUrl}
       token={token}
       connect={true}
+      onConnected={markConnected}
+      onError={reportJoinError}
       audio={false}
       video={false}
       options={{
@@ -136,7 +157,6 @@ export function SpaceRoomLiveKit({
           noiseSuppression: true,
         },
       }}
-      onDisconnected={onLeave}
     >
       <RoomAudioRenderer />
       <RoomUI
@@ -144,6 +164,7 @@ export function SpaceRoomLiveKit({
         userName={userName}
         token={token}
         onLeave={onLeave}
+        onUnexpectedDisconnect={handleUnexpectedDisconnect}
       />
     </LiveKitRoom>
   )
@@ -154,11 +175,13 @@ function RoomUI({
   userName,
   token,
   onLeave,
+  onUnexpectedDisconnect,
 }: {
   roomName: string
   userName: string
   token: string
   onLeave: () => void
+  onUnexpectedDisconnect: () => void
 }) {
   const room = useRoomContext()
   const { resolvedTheme } = useTheme()
@@ -295,18 +318,10 @@ function RoomUI({
   const prevCanPublish = useRef(canPublish)
 
   useEffect(() => {
-    if (prevCanPublish.current === undefined) {
-      prevCanPublish.current = canPublish
-      return
-    }
-
     if (canPublish && !prevCanPublish.current) {
-      toast.add({ title: "Host granted you the microphone!", type: "success" })
-      localParticipant.setMicrophoneEnabled(true).catch(() => {
-        toast.add({
-          title: "Could not automatically enable microphone.",
-          type: "error",
-        })
+      toast.add({
+        title: "Microphone access granted. Unmute when you're ready.",
+        type: "success",
       })
     } else if (!canPublish && prevCanPublish.current) {
       toast.add({
@@ -319,7 +334,7 @@ function RoomUI({
     if (canPublish) {
       setHasRequestedMicLocal(false)
     }
-  }, [canPublish, localParticipant])
+  }, [canPublish])
 
   const sortedParticipants = [...participants].sort((a, b) => {
     if (a.identity === roomHost) return -1
@@ -498,32 +513,35 @@ function RoomUI({
         isEndingTransitionRef.current
       )
         return
+      if (reason === DisconnectReason.JOIN_FAILURE) {
+        onUnexpectedDisconnect()
+        return
+      }
+      const speakers = participants.map((p) => ({ identity: p.identity }))
+      const wasDeleted = reason === DisconnectReason.ROOM_DELETED
+      if (wasDeleted) {
+        setSpaceEndedInfo({ host: roomHost, speakers })
+      }
+
       try {
         const res = await fetch(
           `/api/livekit/rooms?space=${encodeURIComponent(roomName)}`
         )
-        const data = await res.json()
-        if (data.ended) {
-          setSpaceEndedInfo({
-            host: data.data?.space?.host || roomHost,
-            speakers:
-              data.data?.space?.speakers ||
-              participants.map((p) => ({ identity: p.identity })),
-          })
-          return
+        if (res.ok) {
+          const data = await res.json()
+          if (data.ended) {
+            setSpaceEndedInfo({
+              host: data.data?.space?.host || roomHost,
+              speakers: data.data?.space?.speakers || speakers,
+            })
+            return
+          }
         }
       } catch {}
 
-      if (reason === DisconnectReason.ROOM_DELETED) {
-        setSpaceEndedInfo({
-          host: roomHost,
-          speakers: participants.map((p) => ({ identity: p.identity })),
-        })
-        return
-      }
-
+      if (wasDeleted) return
       if (!intentionalLeaveRef.current) {
-        onLeave()
+        onUnexpectedDisconnect()
       }
     }
 
@@ -537,7 +555,7 @@ function RoomUI({
     room,
     isHostOrCohost,
     localParticipant,
-    onLeave,
+    onUnexpectedDisconnect,
     participants,
     roomHost,
     roomName,
