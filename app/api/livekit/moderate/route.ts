@@ -5,7 +5,7 @@ import {
   TokenVerifier,
 } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
-import { markSpaceEnded, type EndedSpaceParticipant } from "@/lib/ended-spaces"
+import { markSpaceEnded } from "@/lib/ended-spaces"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   decryptCohostSecrets,
@@ -319,45 +319,15 @@ export async function POST(req: NextRequest) {
     // Fall through to the same closure procedure as a moderator request.
     case "end":
       {
-        let host = "Unknown"
-        let cohosts: string[] = []
-        let participants: any[] = []
-        try {
-          participants = await roomService.listParticipants(cleanRoom)
-        } catch {}
-        try {
-          if (meta?.host) host = meta.host
-          if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts
-        } catch {}
-
-        const speakers: EndedSpaceParticipant[] = participants
-          .map((p: any) => {
-            let avatar = p.identity
-            try {
-              if (p.metadata) {
-                const m = JSON.parse(p.metadata)
-                if (m.avatar) avatar = m.avatar
-              }
-            } catch {}
-            return { identity: p.identity, avatar }
-          })
-          .filter(
-            (p: any, i: number, arr: any[]) =>
-              arr.findIndex((x) => x.identity === p.identity) === i
-          )
-
-        markSpaceEnded(cleanRoom.toLowerCase().trim(), {
-          host,
-          cohosts,
-          speakers,
-        })
+        const host = meta?.host || "Unknown"
+        markSpaceEnded(cleanRoom, host)
 
         // Disconnect everyone by deleting the room...
         await roomService.deleteRoom(cleanRoom)
 
         // ...then re-create it as a durable "ended" tombstone so the name stays
         // reserved and the join route can never fall through to "create + host".
-        // Roster lives in metadata (shared LiveKit state), not the server disk.
+        // Keep only the host display name and closure time.
         try {
           await roomService.createRoom({
             name: cleanRoom,
@@ -370,8 +340,6 @@ export async function POST(req: NextRequest) {
               ended: true,
               endedAt: Date.now(),
               host,
-              cohosts,
-              speakers: participants.map((p) => p.identity),
             }),
           })
         } catch {}

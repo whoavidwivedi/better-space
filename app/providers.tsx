@@ -12,7 +12,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       const key = localStorage.key(i)
       if (
         key?.startsWith("space_host_secret_") ||
-        key?.startsWith("space_cohost_secret_")
+        key?.startsWith("space_cohost_secret_") ||
+        key?.startsWith("space_chat_")
       ) {
         localStorage.removeItem(key)
       }

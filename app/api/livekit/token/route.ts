@@ -118,10 +118,6 @@ export async function GET(req: NextRequest) {
           name: cleanRoom,
           endedAt: meta.endedAt ?? Date.now(),
           host: meta.host || "Unknown",
-          cohosts: Array.isArray(meta.cohosts) ? meta.cohosts : [],
-          speakers: Array.isArray(meta.speakers)
-            ? meta.speakers.map((id: string) => ({ identity: id }))
-            : [],
         }
         return NextResponse.json(
           {

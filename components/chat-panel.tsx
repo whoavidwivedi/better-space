@@ -36,6 +36,7 @@ const HISTORY_TOPIC = "better-space.chat-history"
 const HISTORY_LIMIT = 100
 const MESSAGE_LIMIT = 2_000
 const LEGACY_PACKET_LIMIT = 14 * 1024
+const CHAT_TTL_MS = 24 * 60 * 60 * 1000
 
 type HistoryMessage = {
   id: string
@@ -217,15 +218,24 @@ export function ChatPanel({
     }
   })
 
+  const cachedTranscript = React.useRef<string | null>(null)
   const [loadedRoom, setLoadedRoom] = React.useState<string>()
 
   React.useEffect(() => {
     if (!roomName) return
+    cachedTranscript.current = null
     try {
       const stored = JSON.parse(
-        localStorage.getItem(`space_chat_${roomName}`) || "null"
+        sessionStorage.getItem(`space_chat_${roomName}`) || "null"
       )
-      setHistory(isHistory(stored) ? stored.slice(-HISTORY_LIMIT) : [])
+      if (stored?.expiresAt > Date.now() && isHistory(stored.messages)) {
+        const restored = stored.messages.slice(-HISTORY_LIMIT)
+        cachedTranscript.current = JSON.stringify(restored)
+        setHistory(restored)
+      } else {
+        sessionStorage.removeItem(`space_chat_${roomName}`)
+        setHistory([])
+      }
     } catch {
       setHistory([])
     }
@@ -235,7 +245,17 @@ export function ChatPanel({
   React.useEffect(() => {
     if (!roomName || loadedRoom !== roomName) return
     try {
-      localStorage.setItem(`space_chat_${roomName}`, JSON.stringify(history))
+      if (!history.length) return
+      const transcript = JSON.stringify(history)
+      if (transcript === cachedTranscript.current) return
+      sessionStorage.setItem(
+        `space_chat_${roomName}`,
+        JSON.stringify({
+          messages: history,
+          expiresAt: Date.now() + CHAT_TTL_MS,
+        })
+      )
+      cachedTranscript.current = transcript
     } catch {}
   }, [history, loadedRoom, roomName])
 

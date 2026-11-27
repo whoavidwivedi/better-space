@@ -33,7 +33,7 @@ const jsonLd = {
       featureList: [
         "Live voice rooms in the browser",
         "No account or sign-up",
-        "Nothing recorded",
+        "Voice isn’t recorded",
         "Live chat in every room",
         "Host and cohost moderation",
       ],
