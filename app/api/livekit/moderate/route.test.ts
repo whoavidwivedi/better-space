@@ -115,6 +115,22 @@ function request(
 }
 
 describe("moderation room flow", () => {
+  test("rejects malformed JSON and invalid request shapes", async () => {
+    for (const body of [
+      "{",
+      "null",
+      JSON.stringify({ roomName, action: {}, token: "token" }),
+    ]) {
+      const response = await POST(
+        new NextRequest("http://localhost/api/livekit/moderate", {
+          method: "POST",
+          body,
+        })
+      )
+      expect(response.status).toBe(400)
+    }
+  })
+
   test("promotes, revokes, and ends through the API boundary", async () => {
     process.env.LIVEKIT_API_KEY = "test-key"
     process.env.LIVEKIT_API_SECRET = "test-secret"
