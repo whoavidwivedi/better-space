@@ -78,6 +78,18 @@ export function ChatPanel({
   >({})
   const lastTypingTime = React.useRef(0)
   const [isCollapsed, setIsCollapsed] = React.useState(true)
+  const openChatButton = React.useRef<HTMLButtonElement>(null)
+  const closeChatButton = React.useRef<HTMLButtonElement>(null)
+  const moveChatFocus = React.useRef(false)
+
+  React.useLayoutEffect(() => {
+    if (!moveChatFocus.current) return
+    moveChatFocus.current = false
+    const button = isCollapsed
+      ? openChatButton.current
+      : closeChatButton.current
+    button?.focus()
+  }, [isCollapsed])
 
   const historyRef = React.useRef(history)
   React.useEffect(() => {
@@ -269,8 +281,13 @@ export function ChatPanel({
         {/* Mobile Badge Overlay */}
         <button
           type="button"
+          ref={openChatButton}
           aria-label="Open chat"
-          onClick={() => setIsCollapsed(false)}
+          aria-expanded={!isCollapsed}
+          onClick={() => {
+            moveChatFocus.current = true
+            setIsCollapsed(false)
+          }}
           className={cn(
             "absolute inset-0 flex cursor-pointer items-center gap-2 px-4 py-2 transition-opacity duration-200 sm:hidden",
             isCollapsed
@@ -319,8 +336,12 @@ export function ChatPanel({
         >
           <button
             type="button"
+            ref={closeChatButton}
             aria-label="Close chat"
-            onClick={() => setIsCollapsed(true)}
+            onClick={() => {
+              moveChatFocus.current = true
+              setIsCollapsed(true)
+            }}
             className="absolute top-2 right-2 z-30 flex size-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground sm:hidden"
           >
             <X className="size-4" />
