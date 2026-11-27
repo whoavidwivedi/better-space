@@ -136,7 +136,6 @@ export function SpaceRoomLiveKit({
           noiseSuppression: true,
         },
       }}
-      onDisconnected={onLeave}
     >
       <RoomAudioRenderer />
       <RoomUI
@@ -498,30 +497,29 @@ function RoomUI({
         isEndingTransitionRef.current
       )
         return
+      const speakers = participants.map((p) => ({ identity: p.identity }))
+      const wasDeleted = reason === DisconnectReason.ROOM_DELETED
+      if (wasDeleted) {
+        setSpaceEndedInfo({ host: roomHost, speakers })
+      }
+
       try {
         const res = await fetch(
           `/api/livekit/rooms?space=${encodeURIComponent(roomName)}`
         )
-        const data = await res.json()
-        if (data.ended) {
-          setSpaceEndedInfo({
-            host: data.data?.space?.host || roomHost,
-            speakers:
-              data.data?.space?.speakers ||
-              participants.map((p) => ({ identity: p.identity })),
-          })
-          return
+        if (res.ok) {
+          const data = await res.json()
+          if (data.ended) {
+            setSpaceEndedInfo({
+              host: data.data?.space?.host || roomHost,
+              speakers: data.data?.space?.speakers || speakers,
+            })
+            return
+          }
         }
       } catch {}
 
-      if (reason === DisconnectReason.ROOM_DELETED) {
-        setSpaceEndedInfo({
-          host: roomHost,
-          speakers: participants.map((p) => ({ identity: p.identity })),
-        })
-        return
-      }
-
+      if (wasDeleted) return
       if (!intentionalLeaveRef.current) {
         onLeave()
       }
