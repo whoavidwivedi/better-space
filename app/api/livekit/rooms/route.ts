@@ -61,7 +61,12 @@ export async function GET(req: NextRequest) {
           data: { ended: false, live: true },
         })
       }
-    } catch {}
+    } catch {
+      return NextResponse.json(
+        { error: { message: "Could not check this space" } },
+        { status: 503 }
+      )
+    }
     return NextResponse.json({
       ended: false,
       live: false,
