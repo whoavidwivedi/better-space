@@ -32,6 +32,11 @@ import { MessageSquare, Send, X } from "lucide-react"
 import { userpicUrl } from "@/lib/userpics"
 import { cn } from "@/lib/utils"
 
+const HISTORY_TOPIC = "better-space.chat-history"
+const HISTORY_LIMIT = 100
+const MESSAGE_LIMIT = 2_000
+const LEGACY_PACKET_LIMIT = 14 * 1024
+
 type HistoryMessage = {
   id: string
   timestamp: number
@@ -72,6 +77,7 @@ export function ChatPanel({
   const { localParticipant } = useLocalParticipant()
   const participants = useParticipants()
   const [inputValue, setInputValue] = React.useState("")
+  const [sendFailed, setSendFailed] = React.useState(false)
   const [history, setHistory] = React.useState<HistoryMessage[]>([])
   const [typingUsers, setTypingUsers] = React.useState<
     Record<string, NodeJS.Timeout>
@@ -84,32 +90,78 @@ export function ChatPanel({
     historyRef.current = history
   }, [history])
 
+  const mergeHistory = React.useCallback((incoming: unknown) => {
+    if (!isHistory(incoming) || incoming.length > HISTORY_LIMIT) return
+    setHistory((current) => {
+      const byId = new Map(incoming.map((entry) => [entry.id, entry]))
+      for (const entry of current) byId.set(entry.id, entry)
+      return [...byId.values()]
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .slice(-HISTORY_LIMIT)
+    })
+  }, [])
+
+  React.useEffect(() => {
+    if (isHost || !hostIdentity) return
+    let active = true
+    room.registerTextStreamHandler(HISTORY_TOPIC, (reader, sender) => {
+      if (sender.identity !== hostIdentity) return
+      void reader
+        .readAll()
+        .then((text) => {
+          if (active) mergeHistory(JSON.parse(text))
+        })
+        .catch(() => {})
+    })
+    return () => {
+      active = false
+      room.unregisterTextStreamHandler(HISTORY_TOPIC)
+    }
+  }, [hostIdentity, isHost, mergeHistory, room])
+
   const { send: sendSyncData } = useDataChannel("chat_sync", (msg) => {
     if (!msg.from?.identity) return
     try {
       const payload = JSON.parse(new TextDecoder().decode(msg.payload))
+      const sender = msg.from.identity
       if (payload.type === "request_history" && isHost) {
-        sendSyncData(
-          new TextEncoder().encode(
-            JSON.stringify({
-              type: "history_payload",
-              history: historyRef.current,
+        if (payload.version === 2) {
+          void localParticipant
+            .sendText(JSON.stringify(historyRef.current), {
+              topic: HISTORY_TOPIC,
+              destinationIdentities: [sender],
             })
-          ),
-          { destinationIdentities: [msg.from.identity], reliable: true }
-        ).catch(() => {})
+            .catch(() => {})
+          return
+        }
+        const encoder = new TextEncoder()
+        let legacyHistory = historyRef.current
+        let packet = encoder.encode(
+          JSON.stringify({ type: "history_payload", history: legacyHistory })
+        )
+        while (
+          packet.byteLength > LEGACY_PACKET_LIMIT &&
+          legacyHistory.length
+        ) {
+          legacyHistory = legacyHistory.slice(1)
+          packet = encoder.encode(
+            JSON.stringify({ type: "history_payload", history: legacyHistory })
+          )
+        }
+        void sendSyncData(packet, {
+          destinationIdentities: [sender],
+          reliable: true,
+        }).catch(() => {})
       } else if (
         payload.type === "history_payload" &&
         !isHost &&
-        msg.from.identity === hostIdentity &&
-        isHistory(payload.history)
+        sender === hostIdentity
       ) {
-        const incoming: HistoryMessage[] = payload.history
-        setHistory((current) => {
-          const byId = new Map(incoming.map((entry) => [entry.id, entry]))
-          for (const entry of current) byId.set(entry.id, entry)
-          return [...byId.values()].sort((a, b) => a.timestamp - b.timestamp)
-        })
+        mergeHistory(
+          isHistory(payload.history)
+            ? payload.history.slice(-HISTORY_LIMIT)
+            : null
+        )
       }
     } catch {}
   })
@@ -118,7 +170,9 @@ export function ChatPanel({
     if (!isHost && roomName && hostIdentity) {
       const t = setTimeout(() => {
         sendSyncData(
-          new TextEncoder().encode(JSON.stringify({ type: "request_history" })),
+          new TextEncoder().encode(
+            JSON.stringify({ type: "request_history", version: 2 })
+          ),
           { destinationIdentities: [hostIdentity], reliable: true }
         ).catch(() => {})
       }, 1000)
@@ -159,7 +213,7 @@ export function ChatPanel({
       const stored = JSON.parse(
         localStorage.getItem(`space_chat_${roomName}`) || "null"
       )
-      setHistory(isHistory(stored) ? stored : [])
+      setHistory(isHistory(stored) ? stored.slice(-HISTORY_LIMIT) : [])
     } catch {
       setHistory([])
     }
@@ -193,7 +247,7 @@ export function ChatPanel({
           newMessages.push({
             id: msg.id,
             timestamp: msg.timestamp,
-            message: msg.message,
+            message: msg.message.slice(0, MESSAGE_LIMIT),
             sender: msg.from?.identity || "Unknown",
             avatarSeed: storedAvatarSeed,
           })
@@ -202,17 +256,23 @@ export function ChatPanel({
       })
       if (changed) {
         newMessages.sort((a, b) => a.timestamp - b.timestamp)
-        return newMessages
+        return newMessages.slice(-HISTORY_LIMIT)
       }
       return prev
     })
   }, [chatMessages, roomName])
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputValue.trim() || isSending) return
-    send(inputValue)
-    setInputValue("")
+    const draft = inputValue
+    if (!draft.trim() || isSending) return
+    setSendFailed(false)
+    try {
+      await send(draft)
+      setInputValue((current) => (current === draft ? "" : current))
+    } catch {
+      setSendFailed(true)
+    }
   }
 
   const groupedMessages = React.useMemo(() => {
@@ -480,6 +540,11 @@ export function ChatPanel({
               </MessageScroller>
             </div>
           </MessageScrollerProvider>
+          {sendFailed && (
+            <p role="status" className="px-3 pt-1 text-xs text-destructive">
+              Could not send. Try again.
+            </p>
+          )}
           <form
             onSubmit={handleSend}
             className="flex items-center gap-2 border-t border-border p-3 sm:p-4"
@@ -501,6 +566,7 @@ export function ChatPanel({
                   lastTypingTime.current = now
                 }
               }}
+              maxLength={MESSAGE_LIMIT}
               placeholder="Type a message..."
               className="h-10 flex-1 rounded-xl border-border bg-muted/50 px-4 text-xs shadow-none focus-visible:ring-1 focus-visible:ring-primary/50 sm:text-sm"
               disabled={isSending}
