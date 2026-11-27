@@ -267,13 +267,15 @@ export function ChatPanel({
         )}
       >
         {/* Mobile Badge Overlay */}
-        <div
+        <button
+          type="button"
+          aria-label="Open chat"
           onClick={() => setIsCollapsed(false)}
           className={cn(
             "absolute inset-0 flex cursor-pointer items-center gap-2 px-4 py-2 transition-opacity duration-200 sm:hidden",
             isCollapsed
               ? "z-20 opacity-100 delay-100"
-              : "pointer-events-none z-0 opacity-0"
+              : "pointer-events-none invisible z-0 opacity-0"
           )}
         >
           {isSomeoneTyping ? (
@@ -304,19 +306,20 @@ export function ChatPanel({
               </span>
             </>
           )}
-        </div>
+        </button>
 
         {/* Full Chat Content */}
         <div
           className={cn(
             "relative flex size-full flex-col transition-opacity duration-200",
             isCollapsed
-              ? "pointer-events-none opacity-0 sm:pointer-events-auto sm:opacity-100"
+              ? "pointer-events-none invisible opacity-0 sm:pointer-events-auto sm:visible sm:opacity-100"
               : "opacity-100 delay-100"
           )}
         >
           <button
             type="button"
+            aria-label="Close chat"
             onClick={() => setIsCollapsed(true)}
             className="absolute top-2 right-2 z-30 flex size-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground sm:hidden"
           >
@@ -501,12 +504,14 @@ export function ChatPanel({
                   lastTypingTime.current = now
                 }
               }}
+              aria-label="Message"
               placeholder="Type a message..."
               className="h-10 flex-1 rounded-xl border-border bg-muted/50 px-4 text-xs shadow-none focus-visible:ring-1 focus-visible:ring-primary/50 sm:text-sm"
               disabled={isSending}
             />
             <Button
               type="submit"
+              aria-label="Send message"
               size="icon"
               disabled={!inputValue.trim() || isSending}
               className="size-10 shrink-0 rounded-xl shadow-none"

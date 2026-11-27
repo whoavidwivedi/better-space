@@ -192,10 +192,7 @@ function StackCardItem({
     let d = (index - pos) % total
     if (d < -half) d += total
     if (d > half) d -= total
-    const absD = Math.abs(d)
-    if (absD >= 2.2) return 0
-    if (absD > 1.8) return (2.2 - absD) / 0.4
-    return 1
+    return Math.abs(d) <= 1.8 ? 1 : 0
   })
 
   const zIndex = useTransform(position, (pos) => {
@@ -239,7 +236,7 @@ function StackCardItem({
             Live
           </span>
           {card.topic && (
-            <span className="truncate font-mono text-[10px] text-muted-foreground/80">
+            <span className="truncate font-mono text-[10px] text-foreground">
               {card.topic}
             </span>
           )}
@@ -262,7 +259,7 @@ function StackCardItem({
           ))}
         </div>
         {card.listeners !== undefined && (
-          <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1 font-mono text-[11px] text-foreground">
             <Users className="size-3" aria-hidden="true" />
             <span>{card.listeners}</span>
           </span>
