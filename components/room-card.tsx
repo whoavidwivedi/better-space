@@ -63,7 +63,7 @@ export function Faces({
         </span>
       ))}
       {extra > 0 && (
-        <span className="relative flex size-8 items-center justify-center rounded-full border-2 border-card bg-muted text-[11px] font-semibold text-muted-foreground tabular-nums">
+        <span className="relative flex size-8 items-center justify-center rounded-full border-2 border-card bg-muted text-[11px] font-semibold text-foreground tabular-nums">
           +{extra}
         </span>
       )}
