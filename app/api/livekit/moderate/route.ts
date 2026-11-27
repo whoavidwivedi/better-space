@@ -5,7 +5,8 @@ import {
   TokenVerifier,
 } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
-import { markSpaceEnded, type EndedSpaceParticipant } from "@/lib/ended-spaces"
+import { snapshotEndedSpeaker } from "@/lib/ended-roster"
+import { markSpaceEnded } from "@/lib/ended-spaces"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   decryptCohostSecrets,
@@ -321,21 +322,9 @@ export async function POST(req: NextRequest) {
           if (Array.isArray(meta?.cohosts)) cohosts = meta.cohosts
         } catch {}
 
-        const speakers: EndedSpaceParticipant[] = participants
-          .map((p: any) => {
-            let avatar = p.identity
-            try {
-              if (p.metadata) {
-                const m = JSON.parse(p.metadata)
-                if (m.avatar) avatar = m.avatar
-              }
-            } catch {}
-            return { identity: p.name || p.identity, avatar }
-          })
-          .filter(
-            (p: any, i: number, arr: any[]) =>
-              arr.findIndex((x) => x.identity === p.identity) === i
-          )
+        const speakers = participants.map((participant) =>
+          snapshotEndedSpeaker(participant, meta?.host || "")
+        )
 
         markSpaceEnded(cleanRoom.toLowerCase().trim(), {
           host,
@@ -362,7 +351,7 @@ export async function POST(req: NextRequest) {
               endedAt: Date.now(),
               host,
               cohosts,
-              speakers: participants.map((p) => p.name || p.identity),
+              speakers,
             }),
           })
         } catch {}

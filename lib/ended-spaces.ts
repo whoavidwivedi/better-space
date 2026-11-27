@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 
-export type EndedSpaceParticipant = { identity: string; avatar?: string }
+import type { EndedSpaceParticipant } from "@/lib/ended-roster"
 
 export type EndedSpace = {
   name: string
