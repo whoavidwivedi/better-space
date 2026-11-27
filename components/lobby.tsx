@@ -409,9 +409,11 @@ export function Lobby() {
               )}
               {isLoading
                 ? "Checking who's live…"
-                : liveCount === 0
-                  ? "No rooms live yet"
-                  : `${liveCount} ${liveCount === 1 ? "room" : "rooms"} live now`}
+                : roomsUnavailable
+                  ? "Live spaces unavailable"
+                  : liveCount === 0
+                    ? "No rooms live yet"
+                    : `${liveCount} ${liveCount === 1 ? "room" : "rooms"} live now`}
             </span>
             <h1 className="mt-3 font-display text-3xl tracking-tight text-foreground sm:text-4xl">
               Lobby
@@ -515,7 +517,7 @@ export function Lobby() {
                 )
               })}
             </div>
-          ) : (
+          ) : roomsUnavailable ? null : (
             <div className="flex flex-col items-center rounded-3xl border border-dashed border-border bg-card/50 px-6 py-12 text-center sm:py-16">
               <div className="flex -space-x-3" aria-hidden="true">
                 {["OSLO-3", "Funny Bunny-3", "Afterclap-2", "Guacamole-1"].map(
