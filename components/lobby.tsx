@@ -168,9 +168,8 @@ export function Lobby() {
   // Rejoin countdown ticker: only runs every second while the host has an active disconnected room (< 60s)
   useEffect(() => {
     const hasActiveDisconnect = () => {
-      if (typeof window === "undefined" || !activeUserName) return false
+      if (typeof window === "undefined") return false
       return rooms.some((room) => {
-        if (room.host !== activeUserName) return false
         const disconnectTimeStr = localStorage.getItem(
           `space_host_disconnected_${room.name}`
         )
@@ -193,7 +192,7 @@ export function Lobby() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [rooms, activeUserName])
+  }, [rooms])
 
   const handleJoin = async (roomName: string) => {
     const uName = joinUserName.trim()
@@ -494,7 +493,7 @@ export function Lobby() {
                       )
                     : null
                 let timeLeft = 0
-                if (disconnectTimeStr && room.host === activeUserName) {
+                if (disconnectTimeStr) {
                   const elapsed = Date.now() - parseInt(disconnectTimeStr, 10)
                   if (elapsed < 60000) {
                     timeLeft = Math.ceil((60000 - elapsed) / 1000)
@@ -685,10 +684,7 @@ export function Lobby() {
                 size="lg"
                 className="h-11 w-full rounded-[10px] text-[15px]"
                 disabled={
-                  !newSpaceName.trim() ||
-                  !createUserName.trim() ||
-                  isJoining ||
-                  rooms.some((r) => r.host === createUserName.trim())
+                  !newSpaceName.trim() || !createUserName.trim() || isJoining
                 }
               >
                 {isJoining ? (
@@ -703,16 +699,9 @@ export function Lobby() {
                   </>
                 )}
               </Button>
-              {createUserName.trim() &&
-              rooms.some((r) => r.host === createUserName.trim()) ? (
-                <p className="text-center text-xs font-medium text-destructive">
-                  You already host a space. End it to start another.
-                </p>
-              ) : (
-                <p className="text-center text-xs text-muted-foreground">
-                  No account. Voice isn’t recorded.
-                </p>
-              )}
+              <p className="text-center text-xs text-muted-foreground">
+                No account. Voice isn’t recorded.
+              </p>
             </div>
           </form>
         </SpacePanel>
@@ -722,11 +711,7 @@ export function Lobby() {
       <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
         <SpacePanel
           title={getDisplayRoomTitle(selectedRoom)}
-          description={
-            joinRoom?.host === joinUserName.trim()
-              ? "This is your room. Go live to pick up where you left off."
-              : "You'll join as a listener. Raise your hand to get the mic."
-          }
+          description="Join as a listener or resume hosting from this browser."
           previewLabel="You, in the room"
           preview={
             joinRoom && (
@@ -773,11 +758,7 @@ export function Lobby() {
                   <span>Connecting to space…</span>
                 </>
               ) : (
-                <span>
-                  {joinRoom?.host === joinUserName.trim()
-                    ? "Go live"
-                    : "Join space"}
-                </span>
+                <span>Join space</span>
               )}
             </Button>
           </form>

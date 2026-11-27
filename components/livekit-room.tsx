@@ -87,6 +87,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { userpicUrl } from "@/lib/userpics"
+import {
+  snapshotEndedSpeaker,
+  type EndedSpaceParticipant,
+} from "@/lib/ended-roster"
 import { getDisplayRoomTitle } from "@/lib/presets"
 
 export function SpaceRoomLiveKit({
@@ -205,7 +209,7 @@ function RoomUI({
   const [disconnectCountdown, setDisconnectCountdown] = useState(60)
   const [spaceEndedInfo, setSpaceEndedInfo] = useState<{
     host?: string
-    speakers?: Array<{ identity: string; avatar?: string }>
+    speakers?: EndedSpaceParticipant[]
   } | null>(null)
   const [isEndingTransition, setIsEndingTransition] = useState(false)
 
@@ -257,24 +261,31 @@ function RoomUI({
 
   const isMuted = !localParticipant.isMicrophoneEnabled
 
-  const { roomHost, roomCohosts, roomCreatedAt } = useMemo(() => {
+  const { roomHost, roomHostName, roomCohosts, roomCreatedAt } = useMemo(() => {
     let host = ""
+    let hostName = ""
     let cohosts: string[] = []
     let createdAt: number | null = null
     try {
       if (metadata) {
         const meta = JSON.parse(metadata)
         host = meta.host || ""
+        hostName = meta.hostName || host
         cohosts = meta.cohosts || []
         if (typeof meta.createdAt === "number" && meta.createdAt > 0) {
           createdAt = meta.createdAt
         }
       }
     } catch {}
-    return { roomHost: host, roomCohosts: cohosts, roomCreatedAt: createdAt }
+    return {
+      roomHost: host,
+      roomHostName: hostName,
+      roomCohosts: cohosts,
+      roomCreatedAt: createdAt,
+    }
   }, [metadata])
 
-  const isHost = localParticipant.identity === roomHost
+  const isHost = Boolean(roomHost && localParticipant.identity === roomHost)
   const isCohost = roomCohosts.includes(localParticipant.identity)
   const [cohostAccessReady, setCohostAccessReady] = useState(
     () => !isCohost || Boolean(localParticipant.permissions?.canPublish)
@@ -380,17 +391,10 @@ function RoomUI({
       } else {
         setTimeout(() => {
           setSpaceEndedInfo({
-            host: userName,
-            speakers: participants.map((p) => {
-              let avatar = p.identity
-              try {
-                if (p.metadata) {
-                  const m = JSON.parse(p.metadata)
-                  if (m.avatar) avatar = m.avatar
-                }
-              } catch {}
-              return { identity: p.identity, avatar }
-            }),
+            host: roomHostName,
+            speakers: participants.map((participant) =>
+              snapshotEndedSpeaker(participant, roomHost)
+            ),
           })
           setIsEndingTransition(false)
         }, 600)
@@ -449,7 +453,7 @@ function RoomUI({
         const data = JSON.parse(decoder.decode(payload))
         if (
           data.type === "COHOST_CREDENTIALS" &&
-          data.identity === userName &&
+          data.identity === localParticipant.identity &&
           (!participant || participant.identity === roomHost)
         ) {
           if (data.secret) {
@@ -460,8 +464,8 @@ function RoomUI({
             fetch(`/api/livekit/token?${query.toString()}`, {
               headers: { "x-cohost-secret": data.secret },
             })
-              .then((res) => {
-                if (!res.ok) {
+              .then(async (res) => {
+                if (!res.ok || !(await res.json()).data?.isCohost) {
                   toast.add({
                     title: "Could not activate co-host access",
                     type: "error",
@@ -483,17 +487,23 @@ function RoomUI({
             data.emoji
           )
         } else if (data.type === "MIC_REQUEST") {
-          if (isHostOrCohost && data.identity) {
+          if (isHostOrCohost && participant?.identity) {
+            const identity = participant.identity
             setMicRequests((prev) =>
-              prev.includes(data.identity) ? prev : [...prev, data.identity]
+              prev.includes(identity) ? prev : [...prev, identity]
             )
             toast.add({
-              title: `${data.identity} requested the microphone.`,
+              title: `${participant.name || identity} requested the microphone.`,
               type: "mic-request",
             })
           }
-        } else if (data.type === "MIC_REJECTED") {
-          if (data.identity === userName) {
+        } else if (
+          data.type === "MIC_REJECTED" &&
+          participant?.identity &&
+          (participant.identity === roomHost ||
+            roomCohosts.includes(participant.identity))
+        ) {
+          if (data.identity === localParticipant.identity) {
             setHasRequestedMicLocal(false)
             toast.add({
               title: "Your microphone request was declined.",
@@ -517,10 +527,12 @@ function RoomUI({
         onUnexpectedDisconnect()
         return
       }
-      const speakers = participants.map((p) => ({ identity: p.identity }))
+      const speakers = participants.map((participant) =>
+        snapshotEndedSpeaker(participant, roomHost)
+      )
       const wasDeleted = reason === DisconnectReason.ROOM_DELETED
       if (wasDeleted) {
-        setSpaceEndedInfo({ host: roomHost, speakers })
+        setSpaceEndedInfo({ host: roomHostName, speakers })
       }
 
       try {
@@ -531,7 +543,7 @@ function RoomUI({
           const data = await res.json()
           if (data.ended) {
             setSpaceEndedInfo({
-              host: data.data?.space?.host || roomHost,
+              host: data.data?.space?.host || roomHostName,
               speakers: data.data?.space?.speakers || speakers,
             })
             return
@@ -557,7 +569,9 @@ function RoomUI({
     localParticipant,
     onUnexpectedDisconnect,
     participants,
+    roomCohosts,
     roomHost,
+    roomHostName,
     roomName,
     userName,
   ])
@@ -689,10 +703,14 @@ function RoomUI({
     const emoji =
       typeof emojiOrData === "string" ? emojiOrData : emojiOrData.emoji
     if (!emoji) return
-    displayReaction(userName, emoji)
+    displayReaction(localParticipant.identity, emoji)
     const encoder = new TextEncoder()
     const data = encoder.encode(
-      JSON.stringify({ type: "REACTION", emoji, senderIdentity: userName })
+      JSON.stringify({
+        type: "REACTION",
+        emoji,
+        senderIdentity: localParticipant.identity,
+      })
     )
     localParticipant.publishData(data, { reliable: true })
   }
@@ -701,9 +719,7 @@ function RoomUI({
     if (hasRequestedMicLocal) return
     setHasRequestedMicLocal(true)
     const encoder = new TextEncoder()
-    const data = encoder.encode(
-      JSON.stringify({ type: "MIC_REQUEST", identity: userName })
-    )
+    const data = encoder.encode(JSON.stringify({ type: "MIC_REQUEST" }))
     localParticipant.publishData(data, { reliable: true })
     toast.add({ title: "Microphone request sent.", type: "success" })
   }
@@ -723,7 +739,7 @@ function RoomUI({
       if (!res.ok) throw new Error("API error")
       setMicRequests((prev) => prev.filter((id) => id !== targetIdentity))
       toast.add({
-        title: `Granted microphone to ${targetIdentity}`,
+        title: `Granted microphone to ${participants.find((p) => p.identity === targetIdentity)?.name || targetIdentity}`,
         type: "success",
       })
     } catch {
@@ -1175,7 +1191,7 @@ function RoomUI({
                     roomCohosts={roomCohosts}
                     roomHost={roomHost}
                     roomName={roomName}
-                    localUserName={userName}
+                    localIdentity={localParticipant.identity}
                     token={token}
                     hasRequestedMic={micRequests.includes(participant.identity)}
                     onClearRequest={() =>
@@ -1540,45 +1556,50 @@ function RoomUI({
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1.5">
-                        {micRequests.map((identity) => (
-                          <div
-                            key={identity}
-                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-2"
-                          >
-                            <div className="mr-2 flex min-w-0 items-center gap-2.5">
-                              <Avatar className="size-7 border border-border">
-                                <AvatarImage
-                                  src={userpicUrl(identity)}
-                                  alt={identity}
-                                  className="object-cover"
-                                />
-                                <AvatarFallback className="text-xs font-bold">
-                                  {identity.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="truncate text-xs font-bold text-foreground">
-                                {identity}
-                              </span>
+                        {micRequests.map((identity) => {
+                          const label =
+                            participants.find((p) => p.identity === identity)
+                              ?.name || identity
+                          return (
+                            <div
+                              key={identity}
+                              className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-2"
+                            >
+                              <div className="mr-2 flex min-w-0 items-center gap-2.5">
+                                <Avatar className="size-7 border border-border">
+                                  <AvatarImage
+                                    src={userpicUrl(identity)}
+                                    alt={label}
+                                    className="object-cover"
+                                  />
+                                  <AvatarFallback className="text-xs font-bold">
+                                    {label.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="truncate text-xs font-bold text-foreground">
+                                  {label}
+                                </span>
+                              </div>
+                              <div className="flex shrink-0 gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 font-mono text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                                  onClick={() => rejectMicRequest(identity)}
+                                >
+                                  Decline
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-7 px-2.5 font-mono text-[10px] font-bold"
+                                  onClick={() => grantMicToRequest(identity)}
+                                >
+                                  Grant Mic
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex shrink-0 gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 font-mono text-[10px] font-bold text-destructive hover:bg-destructive/10"
-                                onClick={() => rejectMicRequest(identity)}
-                              >
-                                Decline
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="h-7 px-2.5 font-mono text-[10px] font-bold"
-                                onClick={() => grantMicToRequest(identity)}
-                              >
-                                Grant Mic
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -1660,7 +1681,7 @@ function ParticipantTile({
   roomCohosts = [],
   roomHost,
   roomName,
-  localUserName,
+  localIdentity,
   token,
   hasRequestedMic = false,
   onClearRequest,
@@ -1672,7 +1693,7 @@ function ParticipantTile({
   roomCohosts?: string[]
   roomHost?: string
   roomName: string
-  localUserName: string
+  localIdentity: string
   token?: string
   hasRequestedMic?: boolean
   onClearRequest?: () => void
@@ -1680,9 +1701,10 @@ function ParticipantTile({
   const [pendingAction, setPendingAction] = useState<string | null>(null)
   const isSpeaking = useIsSpeaking(participant)
   const isAudioMuted = !participant.isMicrophoneEnabled
-  const name = participant.identity || "Unknown"
-  const isThisParticipantHost = name === roomHost
-  const isThisParticipantCohost = roomCohosts.includes(name)
+  const identity = participant.identity
+  const name = participant.name || identity || "Unknown"
+  const isThisParticipantHost = identity === roomHost
+  const isThisParticipantCohost = roomCohosts.includes(identity)
   const permissions = useParticipantPermissions({ participant })
   const canPublish = Boolean(
     permissions?.canPublish || isThisParticipantHost || isThisParticipantCohost
@@ -1710,8 +1732,7 @@ function ParticipantTile({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           roomName,
-          hostName: localUserName,
-          targetIdentity: name,
+          targetIdentity: identity,
           token,
           action,
         }),
@@ -1749,7 +1770,7 @@ function ParticipantTile({
 
   const canModerateThisParticipant =
     isHostOrCohost &&
-    name !== localUserName &&
+    identity !== localIdentity &&
     !isThisParticipantHost &&
     (isHost || !isThisParticipantCohost)
 
@@ -1917,7 +1938,7 @@ function ParticipantTile({
       {/* Participant Name */}
       <div className="mt-2 flex max-w-full items-center justify-center gap-1 truncate px-1">
         <span className="truncate text-xs font-bold text-foreground">
-          {name} {name === localUserName ? "(You)" : ""}
+          {name} {identity === localIdentity ? "(You)" : ""}
         </span>
       </div>
 

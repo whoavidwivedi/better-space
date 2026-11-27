@@ -1,6 +1,11 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import {
+  readBrowserSession,
+  roomParticipantIdentity,
+  setBrowserSession,
+} from "@/lib/browser-session"
 import { limitLiveKitRequest } from "@/lib/livekit-rate-limit"
 import { closureMarkerName, readRoomClosure } from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
@@ -127,6 +132,8 @@ export async function GET(req: NextRequest) {
     )
   }
 
+  const session = readBrowserSession(req)
+  let identity = roomParticipantIdentity(session, cleanRoom)
   let isHost = false
   let isCohost = false
   let activeHostSecret = hostSecret
@@ -144,7 +151,7 @@ export async function GET(req: NextRequest) {
         const endedData = {
           name: cleanRoom,
           endedAt: meta.endedAt ?? Date.now(),
-          host: meta.host || "Unknown",
+          host: meta.hostName || meta.host || "Unknown",
         }
         return NextResponse.json(
           {
@@ -159,51 +166,54 @@ export async function GET(req: NextRequest) {
           { status: 410 }
         )
       }
-      if (meta.banned && meta.banned.includes(username)) {
+      const legacyRoom = !meta.hostName
+      if (
+        Array.isArray(meta.banned) &&
+        (meta.banned.includes(identity) ||
+          (legacyRoom && meta.banned.includes(username)))
+      ) {
         return NextResponse.json(
           { error: { message: "You have been kicked from this space" } },
           { status: 403 }
         )
       }
-      if (meta.host === username) {
-        if (hasHostAccess(meta, username, suppliedHostSecret)) {
-          isHost = true
-          activeHostSecret = suppliedHostSecret
-        } else if (
-          !meta.hostSecretHash &&
-          (!meta.hostSecret ||
-            hostSecretMatches(
-              hashHostSecret(String(meta.hostSecret)),
-              suppliedHostSecret
-            ))
-        ) {
-          // A room from before hashing kept the secret in plain view, so
-          // its host gets a new one and only the hash is kept.
-          isHost = true
-          activeHostSecret = crypto.randomUUID()
-          delete meta.hostSecret
-          meta.hostSecretHash = hashHostSecret(activeHostSecret)
-          await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
-        } else {
-          return NextResponse.json(
-            { error: { message: "Invalid host secret for this identity" } },
-            { status: 403 }
-          )
-        }
-      } else if (!meta.host || meta.host === "Unknown") {
-        // Room exists but has no designated host - assign this user as host
+
+      if (
+        typeof meta.host === "string" &&
+        hasHostAccess(meta, meta.host, suppliedHostSecret)
+      ) {
+        identity = meta.host
         isHost = true
-        activeHostSecret = hostSecret || crypto.randomUUID()
-        meta.host = username
+        activeHostSecret = suppliedHostSecret
+      } else if (
+        legacyRoom &&
+        meta.host === username &&
+        !meta.hostSecretHash &&
+        typeof meta.hostSecret === "string" &&
+        hostSecretMatches(hashHostSecret(meta.hostSecret), suppliedHostSecret)
+      ) {
+        identity = meta.host
+        activeHostSecret = crypto.randomUUID()
         delete meta.hostSecret
         meta.hostSecretHash = hashHostSecret(activeHostSecret)
         await roomService.updateRoomMetadata(cleanRoom, JSON.stringify(meta))
+        isHost = true
+      } else if (meta.host === identity) {
+        return NextResponse.json(
+          { error: { message: "Invalid host credentials for this browser" } },
+          { status: 403 }
+        )
       }
 
-      if (Array.isArray(meta.cohosts) && meta.cohosts.includes(username)) {
-        if (hasCohostAccess(meta, username, suppliedCohostSecret)) {
+      if (!isHost && Array.isArray(meta.cohosts)) {
+        const eligible = legacyRoom ? [identity, username] : [identity]
+        const cohost = eligible.find((candidate) =>
+          hasCohostAccess(meta, candidate, suppliedCohostSecret)
+        )
+        if (cohost) {
+          identity = cohost
           isCohost = true
-        } else {
+        } else if (meta.cohosts.includes(identity)) {
           return NextResponse.json(
             { error: { message: "Invalid co-host credentials" } },
             { status: 403 }
@@ -224,7 +234,8 @@ export async function GET(req: NextRequest) {
     process.env.LIVEKIT_API_KEY!,
     process.env.LIVEKIT_API_SECRET!,
     {
-      identity: username,
+      identity,
+      name: username,
       metadata: JSON.stringify({ avatar }),
     }
   )
@@ -246,6 +257,7 @@ export async function GET(req: NextRequest) {
       roomName: cleanRoom,
     },
   })
+  setBrowserSession(response, session)
   const roleSecret = isHost
     ? activeHostSecret
     : isCohost

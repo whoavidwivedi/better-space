@@ -1,6 +1,11 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import {
+  readBrowserSession,
+  roomParticipantIdentity,
+  setBrowserSession,
+} from "@/lib/browser-session"
 import { limitLiveKitRequest } from "@/lib/livekit-rate-limit"
 import {
   closureMarkerName,
@@ -8,7 +13,7 @@ import {
   readRoomClosure,
 } from "@/lib/livekit-room-closure"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
-import { hashHostSecret, roleCookieName } from "@/lib/space-auth"
+import { hasHostAccess, hashHostSecret, roleCookieName } from "@/lib/space-auth"
 
 function getRoomService() {
   const apiKey = process.env.LIVEKIT_API_KEY
@@ -66,7 +71,7 @@ export async function GET(req: NextRequest) {
                 ended: true,
                 space: {
                   name: cleanRoom,
-                  host: meta.host || "Unknown",
+                  host: meta.hostName || meta.host || "Unknown",
                   endedAt: meta.endedAt ?? Date.now(),
                 },
               },
@@ -166,12 +171,12 @@ async function loadLobbySnapshot(roomService: RoomServiceClient) {
       try {
         if (r.metadata) {
           const meta = JSON.parse(r.metadata)
-          if (meta.host) host = meta.host
+          if (meta.host) host = meta.hostName || meta.host
         }
       } catch {}
 
       if (host === "Unknown" && participants.length > 0) {
-        host = participants[0].identity
+        host = participants[0].name || participants[0].identity
       }
 
       return {
@@ -252,6 +257,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: { message: e.message } }, { status: 500 })
   }
 
+  const session = readBrowserSession(req)
+  const hostIdentity = roomParticipantIdentity(session, cleanRoom)
   const hostSecret = crypto.randomUUID()
 
   try {
@@ -270,7 +277,15 @@ export async function POST(req: NextRequest) {
       if (r.metadata) {
         try {
           const meta = JSON.parse(r.metadata)
-          if (!meta.ended && meta.host === cleanHost) {
+          if (
+            !meta.ended &&
+            (meta.host === roomParticipantIdentity(session, r.name) ||
+              hasHostAccess(
+                meta,
+                meta.host,
+                req.cookies.get(roleCookieName(r.name))?.value ?? ""
+              ))
+          ) {
             return NextResponse.json(
               {
                 error: {
@@ -307,7 +322,8 @@ export async function POST(req: NextRequest) {
     name: cleanRoom,
     emptyTimeout: 43200,
     metadata: JSON.stringify({
-      host: cleanHost,
+      host: hostIdentity,
+      hostName: cleanHost,
       hostSecretHash: hashHostSecret(hostSecret),
       banned: [],
       cohosts: [],
@@ -321,7 +337,8 @@ export async function POST(req: NextRequest) {
     process.env.LIVEKIT_API_KEY!,
     process.env.LIVEKIT_API_SECRET!,
     {
-      identity: cleanHost,
+      identity: hostIdentity,
+      name: cleanHost,
       metadata: JSON.stringify({ avatar }),
     }
   )
@@ -336,6 +353,7 @@ export async function POST(req: NextRequest) {
 
   const token = await at.toJwt()
   const response = NextResponse.json({ data: { roomName: cleanRoom, token } })
+  setBrowserSession(response, session)
   response.cookies.set({
     name: roleCookieName(cleanRoom),
     value: hostSecret,

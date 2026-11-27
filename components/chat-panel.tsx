@@ -43,6 +43,7 @@ type HistoryMessage = {
   timestamp: number
   message: string
   sender: string
+  senderName?: string
   avatarSeed?: string
 }
 
@@ -58,6 +59,8 @@ function isHistory(value: unknown): value is HistoryMessage[] {
         Number.isFinite(entry.timestamp) &&
         typeof entry.message === "string" &&
         typeof entry.sender === "string" &&
+        (entry.senderName === undefined ||
+          typeof entry.senderName === "string") &&
         (entry.avatarSeed === undefined || typeof entry.avatarSeed === "string")
     )
   )
@@ -281,6 +284,7 @@ export function ChatPanel({
             timestamp: msg.timestamp,
             message: msg.message.slice(0, MESSAGE_LIMIT),
             sender: msg.from?.identity || "Unknown",
+            senderName: msg.from?.name,
             avatarSeed: storedAvatarSeed,
           })
           changed = true
@@ -446,7 +450,8 @@ export function ChatPanel({
                       )
                       let avatarSeed =
                         group.messages[0]?.avatarSeed || group.sender
-                      let senderName = group.sender
+                      let senderName =
+                        group.messages[0]?.senderName || group.sender
                       try {
                         if (participant?.metadata) {
                           const meta = JSON.parse(participant.metadata)
@@ -610,8 +615,8 @@ export function ChatPanel({
                   lastTypingTime.current = now
                 }
               }}
-              maxLength={MESSAGE_LIMIT}
               aria-label="Message"
+              maxLength={MESSAGE_LIMIT}
               placeholder="Type a message..."
               className="h-10 flex-1 rounded-xl border-border bg-muted/50 px-4 text-xs shadow-none focus-visible:ring-1 focus-visible:ring-primary/50 sm:text-sm"
               disabled={isSending}
