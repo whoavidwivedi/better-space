@@ -128,15 +128,18 @@ export function Lobby() {
     }
   }, [])
 
+  const [roomsUnavailable, setRoomsUnavailable] = useState(false)
+  const [failedInvite, setFailedInvite] = useState<string | null>(null)
+
   const fetchRooms = async () => {
     try {
       const res = await fetch("/api/livekit/rooms")
-      if (res.ok) {
-        const data = await res.json()
-        setRooms(data.data || [])
-      }
-    } catch (e) {
-      console.error("Failed to fetch rooms", e)
+      if (!res.ok) throw new Error("Could not load spaces")
+      const data = await res.json()
+      setRooms(data.data || [])
+      setRoomsUnavailable(false)
+    } catch {
+      setRoomsUnavailable(true)
     } finally {
       setIsLoading(false)
     }
@@ -317,6 +320,33 @@ export function Lobby() {
   }
 
   // Act on the arrival (above) once the rooms have loaded.
+  const checkInvite = async (space: string) => {
+    setFailedInvite(null)
+    setIsCheckingSpace(true)
+    try {
+      const response = await fetch(
+        `/api/livekit/rooms?space=${encodeURIComponent(space)}`
+      )
+      if (!response.ok) throw new Error("Could not check space")
+      const data = await response.json()
+      if (data.ended) {
+        setEndedModalSpace({
+          name: space,
+          host: data.data?.space?.host,
+          speakers: data.data?.space?.speakers,
+        })
+      } else if (data.live || data.data?.live) {
+        onRoomClick(space)
+      } else {
+        openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
+      }
+    } catch {
+      setFailedInvite(space)
+    } finally {
+      setIsCheckingSpace(false)
+    }
+  }
+
   useEffect(() => {
     const params = arrival.current
     if (isLoading || !params) return
@@ -326,31 +356,8 @@ export function Lobby() {
     )
     if (template) return openLaunch(template.name)
     const space = params.get("space")
-    if (!space) return
-    if (rooms.some((r) => r.name === space)) return onRoomClick(space)
-
-    // Check if space has ended before opening launch
-    setIsCheckingSpace(true)
-    fetch(`/api/livekit/rooms?space=${encodeURIComponent(space)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.ended) {
-          setEndedModalSpace({
-            name: space,
-            host: data.data?.space?.host,
-            speakers: data.data?.space?.speakers,
-          })
-        } else {
-          openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
-        }
-      })
-      .catch(() => {
-        openLaunch(toSlug(stripRoomCode(space)).slice(0, ROOM_NAME_MAX))
-      })
-      .finally(() => {
-        setIsCheckingSpace(false)
-      })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once rooms load
+    if (space) void checkInvite(space)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consume the initial URL once
   }, [isLoading])
 
   if (hasJoined && token) {
@@ -388,7 +395,7 @@ export function Lobby() {
             <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
               {isLoading ? (
                 <Spinner className="size-3 text-muted-foreground" />
-              ) : (
+              ) : roomsUnavailable ? null : (
                 <span className="relative flex size-1.5" aria-hidden="true">
                   <span
                     className={cn(
@@ -402,9 +409,11 @@ export function Lobby() {
               )}
               {isLoading
                 ? "Checking who's live…"
-                : liveCount === 0
-                  ? "No rooms live yet"
-                  : `${liveCount} ${liveCount === 1 ? "room" : "rooms"} live now`}
+                : roomsUnavailable
+                  ? "Live spaces unavailable"
+                  : liveCount === 0
+                    ? "No rooms live yet"
+                    : `${liveCount} ${liveCount === 1 ? "room" : "rooms"} live now`}
             </span>
             <h1 className="mt-3 font-display text-3xl tracking-tight text-foreground sm:text-4xl">
               Lobby
@@ -436,6 +445,27 @@ export function Lobby() {
               aria-label="Search live rooms"
               className="h-10 rounded-[10px] border border-border bg-card pl-10 text-sm"
             />
+          </div>
+        )}
+
+        {failedInvite && (
+          <div role="alert" className="mt-6 flex flex-wrap items-center gap-3">
+            <p>Could not check the invited space.</p>
+            <Button
+              variant="outline"
+              onClick={() => void checkInvite(failedInvite)}
+            >
+              Retry invite
+            </Button>
+          </div>
+        )}
+
+        {roomsUnavailable && (
+          <div role="status" className="mt-6 flex flex-wrap items-center gap-3">
+            <p>Could not refresh live spaces.</p>
+            <Button variant="outline" onClick={() => void fetchRooms()}>
+              Retry lobby
+            </Button>
           </div>
         )}
 
@@ -487,7 +517,7 @@ export function Lobby() {
                 )
               })}
             </div>
-          ) : (
+          ) : roomsUnavailable ? null : (
             <div className="flex flex-col items-center rounded-3xl border border-dashed border-border bg-card/50 px-6 py-12 text-center sm:py-16">
               <div className="flex -space-x-3" aria-hidden="true">
                 {["OSLO-3", "Funny Bunny-3", "Afterclap-2", "Guacamole-1"].map(
