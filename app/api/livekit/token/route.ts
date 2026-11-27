@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { getEndedSpace, isSpaceEnded } from "@/lib/ended-spaces"
+import { limitLiveKitRequest } from "@/lib/livekit-rate-limit"
 import { ROOM_SLUG_PATTERN } from "@/lib/presets"
 import {
   hasCohostAccess,
@@ -22,6 +23,9 @@ function getRoomService() {
 }
 
 export async function GET(req: NextRequest) {
+  const limited = limitLiveKitRequest(req, "join")
+  if (limited) return limited
+
   const room = req.nextUrl.searchParams.get("room")
   const usernameQuery = req.nextUrl.searchParams.get("username")
   const avatarQuery = req.nextUrl.searchParams.get("avatar")
@@ -36,7 +40,7 @@ export async function GET(req: NextRequest) {
   }
 
   const cleanRoom = room.trim()
-  const avatar = avatarQuery?.trim() ?? ""
+  const avatar = avatarQuery?.trim().slice(0, 128) ?? ""
 
   if (!ROOM_SLUG_PATTERN.test(cleanRoom)) {
     return NextResponse.json(
@@ -63,14 +67,13 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  if (!usernameQuery) {
+  const username = usernameQuery?.trim().slice(0, 30)
+  if (!username) {
     return NextResponse.json(
       { error: { message: "Missing username" } },
       { status: 400 }
     )
   }
-
-  const username = usernameQuery.trim().substring(0, 30)
 
   let roomService: RoomServiceClient
   try {
